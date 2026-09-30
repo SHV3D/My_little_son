@@ -1,0 +1,26 @@
+{
+  "name": "My little son — Умный трекер сна",
+  "short_name": "My little son",
+  "description": "Режим сна малыша для всей семьи с адаптивными рекомендациями",
+  "start_url": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#ECEEE6",
+  "theme_color": "#23372A",
+  "lang": "ru",
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "sizes": "192x192 512x512",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "/favicon.svg",
+      "sizes": "128x128",
+      "type": "image/svg+xml",
+      "purpose": "maskable"
+    }
+  ],
+  "categories": ["parenting", "health", "lifestyle"]
+}

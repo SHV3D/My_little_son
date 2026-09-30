@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <rect width="512" height="512" rx="112" fill="#23372A"/>
+  <!-- Glowing Moon -->
+  <path d="M312 344A144 144 0 0 1 168 152a144 144 0 1 0 184 192 143 143 0 0 1-40 0z" fill="#D4F27A"/>
+  <!-- Stars -->
+  <circle cx="344" cy="160" r="20" fill="#FFFFFF"/>
+  <circle cx="392" cy="224" r="14" fill="#D4F27A" opacity="0.85"/>
+  <circle cx="280" cy="112" r="10" fill="#FFFFFF" opacity="0.7"/>
+  <!-- Battery bars subtle accent at bottom -->
+  <rect x="180" y="380" width="28" height="14" rx="7" fill="#D4F27A"/>
+  <rect x="220" y="372" width="28" height="22" rx="7" fill="#D4F27A"/>
+  <rect x="260" y="364" width="28" height="30" rx="7" fill="#D4F27A"/>
+  <rect x="300" y="356" width="28" height="38" rx="7" fill="#4E6552"/>
+</svg>

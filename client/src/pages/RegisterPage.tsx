@@ -34,8 +34,8 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({
       setError('Пожалуйста, укажите эл. почту и пароль');
       return;
     }
-    if (password.length < 6) {
-      setError('Пароль должен быть не меньше 6 символов');
+    if (password.length < 8) {
+      setError('Пароль должен быть не меньше 8 символов');
       return;
     }
     if (familyMode === 'INVITE' && !inviteCode.trim()) {

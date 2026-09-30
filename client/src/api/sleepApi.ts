@@ -48,6 +48,15 @@ export interface RetroactiveSleepPayload {
   source?: string;
 }
 
+function getAuthHeaders(additional?: Record<string, string>): Record<string, string> {
+  const token = localStorage.getItem('auth_token');
+  const headers: Record<string, string> = { ...additional };
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`;
+  }
+  return headers;
+}
+
 export async function fetchScheduleStatus(
   childId?: string,
   date?: string,
@@ -59,7 +68,9 @@ export async function fetchScheduleStatus(
   if (currentTime) params.append('currentTime', currentTime);
 
   const url = `/api/sleep/status${params.toString() ? `?${params.toString()}` : ''}`;
-  const res = await fetch(url);
+  const res = await fetch(url, {
+    headers: getAuthHeaders(),
+  });
   if (!res.ok) {
     throw new Error(`Failed to fetch sleep status: ${res.status} ${res.statusText}`);
   }
@@ -84,7 +95,7 @@ export async function postFellAsleep(
 
   const res = await fetch('/api/sleep/fell-asleep', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: getAuthHeaders({ 'Content-Type': 'application/json' }),
     body: JSON.stringify({ childId, time: t, source: s }),
   });
   if (!res.ok) {
@@ -111,7 +122,7 @@ export async function postWokeUp(
 
   const res = await fetch('/api/sleep/woke-up', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: getAuthHeaders({ 'Content-Type': 'application/json' }),
     body: JSON.stringify({ childId, time: t, source: s }),
   });
   if (!res.ok) {
@@ -126,7 +137,7 @@ export async function postRetroactive(payload: RetroactiveSleepPayload): Promise
 
   const res = await fetch('/api/sleep/retroactive', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: getAuthHeaders({ 'Content-Type': 'application/json' }),
     body: JSON.stringify({
       childId: payload.childId || 'demo-child-1',
       date,
@@ -189,7 +200,9 @@ export async function fetchMonthSummary(
   if (month) params.append('month', String(month));
 
   const url = `/api/calendar/month${params.toString() ? `?${params.toString()}` : ''}`;
-  const res = await fetch(url);
+  const res = await fetch(url, {
+    headers: getAuthHeaders(),
+  });
   if (!res.ok) {
     throw new Error(`Failed to fetch calendar month: ${res.status} ${res.statusText}`);
   }

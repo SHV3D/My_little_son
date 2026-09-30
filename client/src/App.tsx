@@ -5,7 +5,7 @@ import { CalendarPage } from './pages/CalendarPage';
 import { SettingsPage } from './pages/SettingsPage';
 import { LoginPage } from './pages/LoginPage';
 import { RegisterPage } from './pages/RegisterPage';
-import { clearAuthSession } from './api/authApi';
+import { clearAuthSession, getStoredUser } from './api/authApi';
 import {
   fetchScheduleStatus,
   DayStatusResponse,
@@ -34,6 +34,8 @@ export default function App() {
     | null
   >(null);
 
+  const activeFamilyId = getStoredUser()?.familyId || 'demo-family-1';
+
   const loadStatus = useCallback(async () => {
     try {
       const data = await fetchScheduleStatus();
@@ -44,7 +46,7 @@ export default function App() {
   }, []);
 
   useFamilySync({
-    familyId: 'demo-family-1',
+    familyId: activeFamilyId,
     onSleepStatusChanged: () => {
       loadStatus();
     },
