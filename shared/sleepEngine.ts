@@ -190,6 +190,30 @@ export function formatIntervalString(minMinutes: number, maxMinutes: number): st
 }
 
 /**
+ * Pluralizes Russian nouns based on count (1 сон, 2-4 сна, 5+ снов).
+ */
+export function pluralizeRussian(count: number, one: string, twoToFour: string, fiveAndMore: string): string {
+  const abs = Math.abs(Math.round(count));
+  const mod100 = abs % 100;
+  const mod10 = abs % 10;
+  let word: string;
+  if (mod100 >= 11 && mod100 <= 14) {
+    word = fiveAndMore;
+  } else if (mod10 === 1) {
+    word = one;
+  } else if (mod10 >= 2 && mod10 <= 4) {
+    word = twoToFour;
+  } else {
+    word = fiveAndMore;
+  }
+  return `${count} ${word}`;
+}
+
+export function formatNapsCountRussian(count: number): string {
+  return pluralizeRussian(count, 'сон', 'сна', 'снов');
+}
+
+/**
  * Validates sanity of child settings against the 24-hour day structure.
  */
 export function validateSettings(settings: SettingsInput): ValidationResult {
@@ -217,7 +241,7 @@ export function validateSettings(settings: SettingsInput): ValidationResult {
     return {
       isValid: true,
       status: 'valid',
-      message: `${settings.napsPerDay} сна × интервал ${intervalStr} при отбое в ${settings.targetBedtime} — план сходится.`,
+      message: `${formatNapsCountRussian(settings.napsPerDay)} × интервал ${intervalStr} при отбое в ${settings.targetBedtime} — план сходится.`,
       dayLengthMinutes: dayLength,
       minRequiredMinutes,
       maxRequiredMinutes,
@@ -263,8 +287,10 @@ export function calculateDaySchedule(input: ScheduleInput): ScheduleOutput {
   const S_target = settings.totalDaySleepMinutes;
   const N_target = settings.napsPerDay;
 
-  // Identify active nap vs completed naps
-  const activeNap = events.find(e => e.eventType === 'NAP' && (!e.endTime || e.endTime === null));
+  // Identify active sleep (NAP or NIGHT_SLEEP) vs completed naps
+  const activeSleep = events.find(
+    e => (e.eventType === 'NAP' || e.eventType === 'NIGHT_SLEEP') && (!e.endTime || e.endTime === null || e.endTime === '')
+  );
   const completedNaps = events
     .filter(e => e.eventType === 'NAP' && e.endTime != null && e.endTime !== '')
     .sort((a, b) => parseTimeToMinutes(a.startTime) - parseTimeToMinutes(b.startTime));
@@ -279,21 +305,51 @@ export function calculateDaySchedule(input: ScheduleInput): ScheduleOutput {
   }, 0);
 
   const remainingDaySleepMinutes = Math.max(0, S_target - completedDaySleepMinutes);
-  const isSleeping = !!activeNap;
+  const isSleeping = !!activeSleep;
   const state: BabyState = isSleeping ? 'SLEEPING' : 'AWAKE';
 
   // Format common progress strings
   const formattedDaySleepProgress = `${formatMinutesToHoursAndMinutes(completedDaySleepMinutes)} / ${formatMinutesToHoursAndMinutes(S_target)}`;
 
-  if (isSleeping && activeNap) {
-    const sleepStartTimeStr = activeNap.startTime.includes('T')
-      ? formatMinutesToTime(parseTimeToMinutes(activeNap.startTime))
-      : activeNap.startTime;
-    const sleepStartMinutes = parseTimeToMinutes(activeNap.startTime);
+  if (isSleeping && activeSleep) {
+    const isNightSleep = activeSleep.eventType === 'NIGHT_SLEEP';
+    const sleepStartTimeStr = activeSleep.startTime.includes('T')
+      ? formatMinutesToTime(parseTimeToMinutes(activeSleep.startTime))
+      : activeSleep.startTime;
+    const sleepStartMinutes = parseTimeToMinutes(activeSleep.startTime);
     const sleepDurationMinutes = Math.max(0, currentMinutes - sleepStartMinutes);
     const formattedSleepDuration = formatMinutesToHoursAndMinutes(sleepDurationMinutes);
-    const currentNapNumber = activeNap.napNumber || (completedNapsCount + 1);
 
+    if (isNightSleep) {
+      return {
+        state: 'SLEEPING',
+        sleepDurationMinutes,
+        formattedSleepDuration,
+        sleepStartTime: sleepStartTimeStr,
+        currentNapNumber: undefined,
+        plannedCurrentNapDurationMinutes: undefined,
+        wakeDeadlineTime: undefined,
+        isWakeDeadlineExceeded: false,
+        wakeDeadlineMessage: undefined,
+        subsequentNaps: [],
+        targetBedtime: settings.targetBedtime,
+        projectedBedtime: settings.targetBedtime,
+        isBedtimeShifted: false,
+        bedtimeStatusMessage: 'цель отбоя',
+        completedNapsCount,
+        targetNapsCount: N_target,
+        remainingNapsCount: 0,
+        completedDaySleepMinutes,
+        targetDaySleepMinutes: S_target,
+        remainingDaySleepMinutes,
+        formattedDaySleepProgress,
+        formattedRemainingNaps: `ещё 0 из ${N_target}`,
+        isScheduleCrunched: false,
+        scheduleCrunchReason: undefined,
+      };
+    }
+
+    const currentNapNumber = activeSleep.napNumber || (completedNapsCount + 1);
     const remainingNapsCount = Math.max(0, N_target - currentNapNumber);
     const formattedRemainingNaps = `ещё ${remainingNapsCount} из ${N_target}`;
 
@@ -302,24 +358,47 @@ export function calculateDaySchedule(input: ScheduleInput): ScheduleOutput {
     if (currentNapNumber === N_target && N_target > 1) {
       // It's the bridge nap
       plannedCurrentNapDuration = Math.min(40, Math.max(25, remainingDaySleepMinutes));
+    } else if (N_target === 1) {
+      plannedCurrentNapDuration = Math.min(120, remainingDaySleepMinutes);
     } else if (remainingNapsCount === 1) {
       // 1 nap left after this: this nap is long nap
       plannedCurrentNapDuration = Math.min(90, Math.max(60, remainingDaySleepMinutes - 35));
+    } else {
+      // 2 or more naps remain after this: earlier long nap
+      plannedCurrentNapDuration = Math.min(
+        90,
+        Math.max(60, remainingDaySleepMinutes - 35 - (remainingNapsCount - 1) * 75)
+      );
+    }
+
+    // Calculate subsequent naps durations
+    const subsequentDurations: number[] = [];
+    const remainingSleepAfterThis = Math.max(0, remainingDaySleepMinutes - plannedCurrentNapDuration);
+
+    if (remainingNapsCount === 1) {
+      if (N_target > 1) {
+        subsequentDurations.push(Math.min(35, Math.max(25, remainingSleepAfterThis)));
+      } else {
+        subsequentDurations.push(Math.min(120, remainingSleepAfterThis));
+      }
+    } else if (remainingNapsCount > 1) {
+      const bridgeDuration = 35;
+      const longCount = remainingNapsCount - 1;
+      const sleepForLong = Math.max(60 * longCount, remainingSleepAfterThis - bridgeDuration);
+      let remainingLongSleep = sleepForLong;
+      for (let i = 0; i < longCount; i++) {
+        const remainingNapsAfterThis = longCount - 1 - i;
+        const maxForThis = Math.max(60, remainingLongSleep - remainingNapsAfterThis * 75);
+        const dur = Math.min(90, maxForThis);
+        subsequentDurations.push(dur);
+        remainingLongSleep = Math.max(0, remainingLongSleep - dur);
+      }
+      subsequentDurations.push(bridgeDuration);
     }
 
     // Wake deadline calculation:
-    // Need: W_min + (remaining naps after this) * (subsequent nap duration + W_min)
-    let requiredTimeAfter = 0;
-    const subsequentNaps: PlannedNap[] = [];
-
-    if (remainingNapsCount > 0) {
-      // Next is bridge nap
-      const bridgeDuration = Math.min(35, Math.max(25, remainingDaySleepMinutes - plannedCurrentNapDuration));
-      requiredTimeAfter = W_min + bridgeDuration + W_min;
-    } else {
-      // Last nap before bed
-      requiredTimeAfter = W_min;
-    }
+    // sum of all subsequent wake windows (each W_min) plus all subsequent nap durations + final wake window
+    const requiredTimeAfter = (remainingNapsCount + 1) * W_min + subsequentDurations.reduce((a, b) => a + b, 0);
 
     const latestAllowedWakeForTargetBedtime = targetBedtimeMinutes - requiredTimeAfter;
     const plannedWakeTime = sleepStartMinutes + plannedCurrentNapDuration;
@@ -343,16 +422,20 @@ export function calculateDaySchedule(input: ScheduleInput): ScheduleOutput {
       ? `Пора будить, отбой сдвигается`
       : `Разбудить до ${wakeDeadlineTime}, иначе сдвинется отбой`;
 
-    // Subsequent planned naps
-    if (remainingNapsCount > 0) {
-      const subNapNumber = currentNapNumber + 1;
-      const subNapStart = estimatedWakeMinutes + W_min;
-      const subNapDuration = 35;
+    // Subsequent planned naps chain
+    const subsequentNaps: PlannedNap[] = [];
+    let cursor = estimatedWakeMinutes;
+    for (let i = 0; i < remainingNapsCount; i++) {
+      const subNapNumber = currentNapNumber + 1 + i;
+      const isSubBridge = subNapNumber === N_target && N_target > 1;
+      const subNapStart = cursor + W_min;
+      const subNapDuration = subsequentDurations[i];
       const subNapEnd = subNapStart + subNapDuration;
+      cursor = subNapEnd;
 
       subsequentNaps.push({
         napNumber: subNapNumber,
-        isBridge: true,
+        isBridge: isSubBridge,
         plannedStartTime: formatMinutesToTime(subNapStart),
         plannedEndTime: formatMinutesToTime(subNapEnd),
         plannedDurationMinutes: subNapDuration,
@@ -427,7 +510,16 @@ export function calculateDaySchedule(input: ScheduleInput): ScheduleOutput {
   let scheduleCrunchReason: string | undefined;
   let projectedBedtimeMinutes = targetBedtimeMinutes;
 
-  if (remainingNapsCount > 0) {
+  if (remainingNapsCount === 0) {
+    // When all daytime naps are completed:
+    // Check if lastWakeMinutes + W_min > targetBedtimeMinutes.
+    // If so, recalculate bedtime: projectedBedtimeMinutes = lastWakeMinutes + W_min.
+    if (lastWakeMinutes + W_min > targetBedtimeMinutes) {
+      projectedBedtimeMinutes = lastWakeMinutes + W_min;
+      isScheduleCrunched = true;
+      scheduleCrunchReason = 'Позднее пробуждение, отбой пересчитан';
+    }
+  } else {
     const nextNapNumber = completedNapsCount + 1;
     const isBridge = remainingNapsCount === 1 && N_target > 1;
 
@@ -444,84 +536,57 @@ export function calculateDaySchedule(input: ScheduleInput): ScheduleOutput {
       formattedCountdown = `пора спать (+${-countdownMinutes} мин)`;
     }
 
-    // Planned duration distribution
-    let plannedDuration = 90;
+    // Determine planned durations for all remaining naps:
+    // earlier remaining naps get primary long nap durations (~75-90 min),
+    // and final nap before night gets bridge nap duration (~30-35 min, minimum 20-25 min)
+    const durations: number[] = [];
     if (remainingNapsCount === 1) {
-      // Bridge nap or single final nap
       if (N_target > 1) {
-        plannedDuration = Math.min(35, Math.max(25, remainingDaySleepMinutes));
+        durations.push(Math.min(35, Math.max(25, remainingDaySleepMinutes)));
       } else {
-        plannedDuration = Math.min(120, remainingDaySleepMinutes);
+        durations.push(Math.min(120, remainingDaySleepMinutes));
       }
-    } else if (remainingNapsCount === 2) {
-      plannedDuration = Math.min(90, Math.max(60, remainingDaySleepMinutes - 35));
+    } else {
+      const bridgeDuration = 35;
+      const longCount = remainingNapsCount - 1;
+      const sleepForLong = Math.max(60 * longCount, remainingDaySleepMinutes - bridgeDuration);
+      let remainingLongSleep = sleepForLong;
+      for (let i = 0; i < longCount; i++) {
+        const remainingNapsAfterThis = longCount - 1 - i;
+        const maxForThis = Math.max(60, remainingLongSleep - remainingNapsAfterThis * 75);
+        const dur = Math.min(90, maxForThis);
+        durations.push(dur);
+        remainingLongSleep = Math.max(0, remainingLongSleep - dur);
+      }
+      durations.push(bridgeDuration);
     }
 
     // Check schedule crunch
-    // Available time from next nap start to target bedtime
     const effectiveNapStart = Math.max(currentMinutes, targetStartMin);
     const availableTimeUntilBed = targetBedtimeMinutes - effectiveNapStart;
+    const totalWakeWindowsNeeded = remainingNapsCount * W_min;
+    const totalSleepNeeded = durations.reduce((a, b) => a + b, 0);
+    const totalNeeded = totalWakeWindowsNeeded + totalSleepNeeded;
 
-    if (remainingNapsCount === 1) {
-      const requiredAfter = plannedDuration + W_min;
-      if (availableTimeUntilBed < requiredAfter) {
-        isScheduleCrunched = true;
-        scheduleCrunchReason = 'Сон сокращен, чтобы не сместить ночь';
+    if (availableTimeUntilBed < totalNeeded) {
+      isScheduleCrunched = true;
+      scheduleCrunchReason = 'Сон сокращен, чтобы не сместить ночь';
+
+      if (N_target > 1) {
         // Gracefully shrink bridge nap down to 20-25 min
-        const shrunk = Math.max(20, availableTimeUntilBed - W_min);
-        if (shrunk < plannedDuration) {
-          plannedDuration = Math.min(plannedDuration, Math.max(20, shrunk));
-        }
-        if (effectiveNapStart + plannedDuration + W_min > targetBedtimeMinutes) {
-          projectedBedtimeMinutes = effectiveNapStart + plannedDuration + W_min;
-        }
-      }
-    } else if (remainingNapsCount === 2) {
-      // Nap 2 + W_min + Bridge Nap (35m) + W_min
-      const bridgeDuration = 35;
-      const totalNeeded = plannedDuration + W_min + bridgeDuration + W_min;
-
-      if (availableTimeUntilBed < totalNeeded) {
-        isScheduleCrunched = true;
-        scheduleCrunchReason = 'Сон сокращен, чтобы не сместить ночь';
-
-        // Shrink bridge nap first
-        const availableForBridge = availableTimeUntilBed - plannedDuration - 2 * W_min;
-        const adjustedBridgeDuration = Math.max(20, Math.min(bridgeDuration, availableForBridge));
-
-        const subNapStart = effectiveNapStart + plannedDuration + W_min;
-        const subNapEnd = subNapStart + adjustedBridgeDuration;
-
-        subsequentNaps.push({
-          napNumber: nextNapNumber + 1,
-          isBridge: true,
-          plannedStartTime: formatMinutesToTime(subNapStart),
-          plannedEndTime: formatMinutesToTime(subNapEnd),
-          plannedDurationMinutes: adjustedBridgeDuration,
-          formattedDuration: formatDurationRussian(adjustedBridgeDuration),
-          formattedWindow: `${formatMinutesToTime(subNapStart)} – ${formatMinutesToTime(subNapEnd)}`,
-        });
-
-        if (subNapEnd + W_min > targetBedtimeMinutes) {
-          projectedBedtimeMinutes = subNapEnd + W_min;
-        }
+        const bridgeIndex = remainingNapsCount - 1;
+        const sleepWithoutBridge = totalSleepNeeded - durations[bridgeIndex];
+        const availableForBridge = availableTimeUntilBed - totalWakeWindowsNeeded - sleepWithoutBridge;
+        const shrunkBridge = Math.max(20, Math.min(durations[bridgeIndex], availableForBridge));
+        durations[bridgeIndex] = shrunkBridge;
       } else {
-        // Standard distribution without crunch
-        const subNapStart = effectiveNapStart + plannedDuration + W_min;
-        const subNapEnd = subNapStart + bridgeDuration;
-
-        subsequentNaps.push({
-          napNumber: nextNapNumber + 1,
-          isBridge: true,
-          plannedStartTime: formatMinutesToTime(subNapStart),
-          plannedEndTime: formatMinutesToTime(subNapEnd),
-          plannedDurationMinutes: bridgeDuration,
-          formattedDuration: formatDurationRussian(bridgeDuration),
-          formattedWindow: `${formatMinutesToTime(subNapStart)} – ${formatMinutesToTime(subNapEnd)}`,
-        });
+        const shrunk = Math.max(20, availableTimeUntilBed - W_min);
+        durations[0] = Math.min(durations[0], Math.max(20, shrunk));
       }
     }
 
+    // Planned duration for next nap
+    const plannedDuration = durations[0];
     nextNap = {
       napNumber: nextNapNumber,
       isBridge,
@@ -534,6 +599,33 @@ export function calculateDaySchedule(input: ScheduleInput): ScheduleOutput {
       formattedDuration: formatDurationRussian(plannedDuration),
       formattedWindow: `${formatMinutesToTime(targetStartMin)} – ${formatMinutesToTime(windowEndMin)}`,
     };
+
+    // Chain subsequent naps iteratively for all remaining naps
+    let cursor = effectiveNapStart + plannedDuration;
+    for (let j = 1; j < remainingNapsCount; j++) {
+      const subNapNumber = nextNapNumber + j;
+      const isSubBridge = subNapNumber === N_target && N_target > 1;
+      const subNapStart = cursor + W_min;
+      const subNapDuration = durations[j];
+      const subNapEnd = subNapStart + subNapDuration;
+      cursor = subNapEnd;
+
+      subsequentNaps.push({
+        napNumber: subNapNumber,
+        isBridge: isSubBridge,
+        plannedStartTime: formatMinutesToTime(subNapStart),
+        plannedEndTime: formatMinutesToTime(subNapEnd),
+        plannedDurationMinutes: subNapDuration,
+        formattedDuration: formatDurationRussian(subNapDuration),
+        formattedWindow: `${formatMinutesToTime(subNapStart)} – ${formatMinutesToTime(subNapEnd)}`,
+      });
+    }
+
+    // Final bedtime calculation after all naps and final wake window
+    const finalBedtimeMinutes = cursor + W_min;
+    if (finalBedtimeMinutes > targetBedtimeMinutes) {
+      projectedBedtimeMinutes = finalBedtimeMinutes;
+    }
   }
 
   const isBedtimeShifted = projectedBedtimeMinutes > targetBedtimeMinutes;

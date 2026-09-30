@@ -7,6 +7,8 @@ import {
   formatMinutesToHoursAndMinutes,
   formatDurationRussian,
   calculateBatteryStep,
+  pluralizeRussian,
+  formatNapsCountRussian,
   ChildSettings,
   SleepEvent,
   ScheduleInput,
@@ -52,6 +54,26 @@ describe('sleepEngine - Helper Functions', () => {
     expect(calculateBatteryStep(130, W_max)).toBe(5); // 130/180 * 7 = 5.05 -> 5 (from 01_today_awake.html)
     expect(calculateBatteryStep(180, W_max)).toBe(7); // 180/180 * 7 = 7
     expect(calculateBatteryStep(220, W_max)).toBe(7); // clamped to 7
+  });
+
+  it('correctly pluralizes Russian words for сон / сна / снов', () => {
+    expect(formatNapsCountRussian(1)).toBe('1 сон');
+    expect(formatNapsCountRussian(2)).toBe('2 сна');
+    expect(formatNapsCountRussian(3)).toBe('3 сна');
+    expect(formatNapsCountRussian(4)).toBe('4 сна');
+    expect(formatNapsCountRussian(5)).toBe('5 снов');
+    expect(formatNapsCountRussian(6)).toBe('6 снов');
+    expect(formatNapsCountRussian(11)).toBe('11 снов');
+    expect(formatNapsCountRussian(12)).toBe('12 снов');
+    expect(formatNapsCountRussian(14)).toBe('14 снов');
+    expect(formatNapsCountRussian(20)).toBe('20 снов');
+    expect(formatNapsCountRussian(21)).toBe('21 сон');
+    expect(formatNapsCountRussian(22)).toBe('22 сна');
+    expect(formatNapsCountRussian(25)).toBe('25 снов');
+
+    expect(pluralizeRussian(1, 'сон', 'сна', 'снов')).toBe('1 сон');
+    expect(pluralizeRussian(2, 'сон', 'сна', 'снов')).toBe('2 сна');
+    expect(pluralizeRussian(5, 'сон', 'сна', 'снов')).toBe('5 снов');
   });
 });
 
@@ -131,6 +153,121 @@ describe('sleepEngine - (a) Awake State Calculations', () => {
     expect(nap3.plannedStartTime).toBe('17:25'); // 13:25 + 90m + 150m = 17:25
     expect(nap3.plannedEndTime).toBe('18:00'); // 17:25 + 35m = 18:00
     expect(nap3.plannedDurationMinutes).toBe(35);
+  });
+
+  it('plans next nap and subsequent naps (Nap 2 and Nap 3) in morning state with 3 naps remaining', () => {
+    const events: SleepEvent[] = [
+      {
+        eventType: 'WAKEUP',
+        startTime: '07:00',
+      },
+    ];
+
+    const input: ScheduleInput = {
+      settings: standardSettings,
+      currentTime: '07:30',
+      events,
+    };
+
+    const result = calculateDaySchedule(input);
+
+    expect(result.state).toBe('AWAKE');
+    expect(result.lastWakeTime).toBe('07:00');
+    expect(result.awakeDurationMinutes).toBe(30);
+    expect(result.completedNapsCount).toBe(0);
+    expect(result.remainingNapsCount).toBe(3);
+    expect(result.formattedRemainingNaps).toBe('ещё 3 из 3');
+
+    // Next nap (Nap 1)
+    expect(result.nextNap).toBeDefined();
+    expect(result.nextNap?.napNumber).toBe(1);
+    expect(result.nextNap?.isBridge).toBe(false);
+    expect(result.nextNap?.targetStartTime).toBe('09:30'); // 07:00 + 150 min
+    expect(result.nextNap?.windowEndTime).toBe('10:00');   // 07:00 + 180 min
+    expect(result.nextNap?.plannedDurationMinutes).toBe(90);
+
+    // Subsequent naps chain contains Nap 2 and Nap 3
+    expect(result.subsequentNaps).toHaveLength(2);
+
+    const nap2 = result.subsequentNaps![0];
+    expect(nap2.napNumber).toBe(2);
+    expect(nap2.isBridge).toBe(false);
+    expect(nap2.plannedDurationMinutes).toBe(75);
+    expect(nap2.plannedStartTime).toBe('13:30'); // 09:30 + 90m + 150m = 13:30
+    expect(nap2.plannedEndTime).toBe('14:45');   // 13:30 + 75m = 14:45
+
+    const nap3 = result.subsequentNaps![1];
+    expect(nap3.napNumber).toBe(3);
+    expect(nap3.isBridge).toBe(true);
+    expect(nap3.plannedDurationMinutes).toBe(35);
+    expect(nap3.plannedStartTime).toBe('17:15'); // 14:45 + 150m = 17:15
+    expect(nap3.plannedEndTime).toBe('17:50');   // 17:15 + 35m = 17:50
+
+    // Sum of all 3 naps equals target day sleep
+    expect(
+      result.nextNap!.plannedDurationMinutes +
+      nap2.plannedDurationMinutes +
+      nap3.plannedDurationMinutes
+    ).toBe(200);
+
+    // Bedtime fits target without shift
+    expect(result.projectedBedtime).toBe('20:30');
+    expect(result.isBedtimeShifted).toBe(false);
+  });
+
+  it('recalculates bedtime when baby wakes late from the final nap with no naps remaining', () => {
+    // 3 of 3 naps completed. Nap 3 ended late at 18:30.
+    // Target bedtime is 20:30.
+    // Wake interval W_min = 150 min (2h 30m).
+    // 18:30 + 150 min = 21:00 (> 20:30 target).
+    const events: SleepEvent[] = [
+      { eventType: 'WAKEUP', startTime: '07:00' },
+      { eventType: 'NAP', napNumber: 1, startTime: '09:30', endTime: '10:45', durationMinutes: 75 },
+      { eventType: 'NAP', napNumber: 2, startTime: '13:15', endTime: '14:45', durationMinutes: 90 },
+      { eventType: 'NAP', napNumber: 3, startTime: '17:45', endTime: '18:30', durationMinutes: 45 },
+    ];
+
+    const input: ScheduleInput = {
+      settings: standardSettings,
+      currentTime: '19:00',
+      events,
+    };
+
+    const result = calculateDaySchedule(input);
+    expect(result.state).toBe('AWAKE');
+    expect(result.completedNapsCount).toBe(3);
+    expect(result.remainingNapsCount).toBe(0);
+    expect(result.nextNap).toBeNull();
+    expect(result.subsequentNaps).toHaveLength(0);
+
+    // Bedtime must be shifted to 21:00 (18:30 + 150 min)
+    expect(result.isBedtimeShifted).toBe(true);
+    expect(result.projectedBedtime).toBe('21:00');
+    expect(result.bedtimeStatusMessage).toBe('пересчитано');
+    expect(result.isScheduleCrunched).toBe(true);
+  });
+
+  it('keeps target bedtime when baby wakes on time after all naps completed', () => {
+    // Nap 3 ended on time at 17:50.
+    // 17:50 + 150 min = 20:20 <= 20:30 target.
+    const events: SleepEvent[] = [
+      { eventType: 'WAKEUP', startTime: '07:00' },
+      { eventType: 'NAP', napNumber: 1, startTime: '09:30', endTime: '10:45', durationMinutes: 75 },
+      { eventType: 'NAP', napNumber: 2, startTime: '13:15', endTime: '14:45', durationMinutes: 90 },
+      { eventType: 'NAP', napNumber: 3, startTime: '17:15', endTime: '17:50', durationMinutes: 35 },
+    ];
+
+    const input: ScheduleInput = {
+      settings: standardSettings,
+      currentTime: '18:10',
+      events,
+    };
+
+    const result = calculateDaySchedule(input);
+    expect(result.remainingNapsCount).toBe(0);
+    expect(result.isBedtimeShifted).toBe(false);
+    expect(result.projectedBedtime).toBe('20:30');
+    expect(result.bedtimeStatusMessage).toBe('цель отбоя');
   });
 });
 
@@ -258,6 +395,88 @@ describe('sleepEngine - (b) Sleeping State Calculations', () => {
     // Wake deadline = 20:30 - 150 min = 18:00
     expect(result.wakeDeadlineTime).toBe('18:00');
     expect(result.subsequentNaps).toHaveLength(0);
+  });
+
+  it('calculates wake deadline for Nap 1 accounting for Nap 2, Nap 3 and all intervening wake windows', () => {
+    // Child woke at 07:00 and started Nap 1 at 09:35 (a bit late)
+    // Settings: targetBedtime = 20:30 (1230 min), W_min = 150 min
+    // Remaining naps after Nap 1 = 2 (Nap 2: 75 min, Nap 3: 35 min)
+    // Required time after Nap 1 = 3 * W_min + (75 + 35) = 450 + 110 = 560 min
+    // Latest wake to meet 20:30 target = 1230 - 560 = 670 (11:10)
+    // Planned wake time = 09:35 + 90m = 11:05
+    // wakeDeadline = min(11:05, 11:10) = 11:05
+    const events: SleepEvent[] = [
+      {
+        eventType: 'WAKEUP',
+        startTime: '07:00',
+      },
+      {
+        eventType: 'NAP',
+        napNumber: 1,
+        startTime: '09:35',
+        endTime: null, // actively sleeping
+      },
+    ];
+
+    const input: ScheduleInput = {
+      settings: standardSettings,
+      currentTime: '10:00',
+      events,
+    };
+
+    const result = calculateDaySchedule(input);
+    expect(result.state).toBe('SLEEPING');
+    expect(result.currentNapNumber).toBe(1);
+    expect(result.remainingNapsCount).toBe(2);
+    expect(result.wakeDeadlineTime).toBe('11:05');
+    expect(result.subsequentNaps).toHaveLength(2);
+    expect(result.subsequentNaps![0].napNumber).toBe(2);
+    expect(result.subsequentNaps![0].isBridge).toBe(false);
+    expect(result.subsequentNaps![1].napNumber).toBe(3);
+    expect(result.subsequentNaps![1].isBridge).toBe(true);
+
+    // Now test when Nap 1 started even later at 09:50:
+    // Planned wake = 09:50 + 90m = 11:20
+    // But latest allowed wake = 20:30 - (3 * 150 + 75 + 35) = 11:10
+    // Deadline must be clamped to 11:10!
+    const lateNap1Input: ScheduleInput = {
+      settings: standardSettings,
+      currentTime: '10:30',
+      events: [
+        { eventType: 'WAKEUP', startTime: '07:00' },
+        { eventType: 'NAP', napNumber: 1, startTime: '09:50', endTime: null },
+      ],
+    };
+
+    const lateResult = calculateDaySchedule(lateNap1Input);
+    expect(lateResult.wakeDeadlineTime).toBe('11:10');
+    expect(lateResult.wakeDeadlineMessage).toBe('Разбудить до 11:10, иначе сдвинется отбой');
+  });
+
+  it('supports active NIGHT_SLEEP event properly in calculateDaySchedule', () => {
+    const events: SleepEvent[] = [
+      { eventType: 'WAKEUP', startTime: '07:00' },
+      { eventType: 'NAP', napNumber: 1, startTime: '09:30', endTime: '10:45', durationMinutes: 75 },
+      { eventType: 'NAP', napNumber: 2, startTime: '13:15', endTime: '14:45', durationMinutes: 90 },
+      { eventType: 'NAP', napNumber: 3, startTime: '17:15', endTime: '17:50', durationMinutes: 35 },
+      { eventType: 'NIGHT_SLEEP', startTime: '20:30', endTime: null },
+    ];
+
+    const input: ScheduleInput = {
+      settings: standardSettings,
+      currentTime: '21:15',
+      events,
+    };
+
+    const result = calculateDaySchedule(input);
+    expect(result.state).toBe('SLEEPING');
+    expect(result.sleepStartTime).toBe('20:30');
+    expect(result.sleepDurationMinutes).toBe(45);
+    expect(result.formattedSleepDuration).toBe('0:45');
+    expect(result.remainingNapsCount).toBe(0);
+    expect(result.subsequentNaps).toHaveLength(0);
+    expect(result.currentNapNumber).toBeUndefined();
+    expect(result.wakeDeadlineTime).toBeUndefined();
   });
 });
 
@@ -434,5 +653,43 @@ describe('sleepEngine - (e) Settings Sanity Check Validator', () => {
     expect(result.isValid).toBe(false);
     expect(result.status).toBe('warning');
     expect(result.message).toContain('длинный');
+  });
+
+  it('uses proper Russian pluralization in validateSettings messages', () => {
+    const settings1Nap = {
+      napsPerDay: 1,
+      wakeIntervalMinMinutes: 300,
+      wakeIntervalMaxMinutes: 360,
+      totalDaySleepMinutes: 120,
+      typicalWakeupTime: '07:00',
+      targetBedtime: '20:00',
+    };
+    const res1 = validateSettings(settings1Nap);
+    expect(res1.isValid).toBe(true);
+    expect(res1.message).toContain('1 сон × интервал');
+
+    const settings4Naps = {
+      napsPerDay: 4,
+      wakeIntervalMinMinutes: 100,
+      wakeIntervalMaxMinutes: 140,
+      totalDaySleepMinutes: 200,
+      typicalWakeupTime: '07:00',
+      targetBedtime: '21:00',
+    };
+    const res4 = validateSettings(settings4Naps);
+    expect(res4.isValid).toBe(true);
+    expect(res4.message).toContain('4 сна × интервал');
+
+    const settings5Naps = {
+      napsPerDay: 5,
+      wakeIntervalMinMinutes: 80,
+      wakeIntervalMaxMinutes: 110,
+      totalDaySleepMinutes: 240,
+      typicalWakeupTime: '07:00',
+      targetBedtime: '21:00',
+    };
+    const res5 = validateSettings(settings5Naps);
+    expect(res5.isValid).toBe(true);
+    expect(res5.message).toContain('5 снов × интервал');
   });
 });
