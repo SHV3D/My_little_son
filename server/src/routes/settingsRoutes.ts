@@ -1,6 +1,7 @@
 import { Router, Request, Response } from 'express';
 import { getSettings, updateSettings } from '../services/settingsService';
 import { optionalAuth } from '../middleware/authMiddleware';
+import { broadcastToFamily, getFamilyIdForChild } from '../ws/wsServer';
 
 const router = Router();
 
@@ -20,6 +21,17 @@ router.put('/', (req: Request, res: Response) => {
   try {
     const childId = (req.body.childId as string) || (req.query.childId as string) || req.user?.childId || 'demo-child-1';
     const updated = updateSettings(childId, req.body);
+    const familyId = req.user?.familyId || updated.family?.id || getFamilyIdForChild(childId);
+    if (familyId) {
+      broadcastToFamily(familyId, {
+        type: 'SETTINGS_UPDATED',
+        payload: {
+          childId,
+          settings: updated.settings,
+          timestamp: new Date().toISOString(),
+        },
+      });
+    }
     res.json(updated);
   } catch (err: any) {
     res.status(400).json({ error: err.message || 'Ошибка обновления настроек' });

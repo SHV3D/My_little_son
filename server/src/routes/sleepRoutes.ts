@@ -7,6 +7,7 @@ import {
   deleteSleepEvent,
 } from '../services/sleepService';
 import { optionalAuth } from '../middleware/authMiddleware';
+import { broadcastToFamily, getFamilyIdForChild } from '../ws/wsServer';
 
 const router = Router();
 
@@ -34,6 +35,18 @@ router.post('/fell-asleep', (req: Request, res: Response) => {
     const source = req.body.source || 'NOW';
 
     const result = recordFellAsleep(childId, userId, userName, time, source);
+    const familyId = req.user?.familyId || getFamilyIdForChild(childId);
+    if (familyId) {
+      broadcastToFamily(familyId, {
+        type: 'SLEEP_STATUS_CHANGED',
+        payload: {
+          childId,
+          action: 'FELL_ASLEEP',
+          timestamp: new Date().toISOString(),
+          result,
+        },
+      });
+    }
     res.status(200).json(result);
   } catch (err: any) {
     res.status(400).json({ error: err.message || 'Ошибка фиксации засыпания' });
@@ -49,6 +62,18 @@ router.post('/woke-up', (req: Request, res: Response) => {
     const source = req.body.source || 'NOW';
 
     const result = recordWokeUp(childId, userId, userName, time, source);
+    const familyId = req.user?.familyId || getFamilyIdForChild(childId);
+    if (familyId) {
+      broadcastToFamily(familyId, {
+        type: 'SLEEP_STATUS_CHANGED',
+        payload: {
+          childId,
+          action: 'WOKE_UP',
+          timestamp: new Date().toISOString(),
+          result,
+        },
+      });
+    }
     res.status(200).json(result);
   } catch (err: any) {
     res.status(400).json({ error: err.message || 'Ошибка фиксации пробуждения' });
@@ -74,6 +99,18 @@ router.post('/retroactive', (req: Request, res: Response) => {
       napNumber: req.body.napNumber,
       source: req.body.source || 'RETROACTIVE',
     });
+    const familyId = req.user?.familyId || getFamilyIdForChild(childId);
+    if (familyId) {
+      broadcastToFamily(familyId, {
+        type: 'SLEEP_STATUS_CHANGED',
+        payload: {
+          childId,
+          action: 'RETROACTIVE',
+          timestamp: new Date().toISOString(),
+          result,
+        },
+      });
+    }
     res.status(201).json(result);
   } catch (err: any) {
     res.status(400).json({ error: err.message || 'Ошибка добавления сна задним числом' });
@@ -85,6 +122,19 @@ router.delete('/events/:id', (req: Request, res: Response) => {
     const childId = (req.query.childId as string) || req.user?.childId || 'demo-child-1';
     const eventId = req.params.id;
     const result = deleteSleepEvent(eventId, childId);
+    const familyId = req.user?.familyId || getFamilyIdForChild(childId);
+    if (familyId) {
+      broadcastToFamily(familyId, {
+        type: 'SLEEP_STATUS_CHANGED',
+        payload: {
+          childId,
+          eventId,
+          action: 'DELETE_EVENT',
+          timestamp: new Date().toISOString(),
+          result,
+        },
+      });
+    }
     res.json(result);
   } catch (err: any) {
     res.status(404).json({ error: err.message || 'Ошибка удаления записи' });

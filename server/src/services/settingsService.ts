@@ -127,15 +127,6 @@ export function updateSettings(childId: string, input: UpdateSettingsInput): Set
   const db = getDb();
   const current = getSettings(childId);
 
-  if (input.childName !== undefined || input.birthDate !== undefined) {
-    db.prepare(`
-      UPDATE children
-      SET name = COALESCE(?, name),
-          birth_date = COALESCE(?, birth_date)
-      WHERE id = ?
-    `).run(input.childName ?? null, input.birthDate ?? null, current.child.id);
-  }
-
   const napsPerDay = input.napsPerDay ?? current.settings.napsPerDay;
   const wakeIntervalMinMinutes = input.wakeIntervalMinMinutes ?? current.settings.wakeIntervalMinMinutes;
   const wakeIntervalMaxMinutes = input.wakeIntervalMaxMinutes ?? current.settings.wakeIntervalMaxMinutes;
@@ -144,27 +135,38 @@ export function updateSettings(childId: string, input: UpdateSettingsInput): Set
   const targetBedtime = input.targetBedtime ?? current.settings.targetBedtime;
   const typicalWakeupTime = input.typicalWakeupTime ?? current.settings.typicalWakeupTime;
 
-  db.prepare(`
-    UPDATE child_settings
-    SET naps_per_day = ?,
-        wake_interval_min_minutes = ?,
-        wake_interval_max_minutes = ?,
-        total_wake_minutes = ?,
-        total_day_sleep_minutes = ?,
-        target_bedtime = ?,
-        typical_wakeup_time = ?,
-        updated_at = CURRENT_TIMESTAMP
-    WHERE child_id = ?
-  `).run(
-    napsPerDay,
-    wakeIntervalMinMinutes,
-    wakeIntervalMaxMinutes,
-    totalWakeMinutes,
-    totalDaySleepMinutes,
-    targetBedtime,
-    typicalWakeupTime,
-    current.child.id
-  );
+  db.transaction(() => {
+    if (input.childName !== undefined || input.birthDate !== undefined) {
+      db.prepare(`
+        UPDATE children
+        SET name = COALESCE(?, name),
+            birth_date = COALESCE(?, birth_date)
+        WHERE id = ?
+      `).run(input.childName ?? null, input.birthDate ?? null, current.child.id);
+    }
+
+    db.prepare(`
+      UPDATE child_settings
+      SET naps_per_day = ?,
+          wake_interval_min_minutes = ?,
+          wake_interval_max_minutes = ?,
+          total_wake_minutes = ?,
+          total_day_sleep_minutes = ?,
+          target_bedtime = ?,
+          typical_wakeup_time = ?,
+          updated_at = CURRENT_TIMESTAMP
+      WHERE child_id = ?
+    `).run(
+      napsPerDay,
+      wakeIntervalMinMinutes,
+      wakeIntervalMaxMinutes,
+      totalWakeMinutes,
+      totalDaySleepMinutes,
+      targetBedtime,
+      typicalWakeupTime,
+      current.child.id
+    );
+  })();
 
   return getSettings(current.child.id);
 }

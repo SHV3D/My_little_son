@@ -120,13 +120,13 @@
 - WS события: `CLIENT_JOIN_FAMILY`, `SLEEP_STATUS_CHANGED`, `SETTINGS_UPDATED`
 - При любом действии мамы (`fell-asleep`, `woke-up`) событие за <50ms прилетает папе.
 
-- [ ] **Шаг 1: Написать тест на широковещательную рассылку WebSocket внутри одной семьи**
-- [ ] **Шаг 2: Реализовать WS сервер с авторизацией по family_id и heartbeat**
-- [ ] **Шаг 3: Реализовать клиентский модуль `socket.ts` и хук `useFamilySync` с автоматическим реконнектом**
-- [ ] **Шаг 4: Проверить тест WebSocket**
+- [x] **Шаг 1: Написать тест на широковещательную рассылку WebSocket внутри одной семьи**
+- [x] **Шаг 2: Реализовать WS сервер с авторизацией по family_id и heartbeat**
+- [x] **Шаг 3: Реализовать клиентский модуль `socket.ts` и хук `useFamilySync` с автоматическим реконнектом**
+- [x] **Шаг 4: Проверить тест WebSocket**
   Запуск: `npx vitest run server/src/tests/ws.test.ts`
-  Ожидание: PASS
-- [ ] **Шаг 5: Закоммитить изменения**
+  Ожидание: PASS (8/8 tests passed)
+- [x] **Шаг 5: Закоммитить изменения**
   `git add server/src/ws client/src/api/socket.ts client/src/hooks/useFamilySync.ts && git commit -m "feat(sync): add real-time WebSocket family synchronization"`
 
 ---

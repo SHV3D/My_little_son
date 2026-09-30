@@ -82,27 +82,57 @@ export function registerUser(input: RegisterInput): AuthResponse {
     throw new Error('Пользователь с такой эл. почтой уже зарегистрирован');
   }
 
-  let familyId: string;
-  let familyName: string;
-  let inviteCode: string;
-  let childId: string;
-  let childName: string;
+  let familyId = '';
+  let familyName = '';
+  let inviteCode = '';
+  let childId = '';
+  let childName = '';
 
-  if (input.inviteCode && input.inviteCode.trim()) {
-    const code = input.inviteCode.trim().toUpperCase();
-    const family = db.prepare('SELECT * FROM families WHERE invite_code = ?').get(code) as DbFamily | undefined;
-    if (!family) {
-      throw new Error('Неверный код приглашения');
-    }
-    familyId = family.id;
-    familyName = family.name;
-    inviteCode = family.invite_code;
+  const userId = crypto.randomUUID();
+  const passwordHash = bcrypt.hashSync(password, 10);
 
-    const child = db.prepare('SELECT * FROM children WHERE family_id = ? LIMIT 1').get(familyId) as DbChild | undefined;
-    if (child) {
-      childId = child.id;
-      childName = child.name;
+  db.transaction(() => {
+    if (input.inviteCode && input.inviteCode.trim()) {
+      const code = input.inviteCode.trim().toUpperCase();
+      const family = db.prepare('SELECT * FROM families WHERE invite_code = ?').get(code) as DbFamily | undefined;
+      if (!family) {
+        throw new Error('Неверный код приглашения');
+      }
+      familyId = family.id;
+      familyName = family.name;
+      inviteCode = family.invite_code;
+
+      const child = db.prepare('SELECT * FROM children WHERE family_id = ? LIMIT 1').get(familyId) as DbChild | undefined;
+      if (child) {
+        childId = child.id;
+        childName = child.name;
+      } else {
+        childId = crypto.randomUUID();
+        childName = input.childName || 'Сын';
+        db.prepare('INSERT INTO children (id, family_id, name, birth_date) VALUES (?, ?, ?, ?)').run(
+          childId,
+          familyId,
+          childName,
+          '2026-01-15'
+        );
+        db.prepare(`
+          INSERT INTO child_settings (
+            id, child_id, naps_per_day, wake_interval_min_minutes, wake_interval_max_minutes,
+            total_wake_minutes, total_day_sleep_minutes, target_bedtime, typical_wakeup_time
+          ) VALUES (?, ?, 3, 150, 180, 600, 200, '20:30', '07:00')
+        `).run(crypto.randomUUID(), childId);
+      }
     } else {
+      familyId = crypto.randomUUID();
+      familyName = input.familyName || 'Наша семья';
+      inviteCode = generateInviteCode();
+
+      db.prepare('INSERT INTO families (id, name, invite_code) VALUES (?, ?, ?)').run(
+        familyId,
+        familyName,
+        inviteCode
+      );
+
       childId = crypto.randomUUID();
       childName = input.childName || 'Сын';
       db.prepare('INSERT INTO children (id, family_id, name, birth_date) VALUES (?, ?, ?, ?)').run(
@@ -111,6 +141,7 @@ export function registerUser(input: RegisterInput): AuthResponse {
         childName,
         '2026-01-15'
       );
+
       db.prepare(`
         INSERT INTO child_settings (
           id, child_id, naps_per_day, wake_interval_min_minutes, wake_interval_max_minutes,
@@ -118,41 +149,12 @@ export function registerUser(input: RegisterInput): AuthResponse {
         ) VALUES (?, ?, 3, 150, 180, 600, 200, '20:30', '07:00')
       `).run(crypto.randomUUID(), childId);
     }
-  } else {
-    familyId = crypto.randomUUID();
-    familyName = input.familyName || 'Наша семья';
-    inviteCode = generateInviteCode();
-
-    db.prepare('INSERT INTO families (id, name, invite_code) VALUES (?, ?, ?)').run(
-      familyId,
-      familyName,
-      inviteCode
-    );
-
-    childId = crypto.randomUUID();
-    childName = input.childName || 'Сын';
-    db.prepare('INSERT INTO children (id, family_id, name, birth_date) VALUES (?, ?, ?, ?)').run(
-      childId,
-      familyId,
-      childName,
-      '2026-01-15'
-    );
 
     db.prepare(`
-      INSERT INTO child_settings (
-        id, child_id, naps_per_day, wake_interval_min_minutes, wake_interval_max_minutes,
-        total_wake_minutes, total_day_sleep_minutes, target_bedtime, typical_wakeup_time
-      ) VALUES (?, ?, 3, 150, 180, 600, 200, '20:30', '07:00')
-    `).run(crypto.randomUUID(), childId);
-  }
-
-  const userId = crypto.randomUUID();
-  const passwordHash = bcrypt.hashSync(password, 10);
-
-  db.prepare(`
-    INSERT INTO users (id, family_id, email, password_hash, name, role)
-    VALUES (?, ?, ?, ?, ?, ?)
-  `).run(userId, familyId, email, passwordHash, name, role);
+      INSERT INTO users (id, family_id, email, password_hash, name, role)
+      VALUES (?, ?, ?, ?, ?, ?)
+    `).run(userId, familyId, email, passwordHash, name, role);
+  })();
 
   const payload: UserTokenPayload = {
     userId,

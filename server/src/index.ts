@@ -1,3 +1,4 @@
+import http from 'http';
 import express, { Request, Response } from 'express';
 import cors from 'cors';
 import { initDatabase } from './db/database';
@@ -5,6 +6,7 @@ import authRoutes from './routes/authRoutes';
 import settingsRoutes from './routes/settingsRoutes';
 import sleepRoutes from './routes/sleepRoutes';
 import calendarRoutes from './routes/calendarRoutes';
+import { setupWebSocketServer } from './ws/wsServer';
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -26,10 +28,14 @@ app.use('/api/settings', settingsRoutes);
 app.use('/api/sleep', sleepRoutes);
 app.use('/api/calendar', calendarRoutes);
 
+const server = http.createServer(app);
+const wss = setupWebSocketServer(server);
+
 if (process.env.NODE_ENV !== 'test' && (!process.env.PORT || require.main === module)) {
-  app.listen(PORT, () => {
+  server.listen(PORT, () => {
     console.log(`Server listening on port ${PORT}`);
   });
 }
 
+export { server, wss, app };
 export default app;
