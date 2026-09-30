@@ -5,6 +5,7 @@ import {
   recordWokeUp,
   recordRetroactive,
   deleteSleepEvent,
+  updateSleepEvent,
 } from '../services/sleepService';
 import { optionalAuth } from '../middleware/authMiddleware';
 import { broadcastToFamily, getFamilyIdForChild } from '../ws/wsServer';
@@ -138,6 +139,39 @@ router.delete('/events/:id', (req: Request, res: Response) => {
     res.json(result);
   } catch (err: any) {
     res.status(404).json({ error: err.message || 'Ошибка удаления записи' });
+  }
+});
+
+router.put('/events/:id', (req: Request, res: Response) => {
+  try {
+    const childId = (req.query.childId as string) || (req.body.childId as string) || req.user?.childId || 'demo-child-1';
+    const eventId = req.params.id;
+    const result = updateSleepEvent(eventId, childId, {
+      eventType: req.body.eventType,
+      startTime: req.body.startTime,
+      endTime: req.body.endTime,
+      napNumber: req.body.napNumber,
+      date: req.body.date,
+    });
+
+    const familyId = req.user?.familyId || getFamilyIdForChild(childId);
+    if (familyId) {
+      broadcastToFamily(familyId, {
+        type: 'SLEEP_STATUS_CHANGED',
+        payload: {
+          childId,
+          eventId,
+          action: 'UPDATE_EVENT',
+          timestamp: new Date().toISOString(),
+          result,
+        },
+      });
+    }
+
+    res.json(result);
+  } catch (err: any) {
+    const status = err.message === 'Запись о сне не найдена' ? 404 : 400;
+    res.status(status).json({ error: err.message || 'Ошибка обновления записи' });
   }
 });
 

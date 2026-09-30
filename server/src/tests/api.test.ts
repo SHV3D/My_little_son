@@ -298,6 +298,36 @@ describe('My Little Son - REST API Integration Tests', () => {
 
       expect(deleteAgain.status).toBe(404);
     });
+
+    it('PUT /api/sleep/events/:id updates start and end time and recalculates status', async () => {
+      // 1. Get current status to find an event ID
+      const statusRes = await request(app).get('/api/sleep/status?childId=demo-child-1');
+      expect(statusRes.status).toBe(200);
+      const nap = statusRes.body.events.find((e: any) => e.eventType === 'NAP' && e.endTime);
+      expect(nap).toBeDefined();
+
+      // 2. Update the event
+      const updateRes = await request(app)
+        .put(`/api/sleep/events/${nap.id}`)
+        .send({
+          startTime: '10:00',
+          endTime: '11:30',
+          eventType: 'NAP',
+        });
+
+      expect(updateRes.status).toBe(200);
+      expect(updateRes.body.event).toBeDefined();
+      expect(updateRes.body.event.durationMinutes).toBe(90);
+      expect(updateRes.body.event.formattedDuration).toContain('1:30');
+      expect(updateRes.body.status).toBeDefined();
+    });
+
+    it('PUT /api/sleep/events/:id returns 404 for nonexistent event', async () => {
+      const res = await request(app)
+        .put('/api/sleep/events/nonexistent-id')
+        .send({ startTime: '10:00' });
+      expect(res.status).toBe(404);
+    });
   });
 
   describe('Calendar month summary flow', () => {

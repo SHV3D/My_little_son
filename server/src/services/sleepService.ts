@@ -57,6 +57,14 @@ export interface RetroactiveEventInput {
   source?: string;
 }
 
+export interface UpdateSleepEventInput {
+  eventType?: 'WAKEUP' | 'NAP' | 'NIGHT_SLEEP';
+  startTime?: string;
+  endTime?: string | null;
+  napNumber?: number | null;
+  date?: string;
+}
+
 export interface CalendarDaySummary {
   date: string;
   dayNumber: number;
@@ -89,7 +97,8 @@ export interface MonthSummaryResponse {
 
 function normalizeToIso(dateStr: string, timeStr: string): string {
   if (timeStr.includes('T')) {
-    return timeStr;
+    const parts = timeStr.split('T');
+    return `${dateStr}T${parts[1]}`;
   }
   const cleanTime = timeStr.trim();
   const parts = cleanTime.split(':');
@@ -454,6 +463,60 @@ export function deleteSleepEvent(eventId: string, childId: string): { success: b
     throw new Error('Запись о сне не найдена');
   }
   return { success: true, id: eventId };
+}
+
+export function updateSleepEvent(
+  eventId: string,
+  childId: string,
+  input: UpdateSleepEventInput
+): { event: FormattedSleepEvent; status: DayStatusResponse } {
+  const db = getDb();
+  const existing = db.prepare('SELECT * FROM sleep_events WHERE id = ? AND child_id = ?').get(eventId, childId) as DbSleepEvent | undefined;
+  if (!existing) {
+    throw new Error('Запись о сне не найдена');
+  }
+
+  const effectiveDate = input.date || existing.date;
+  const effectiveType = input.eventType || existing.event_type;
+  const effectiveStartIso = input.startTime ? normalizeToIso(effectiveDate, input.startTime) : (
+    input.date && input.date !== existing.date ? normalizeToIso(effectiveDate, existing.start_time) : existing.start_time
+  );
+
+  let effectiveEndIso: string | null = existing.end_time;
+  if (input.endTime !== undefined) {
+    effectiveEndIso = input.endTime ? normalizeToIso(effectiveDate, input.endTime) : null;
+  } else if (input.date && input.date !== existing.date && existing.end_time) {
+    effectiveEndIso = normalizeToIso(effectiveDate, existing.end_time);
+  }
+
+  let durationMinutes: number | null = null;
+  if (effectiveEndIso) {
+    const startMin = parseTimeToMinutes(effectiveStartIso);
+    const endMin = parseTimeToMinutes(effectiveEndIso);
+    let diff = endMin - startMin;
+    if (diff < 0) diff += 1440;
+    durationMinutes = diff;
+  }
+
+  const napNumber = input.napNumber !== undefined ? input.napNumber : existing.nap_number;
+
+  db.prepare(`
+    UPDATE sleep_events
+    SET date = ?,
+        event_type = ?,
+        start_time = ?,
+        end_time = ?,
+        duration_minutes = ?,
+        nap_number = ?,
+        updated_at = CURRENT_TIMESTAMP
+    WHERE id = ? AND child_id = ?
+  `).run(effectiveDate, effectiveType, effectiveStartIso, effectiveEndIso, durationMinutes, napNumber, eventId, childId);
+
+  const updatedRaw = db.prepare('SELECT * FROM sleep_events WHERE id = ?').get(eventId) as DbSleepEvent;
+  const formatted = formatEventForUi(updatedRaw);
+  const status = getDayStatus(childId, effectiveDate);
+
+  return { event: formatted, status };
 }
 
 export function getMonthSummary(childId: string, year: number, month: number): MonthSummaryResponse {
