@@ -12,6 +12,8 @@ export interface CalendarPageProps {
   childId?: string;
   onSelectTab?: (tab: string) => void;
   onEditDay?: (date: string) => void;
+  onEditRecord?: (record: any) => void;
+  refreshKey?: number | string;
   className?: string;
   style?: React.CSSProperties;
 }
@@ -24,6 +26,8 @@ export const CalendarPage: React.FC<CalendarPageProps> = ({
   childId = 'demo-child-1',
   onSelectTab,
   onEditDay,
+  onEditRecord,
+  refreshKey,
   className = '',
   style,
 }) => {
@@ -57,6 +61,12 @@ export const CalendarPage: React.FC<CalendarPageProps> = ({
     loadMonth(year, month);
   }, [year, month, loadMonth]);
 
+  useEffect(() => {
+    if (refreshKey !== undefined && refreshKey !== 0) {
+      loadMonth(year, month);
+    }
+  }, [refreshKey, year, month, loadMonth]);
+
   const handlePrevMonth = () => {
     let nextY = year;
     let nextM = month - 1;
@@ -87,6 +97,14 @@ export const CalendarPage: React.FC<CalendarPageProps> = ({
 
   // Find summary for selected day
   const selectedDay = monthData?.days?.find((d) => d.date === selectedDate);
+
+  const handleEditClick = () => {
+    if (selectedDay?.events && selectedDay.events.length > 0 && onEditRecord) {
+      onEditRecord(selectedDay.events[0]);
+    } else if (onEditDay) {
+      onEditDay(selectedDate);
+    }
+  };
 
   return (
     <div
@@ -223,7 +241,9 @@ export const CalendarPage: React.FC<CalendarPageProps> = ({
           targetDaySleepMinutes={monthData?.targetDaySleepMinutes}
           targetNapsCount={monthData?.targetNapsCount}
           targetBedtime={monthData?.targetBedtime}
-          onEditClick={() => onEditDay?.(selectedDate)}
+          onEventClick={onEditRecord}
+          onEditRecord={onEditRecord}
+          onEditClick={handleEditClick}
         />
       </div>
 

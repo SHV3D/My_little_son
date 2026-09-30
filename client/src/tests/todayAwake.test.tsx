@@ -296,4 +296,58 @@ describe('TodayAwakePage Component', () => {
     fireEvent.click(calendarTab);
     expect(handleSelectTab).toHaveBeenCalledWith('calendar');
   });
+
+  it('triggers onEditRecord when clicking a day log item in TodayAwakePage', async () => {
+    const handleEditRecord = vi.fn();
+    const dataWithEvents: DayStatusResponse = {
+      ...mockInitialData,
+      events: [
+        {
+          id: 'ev-wake-1',
+          childId: 'demo-child-1',
+          date: '2026-09-30',
+          eventType: 'WAKEUP',
+          napNumber: null,
+          startTime: '07:00',
+          endTime: null,
+          formattedStartTime: '07:00',
+          formattedEndTime: null,
+          durationMinutes: null,
+          formattedDuration: '',
+          recordedByUserId: 'u1',
+          recordedByName: 'Мама',
+          source: 'NOW',
+          isOngoing: false,
+          title: 'Подъём',
+          subtitle: '07:00',
+        },
+      ],
+    };
+
+    global.fetch = vi.fn().mockImplementation(() =>
+      Promise.resolve({
+        ok: true,
+        json: () => Promise.resolve(dataWithEvents),
+      })
+    );
+
+    await act(async () => {
+      render(
+        <TodayAwakePage
+          initialData={dataWithEvents}
+          onEditRecord={handleEditRecord}
+        />
+      );
+    });
+
+    const logItems = screen.getAllByTestId('day-log-item');
+    expect(logItems.length).toBeGreaterThan(0);
+
+    fireEvent.click(logItems[0]);
+    expect(handleEditRecord).toHaveBeenCalledWith(
+      expect.objectContaining({
+        id: 'ev-wake-1',
+      })
+    );
+  });
 });

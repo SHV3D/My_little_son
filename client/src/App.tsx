@@ -12,6 +12,9 @@ import {
   recordFellAsleepApi,
   recordWokeUpApi,
   recordRetroactiveApi,
+  updateSleepEventApi,
+  deleteSleepEventApi,
+  UpdateSleepEventInput,
 } from './api/sleepApi';
 import {
   SleepActionModal,
@@ -20,6 +23,7 @@ import {
   RetroactiveSavePayload,
   getCurrentTimeHHMM,
 } from './components/modals';
+import { EditSleepModal } from './components/modals/EditSleepModal';
 import { useFamilySync } from './hooks/useFamilySync';
 
 export default function App() {
@@ -33,6 +37,10 @@ export default function App() {
     | { type: 'RETROACTIVE' }
     | null
   >(null);
+
+  const [editingEvent, setEditingEvent] = useState<any | null>(null);
+  const [isEditModalOpen, setIsEditModalOpen] = useState<boolean>(false);
+  const [calendarRefreshKey, setCalendarRefreshKey] = useState<number>(0);
 
   const activeFamilyId = getStoredUser()?.familyId || 'demo-family-1';
 
@@ -128,6 +136,52 @@ export default function App() {
     }
   };
 
+  const handleOpenEditModal = (event: any) => {
+    let fullEvent = event;
+    if (status?.events && event?.id) {
+      const found = status.events.find((e) => e.id === event.id);
+      if (found) {
+        fullEvent = { ...found, ...event };
+      }
+    }
+    setEditingEvent(fullEvent);
+    setIsEditModalOpen(true);
+  };
+
+  const handleSaveEdit = async (eventId: string, data: UpdateSleepEventInput) => {
+    const childId = status?.child?.id || 'demo-child-1';
+    try {
+      const result = await updateSleepEventApi(eventId, data, childId);
+      if (result?.status) {
+        setStatus(result.status);
+      } else {
+        await loadStatus();
+      }
+    } catch (err) {
+      console.error('Failed to update sleep event:', err);
+      await loadStatus();
+    } finally {
+      setCalendarRefreshKey((k) => k + 1);
+      setIsEditModalOpen(false);
+      setEditingEvent(null);
+    }
+  };
+
+  const handleDeleteEdit = async (eventId: string) => {
+    const childId = status?.child?.id || 'demo-child-1';
+    try {
+      await deleteSleepEventApi(eventId, childId);
+      await loadStatus();
+    } catch (err) {
+      console.error('Failed to delete sleep event:', err);
+      await loadStatus();
+    } finally {
+      setCalendarRefreshKey((k) => k + 1);
+      setIsEditModalOpen(false);
+      setEditingEvent(null);
+    }
+  };
+
   if (authView === 'login') {
     return (
       <LoginPage
@@ -159,6 +213,8 @@ export default function App() {
           childId={status?.child?.id || 'demo-child-1'}
           onSelectTab={(tab) => setActiveTab(tab)}
           onEditDay={() => setActiveModal({ type: 'RETROACTIVE' })}
+          onEditRecord={handleOpenEditModal}
+          refreshKey={calendarRefreshKey}
         />
       ) : activeTab === 'settings' ? (
         <SettingsPage
@@ -175,12 +231,15 @@ export default function App() {
           onSelectTab={(tab) => setActiveTab(tab)}
           onWokeUpClick={() => setActiveModal({ type: 'WOKE_UP' })}
           onAddRetroactiveClick={() => setActiveModal({ type: 'RETROACTIVE' })}
+          onEditRecord={handleOpenEditModal}
         />
       ) : (
         <TodayAwakePage
           initialData={status || undefined}
           onSelectTab={(tab) => setActiveTab(tab)}
           onFellAsleepClick={() => setActiveModal({ type: 'FELL_ASLEEP' })}
+          onAddRetroactiveClick={() => setActiveModal({ type: 'RETROACTIVE' })}
+          onEditRecord={handleOpenEditModal}
         />
       )}
 
@@ -207,6 +266,19 @@ export default function App() {
         currentDate={status?.date}
         onClose={() => setActiveModal(null)}
         onSave={handleRetroactiveSave}
+      />
+
+      {/* Edit Sleep Modal */}
+      <EditSleepModal
+        isOpen={isEditModalOpen}
+        event={editingEvent}
+        childId={status?.child?.id || 'demo-child-1'}
+        onClose={() => {
+          setIsEditModalOpen(false);
+          setEditingEvent(null);
+        }}
+        onSave={handleSaveEdit}
+        onDelete={handleDeleteEdit}
       />
     </>
   );

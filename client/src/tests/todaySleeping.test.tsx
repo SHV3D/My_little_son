@@ -351,4 +351,25 @@ describe('TodaySleepingPage Component', () => {
     fireEvent.click(addBtn);
     expect(handleAddRetroactive).toHaveBeenCalledTimes(1);
   });
+
+  it('triggers onEditRecord when clicking a day log item in TodaySleepingPage', () => {
+    const handleEditRecord = vi.fn();
+    render(
+      <TodaySleepingPage
+        initialData={mockSleepingData}
+        onEditRecord={handleEditRecord}
+      />
+    );
+
+    const logItems = screen.getAllByTestId('day-log-item');
+    expect(logItems).toHaveLength(3);
+
+    fireEvent.click(logItems[1]);
+    expect(handleEditRecord).toHaveBeenCalledWith(
+      expect.objectContaining({
+        id: 'e2',
+        title: 'Сон 1 · 1:15',
+      })
+    );
+  });
 });

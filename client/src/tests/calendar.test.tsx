@@ -454,6 +454,46 @@ describe('DayDetailCard Component', () => {
     expect(eventRows[4].textContent).toContain('Ночной сон');
     expect(eventRows[4].textContent).toContain('20:35');
   });
+
+  it('triggers onEventClick when clicking an event row in DayDetailCard', () => {
+    const handleEventClick = vi.fn();
+    render(
+      <DayDetailCard
+        day={mockMonthData.days[1]}
+        date="2026-09-29"
+        onEventClick={handleEventClick}
+      />
+    );
+
+    const eventRows = screen.getAllByTestId('day-event-row');
+    expect(eventRows.length).toBeGreaterThan(0);
+
+    fireEvent.click(eventRows[1]);
+    expect(handleEventClick).toHaveBeenCalledWith(
+      expect.objectContaining({
+        id: 'ev-nap1-29',
+      })
+    );
+  });
+
+  it('triggers onEventClick when clicking "Изменить" button with events present and no onEditClick', () => {
+    const handleEventClick = vi.fn();
+    render(
+      <DayDetailCard
+        day={mockMonthData.days[1]}
+        date="2026-09-29"
+        onEventClick={handleEventClick}
+      />
+    );
+
+    const editBtn = screen.getByTestId('edit-day-btn');
+    fireEvent.click(editBtn);
+    expect(handleEventClick).toHaveBeenCalledWith(
+      expect.objectContaining({
+        id: 'ev-wakeup-29',
+      })
+    );
+  });
 });
 
 describe('CalendarPage Component', () => {
@@ -550,9 +590,32 @@ describe('CalendarPage Component', () => {
     });
     expect(screen.getByTestId('month-title').textContent).toBe('Август 2026');
   });
+
+  it('passes onEditRecord to DayDetailCard and triggers it on row click', () => {
+    const handleEditRecord = vi.fn();
+    render(
+      <CalendarPage
+        initialYear={2026}
+        initialMonth={9}
+        initialSelectedDate="2026-09-29"
+        initialData={mockMonthData}
+        onEditRecord={handleEditRecord}
+      />
+    );
+
+    const eventRows = screen.getAllByTestId('day-event-row');
+    expect(eventRows.length).toBeGreaterThan(0);
+
+    fireEvent.click(eventRows[1]);
+    expect(handleEditRecord).toHaveBeenCalledWith(
+      expect.objectContaining({
+        id: 'ev-nap1-29',
+      })
+    );
+  });
 });
 
-describe('App Tab Navigation to Calendar', () => {
+describe('App Tab Navigation to Calendar and Edit Modal Integration', () => {
   beforeEach(() => {
     global.fetch = vi.fn().mockImplementation((url: string) => {
       if (typeof url === 'string' && url.includes('/api/sleep/status')) {
@@ -599,5 +662,28 @@ describe('App Tab Navigation to Calendar', () => {
 
     // Today tab is displayed again
     expect(screen.getByTestId('fell-asleep-btn')).toBeDefined();
+  });
+
+  it('opens EditSleepModal when clicking an event row in CalendarPage through App', async () => {
+    render(<App />);
+
+    // Switch to Calendar tab
+    const calendarTab = screen.getByTestId('tab-calendar');
+    await act(async () => {
+      fireEvent.click(calendarTab);
+    });
+
+    const eventRows = await screen.findAllByTestId('day-event-row');
+    expect(eventRows.length).toBeGreaterThan(0);
+
+    // Click Nap 1 event row
+    await act(async () => {
+      fireEvent.click(eventRows[1]);
+    });
+
+    // Edit modal should open
+    expect(screen.getByTestId('edit-sleep-modal')).toBeDefined();
+    expect(screen.getByTestId('edit-sleep-title').textContent).toContain('Редактировать запись');
+    expect(screen.getByDisplayValue('09:35')).toBeDefined();
   });
 });

@@ -877,5 +877,145 @@ describe('Modal Integration in Pages and App', () => {
       source: 'NOW',
     });
   });
+
+  it('App opens EditSleepModal from TodaySleepingPage and updates event via PUT API', async () => {
+    let putUrl = '';
+    let putBody: any = null;
+    const statusWithEvents: DayStatusResponse = {
+      ...mockSleepingStatus,
+      events: [
+        {
+          id: 'ev-nap-1',
+          childId: 'demo-child-1',
+          date: '2026-09-30',
+          eventType: 'NAP',
+          napNumber: 1,
+          startTime: '09:30',
+          endTime: '10:45',
+          formattedStartTime: '09:30',
+          formattedEndTime: '10:45',
+          durationMinutes: 75,
+          formattedDuration: '1:15',
+          recordedByUserId: 'u1',
+          recordedByName: 'Мама',
+          source: 'NOW',
+          isOngoing: false,
+          title: 'Сон 1 · 1:15',
+          subtitle: '09:30 – 10:45',
+        },
+      ],
+    };
+
+    global.fetch = vi.fn().mockImplementation((url: string, init?: RequestInit) => {
+      if (typeof url === 'string' && url.includes('/api/sleep/events/ev-nap-1') && init?.method === 'PUT') {
+        putUrl = url;
+        putBody = JSON.parse(init.body as string);
+        return Promise.resolve({
+          ok: true,
+          json: () => Promise.resolve({ event: { id: 'ev-nap-1' }, status: statusWithEvents }),
+        });
+      }
+      return Promise.resolve({
+        ok: true,
+        json: () => Promise.resolve(statusWithEvents),
+      });
+    });
+
+    await act(async () => {
+      render(<App />);
+    });
+
+    const dayLogItem = await screen.findByText('Сон 1 · 1:15');
+    await act(async () => {
+      fireEvent.click(dayLogItem);
+    });
+
+    // Edit modal should open
+    expect(screen.getByTestId('edit-sleep-modal')).toBeDefined();
+    expect(screen.getByDisplayValue('09:30')).toBeDefined();
+
+    // Click Save
+    const saveBtn = screen.getByTestId('edit-sleep-save-btn');
+    await act(async () => {
+      fireEvent.click(saveBtn);
+    });
+
+    expect(putUrl).toContain('/api/sleep/events/ev-nap-1');
+    expect(putBody).toEqual(
+      expect.objectContaining({
+        eventType: 'NAP',
+        startTime: '09:30',
+        endTime: '10:45',
+      })
+    );
+  });
+
+  it('App opens EditSleepModal from TodaySleepingPage and deletes event via DELETE API', async () => {
+    let deleteUrl = '';
+    const statusWithEvents: DayStatusResponse = {
+      ...mockSleepingStatus,
+      events: [
+        {
+          id: 'ev-nap-1',
+          childId: 'demo-child-1',
+          date: '2026-09-30',
+          eventType: 'NAP',
+          napNumber: 1,
+          startTime: '09:30',
+          endTime: '10:45',
+          formattedStartTime: '09:30',
+          formattedEndTime: '10:45',
+          durationMinutes: 75,
+          formattedDuration: '1:15',
+          recordedByUserId: 'u1',
+          recordedByName: 'Мама',
+          source: 'NOW',
+          isOngoing: false,
+          title: 'Сон 1 · 1:15',
+          subtitle: '09:30 – 10:45',
+        },
+      ],
+    };
+
+    global.fetch = vi.fn().mockImplementation((url: string, init?: RequestInit) => {
+      if (typeof url === 'string' && url.includes('/api/sleep/events/ev-nap-1') && init?.method === 'DELETE') {
+        deleteUrl = url;
+        return Promise.resolve({
+          ok: true,
+          json: () => Promise.resolve({ success: true, id: 'ev-nap-1' }),
+        });
+      }
+      return Promise.resolve({
+        ok: true,
+        json: () => Promise.resolve(statusWithEvents),
+      });
+    });
+
+    await act(async () => {
+      render(<App />);
+    });
+
+    const dayLogItem = await screen.findByText('Сон 1 · 1:15');
+    await act(async () => {
+      fireEvent.click(dayLogItem);
+    });
+
+    // Edit modal should open
+    expect(screen.getByTestId('edit-sleep-modal')).toBeDefined();
+
+    // Click Delete once -> confirmation
+    const deleteBtn = screen.getByTestId('edit-sleep-delete-btn');
+    await act(async () => {
+      fireEvent.click(deleteBtn);
+    });
+    expect(screen.getByTestId('edit-sleep-delete-btn').textContent).toContain('Точно удалить?');
+
+    // Click Delete again -> triggers delete API
+    await act(async () => {
+      fireEvent.click(screen.getByTestId('edit-sleep-delete-btn'));
+    });
+
+    expect(deleteUrl).toContain('/api/sleep/events/ev-nap-1');
+  });
 });
 

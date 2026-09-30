@@ -36,6 +36,11 @@ export interface TodaySleepingPageProps {
   onRecordClick?: (record: DayLogRecord) => void;
 
   /**
+   * Optional callback to edit a day log record
+   */
+  onEditRecord?: (record: any) => void;
+
+  /**
    * Navigation handler for bottom navigation tabs
    */
   onSelectTab?: (tab: string) => void;
@@ -79,6 +84,7 @@ export const TodaySleepingPage: React.FC<TodaySleepingPageProps> = ({
   onWokeUpClick,
   onAddRetroactiveClick,
   onRecordClick,
+  onEditRecord,
   onSelectTab,
   childId = 'demo-child-1',
   familyId = 'demo-family-1',
@@ -419,7 +425,7 @@ export const TodaySleepingPage: React.FC<TodaySleepingPageProps> = ({
         <DayLogsList
           events={statusData?.events}
           onAddRetroactiveClick={handleAddRetroactiveBtnClick}
-          onRecordClick={onRecordClick}
+          onRecordClick={onEditRecord || onRecordClick}
         />
       </div>
 

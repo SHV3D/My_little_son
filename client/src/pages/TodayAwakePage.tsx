@@ -4,6 +4,7 @@ import { BottomNav } from '../components/common/BottomNav';
 import { AwakeHeroCard } from '../components/today/AwakeHeroCard';
 import { BentoMetricsGrid } from '../components/today/BentoMetricsGrid';
 import { SleepActionModal, SleepActionConfirmPayload, getCurrentTimeHHMM } from '../components/modals/SleepActionModal';
+import { DayLogsList } from '../components/today/DayLogsList';
 import { useFamilySync } from '../hooks/useFamilySync';
 import { fetchScheduleStatus, DayStatusResponse, recordFellAsleepApi } from '../api/sleepApi';
 import { formatMinutesToHoursAndMinutes } from '@shared/sleepEngine';
@@ -13,6 +14,21 @@ export interface TodayAwakePageProps {
    * Action trigger when tapping the big "Уснул" button (e.g. to open modal sheet)
    */
   onFellAsleepClick?: () => void;
+
+  /**
+   * Action trigger when tapping "+ Добавить сон задним числом"
+   */
+  onAddRetroactiveClick?: () => void;
+
+  /**
+   * Optional callback to edit a day log record
+   */
+  onEditRecord?: (record: any) => void;
+
+  /**
+   * Optional callback when tapping a day log record
+   */
+  onRecordClick?: (record: any) => void;
 
   /**
    * Navigation handler for bottom navigation tabs
@@ -57,6 +73,9 @@ function formatRussianHeaderDate(dateString?: string): string {
 
 export const TodayAwakePage: React.FC<TodayAwakePageProps> = ({
   onFellAsleepClick,
+  onAddRetroactiveClick,
+  onEditRecord,
+  onRecordClick,
   onSelectTab,
   childId = 'demo-child-1',
   familyId = 'demo-family-1',
@@ -264,6 +283,13 @@ export const TodayAwakePage: React.FC<TodayAwakePageProps> = ({
           </svg>
           <span>Уснул</span>
         </button>
+
+        {/* Day Logs List */}
+        <DayLogsList
+          events={statusData?.events}
+          onAddRetroactiveClick={onAddRetroactiveClick}
+          onRecordClick={onEditRecord || onRecordClick}
+        />
       </div>
 
       {/* Bottom Navigation */}

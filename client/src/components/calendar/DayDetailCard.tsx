@@ -33,6 +33,16 @@ export interface DayDetailCardProps {
    */
   onEditClick?: () => void;
 
+  /**
+   * Optional callback when clicking an event row
+   */
+  onEventClick?: (event: any) => void;
+
+  /**
+   * Optional callback to edit a record
+   */
+  onEditRecord?: (event: any) => void;
+
   className?: string;
   style?: React.CSSProperties;
 }
@@ -84,6 +94,8 @@ export const DayDetailCard: React.FC<DayDetailCardProps> = ({
   targetNapsCount = 3,
   targetBedtime = '20:30',
   onEditClick,
+  onEventClick,
+  onEditRecord,
   className = '',
   style,
 }) => {
@@ -180,21 +192,47 @@ export const DayDetailCard: React.FC<DayDetailCardProps> = ({
   }
 
   // 5. Events list items
-  const eventRows: Array<{ id: string; label: string; value: string }> = [];
+  interface EventRowItem {
+    id: string;
+    label: string;
+    value: string;
+    rawEvent?: any;
+    eventType?: 'WAKEUP' | 'NAP' | 'NIGHT_SLEEP';
+    startTime?: string;
+    endTime?: string | null;
+    date?: string;
+    napNumber?: number | null;
+    durationMinutes?: number | null;
+    formattedStartTime?: string;
+    formattedEndTime?: string | null;
+    formattedDuration?: string;
+  }
+  const eventRows: EventRowItem[] = [];
 
   // Wakeup
   const wakeupEvent = events.find((e) => e.eventType === 'WAKEUP');
   if (wakeupEvent) {
     eventRows.push({
+      ...wakeupEvent,
       id: wakeupEvent.id,
       label: 'Подъём',
       value: wakeupEvent.formattedStartTime || wakeupEvent.startTime,
+      date: wakeupEvent.date || effectiveDate,
+      rawEvent: wakeupEvent,
     });
   } else if (day?.wakeupTime) {
+    const raw = {
+      id: 'wakeup-row',
+      eventType: 'WAKEUP' as const,
+      startTime: day.wakeupTime,
+      date: effectiveDate,
+    };
     eventRows.push({
+      ...raw,
       id: 'wakeup-row',
       label: 'Подъём',
       value: day.wakeupTime,
+      rawEvent: raw,
     });
   }
 
@@ -207,9 +245,12 @@ export const DayDetailCard: React.FC<DayDetailCardProps> = ({
     const dur = ev.formattedDuration ? ` · ${ev.formattedDuration}` : '';
     const val = e ? `${s} – ${e}${dur}` : s;
     eventRows.push({
+      ...ev,
       id: ev.id,
       label: title,
       value: val,
+      date: ev.date || effectiveDate,
+      rawEvent: ev,
     });
   });
 
@@ -217,15 +258,26 @@ export const DayDetailCard: React.FC<DayDetailCardProps> = ({
   const nightEvent = events.find((e) => e.eventType === 'NIGHT_SLEEP');
   if (nightEvent) {
     eventRows.push({
+      ...nightEvent,
       id: nightEvent.id,
       label: 'Ночной сон',
       value: nightEvent.formattedStartTime || nightEvent.startTime,
+      date: nightEvent.date || effectiveDate,
+      rawEvent: nightEvent,
     });
   } else if (day?.bedtime) {
+    const raw = {
+      id: 'bedtime-row',
+      eventType: 'NIGHT_SLEEP' as const,
+      startTime: day.bedtime,
+      date: effectiveDate,
+    };
     eventRows.push({
+      ...raw,
       id: 'bedtime-row',
       label: 'Ночной сон',
       value: day.bedtime,
+      rawEvent: raw,
     });
   }
 
@@ -264,7 +316,14 @@ export const DayDetailCard: React.FC<DayDetailCardProps> = ({
         <button
           type="button"
           data-testid="edit-day-btn"
-          onClick={onEditClick}
+          onClick={() => {
+            if (onEditClick) {
+              onEditClick();
+            } else if (eventRows.length > 0) {
+              const handler = onEventClick || onEditRecord;
+              handler?.(eventRows[0]);
+            }
+          }}
           style={{
             height: '44px',
             padding: '0 14px',
@@ -427,27 +486,49 @@ export const DayDetailCard: React.FC<DayDetailCardProps> = ({
           }}
         >
           {eventRows.length > 0 ? (
-            eventRows.map((item) => (
-              <div
-                key={item.id}
-                data-testid="day-event-row"
-                style={{
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  alignItems: 'center',
-                }}
-              >
-                <span
-                  data-testid="event-label"
-                  style={{ color: '#B7C4B4', userSelect: 'none' }}
+            eventRows.map((item) => {
+              const isClickable = Boolean(onEventClick || onEditRecord);
+              const handleRowClick = () => {
+                onEventClick?.(item);
+                onEditRecord?.(item);
+              };
+
+              return (
+                <div
+                  key={item.id}
+                  data-testid="day-event-row"
+                  role={isClickable ? 'button' : undefined}
+                  tabIndex={isClickable ? 0 : undefined}
+                  onClick={handleRowClick}
+                  onKeyDown={(e) => {
+                    if (isClickable && (e.key === 'Enter' || e.key === ' ')) {
+                      e.preventDefault();
+                      handleRowClick();
+                    }
+                  }}
+                  style={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    cursor: isClickable ? 'pointer' : 'default',
+                    borderRadius: '8px',
+                    padding: '3px 6px',
+                    margin: '0 -6px',
+                    transition: 'background-color 0.15s ease',
+                  }}
                 >
-                  {item.label}
-                </span>
-                <span data-testid="event-value" style={{ fontWeight: 600 }}>
-                  {item.value}
-                </span>
-              </div>
-            ))
+                  <span
+                    data-testid="event-label"
+                    style={{ color: '#B7C4B4', userSelect: 'none' }}
+                  >
+                    {item.label}
+                  </span>
+                  <span data-testid="event-value" style={{ fontWeight: 600 }}>
+                    {item.value}
+                  </span>
+                </div>
+              );
+            })
           ) : (
             <div
               data-testid="empty-events-msg"
