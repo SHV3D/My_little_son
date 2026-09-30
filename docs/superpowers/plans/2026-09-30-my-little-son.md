@@ -193,13 +193,13 @@
 - Лаймовая кнопка «Проснулся».
 - Список «Записи за день» с отображением автора записи (Мама/Папа) и кнопкой добавления задним числом.
 
-- [ ] **Шаг 1: Реализовать темную карточку сна `SleepingHeroCard` с живым таймером**
-- [ ] **Шаг 2: Реализовать карточки пересчитанного отбоя и дедлайна пробуждения**
-- [ ] **Шаг 3: Реализовать список записей за день `DayLogsList`**
-- [ ] **Шаг 4: Реализовать кнопку «Проснулся»**
-- [ ] **Шаг 5: Проверить визуальное соответствие макету `03_today_sleeping.html`**
-- [ ] **Шаг 6: Закоммитить изменения**
-  `git add client/src/pages/TodaySleepingPage.tsx client/src/components/today/ && git commit -m "feat(ui): implement Today Sleeping screen matching Bento design"`
+- [x] **Шаг 1: Реализовать темную карточку сна `SleepingHeroCard` с живым таймером**
+- [x] **Шаг 2: Реализовать карточки пересчитанного отбоя и дедлайна пробуждения**
+- [x] **Шаг 3: Реализовать список записей за день `DayLogsList`**
+- [x] **Шаг 4: Реализовать кнопку «Проснулся»**
+- [x] **Шаг 5: Проверить визуальное соответствие макету `03_today_sleeping.html`**
+- [x] **Шаг 6: Закоммитить изменения**
+  `git add client/src/pages/TodaySleepingPage.tsx client/src/components/today/ client/src/pages/ client/src/App.tsx client/src/tests/todaySleeping.test.tsx && git commit -m "feat(ui): implement Today Sleeping screen matching Bento design"`
 
 ---
 
