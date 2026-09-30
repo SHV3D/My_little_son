@@ -56,7 +56,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({
     }
   }, [theme]);
 
-  const currentTheme = theme !== undefined ? theme : internalTheme;
+  const currentTheme = internalTheme;
 
   const handleThemeSelect = (selected: ThemeMode) => {
     setInternalTheme(selected);
@@ -208,11 +208,11 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({
         minHeight: '100vh',
         margin: '0 auto',
         boxSizing: 'border-box',
-        backgroundColor: '#ECEEE6',
+        backgroundColor: 'var(--bg-primary, #ECEEE6)',
         display: 'flex',
         flexDirection: 'column',
         fontFamily: "'Geologica', system-ui, sans-serif",
-        color: '#1E2A20',
+        color: 'var(--text-primary, #1E2A20)',
         ...style,
       }}
     >
@@ -242,7 +242,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({
         <section
           data-testid="section-child"
           style={{
-            backgroundColor: '#FFFFFF',
+            backgroundColor: 'var(--color-white, #FFFFFF)',
             borderRadius: '24px',
             padding: '6px 16px',
             display: 'flex',
@@ -255,7 +255,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({
               display: 'flex',
               alignItems: 'center',
               gap: '12px',
-              borderBottom: '1px solid #E3E7DA',
+              borderBottom: '1px solid var(--color-border, #E3E7DA)',
             }}
           >
             <label
@@ -281,7 +281,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({
                 fontFamily: 'inherit',
                 fontSize: '16px',
                 fontWeight: 500,
-                color: '#1E2A20',
+                color: 'var(--text-primary, #1E2A20)',
                 outline: 'none',
               }}
             />
@@ -300,7 +300,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({
               backgroundColor: 'transparent',
               border: 0,
               fontFamily: 'inherit',
-              color: '#1E2A20',
+              color: 'var(--text-primary, #1E2A20)',
               textAlign: 'left',
               cursor: 'pointer',
             }}
@@ -316,7 +316,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({
               <span style={{ fontSize: '16px', fontWeight: 500 }}>
                 Подставить значения по возрасту
               </span>
-              <span style={{ fontSize: '13px', color: '#4A5A4C' }}>
+              <span style={{ fontSize: '13px', color: 'var(--text-muted, #4A5A4C)' }}>
                 типичный режим, потом можно поправить
               </span>
             </span>
@@ -329,7 +329,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({
               strokeWidth="2"
               strokeLinecap="round"
               strokeLinejoin="round"
-              style={{ color: '#4A5A4C' }}
+              style={{ color: 'var(--text-muted, #4A5A4C)' }}
             >
               <path d="M9 6l6 6-6 6" />
             </svg>
@@ -435,17 +435,17 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({
             data-testid="bedtime-card"
             onClick={() => setEditingBedtime(true)}
             style={{
-              backgroundColor: '#FFFFFF',
+              backgroundColor: 'var(--color-white, #FFFFFF)',
               borderRadius: '24px',
               padding: '16px',
               display: 'flex',
               flexDirection: 'column',
               gap: '6px',
-              color: '#1E2A20',
+              color: 'var(--text-primary, #1E2A20)',
               cursor: 'pointer',
             }}
           >
-            <span style={{ fontSize: '13px', color: '#4A5A4C' }}>Отход к ночному сну</span>
+            <span style={{ fontSize: '13px', color: 'var(--text-muted, #4A5A4C)' }}>Отход к ночному сну</span>
             {editingBedtime ? (
               <input
                 data-testid="bedtime-input"
@@ -462,11 +462,13 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({
                   fontSize: '28px',
                   fontWeight: 700,
                   letterSpacing: '-1px',
-                  border: '1px solid #23372A',
+                  border: '1px solid var(--color-border, #E3E7DA)',
                   borderRadius: '8px',
                   padding: '2px 4px',
                   width: '100%',
                   fontFamily: 'inherit',
+                  backgroundColor: 'var(--color-neutral-bg, #ECEEE6)',
+                  color: 'var(--text-primary, #1E2A20)',
                 }}
               />
             ) : (
@@ -477,7 +479,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({
                 {settings.targetBedtime}
               </span>
             )}
-            <span style={{ fontSize: '13px', color: '#4A5A4C' }}>
+            <span style={{ fontSize: '13px', color: 'var(--text-muted, #4A5A4C)' }}>
               план подстраивается под это время
             </span>
           </div>
@@ -487,17 +489,18 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({
             data-testid="wake-interval-card"
             style={{
               gridColumn: 'span 2',
-              backgroundColor: '#FFFFFF',
+              backgroundColor: 'var(--color-white, #FFFFFF)',
               borderRadius: '24px',
               padding: '16px',
               display: 'flex',
               flexDirection: 'column',
               gap: '12px',
+              color: 'var(--text-primary, #1E2A20)',
             }}
           >
             <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
               <div style={{ fontSize: '16px', fontWeight: 500 }}>Интервал между снами</div>
-              <div style={{ fontSize: '13px', color: '#4A5A4C' }}>
+              <div style={{ fontSize: '13px', color: 'var(--text-muted, #4A5A4C)' }}>
                 от пробуждения до отхода к следующему сну
               </div>
             </div>
@@ -513,11 +516,11 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({
                     height: '52px',
                     borderRadius: '16px',
                     border: 0,
-                    backgroundColor: '#ECEEE6',
+                    backgroundColor: 'var(--color-neutral-bg, #ECEEE6)',
                     fontFamily: 'inherit',
                     fontSize: '17px',
                     fontWeight: 600,
-                    color: '#1E2A20',
+                    color: 'var(--text-primary, #1E2A20)',
                     cursor: 'pointer',
                   }}
                 >
@@ -538,7 +541,8 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({
                         height: '32px',
                         borderRadius: '8px',
                         border: 0,
-                        backgroundColor: '#E3E7DA',
+                        backgroundColor: 'var(--color-neutral-bg, #ECEEE6)',
+                        color: 'var(--text-primary, #1E2A20)',
                         fontSize: '14px',
                         cursor: 'pointer',
                       }}
@@ -561,7 +565,8 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({
                         height: '32px',
                         borderRadius: '8px',
                         border: 0,
-                        backgroundColor: '#E3E7DA',
+                        backgroundColor: 'var(--color-neutral-bg, #ECEEE6)',
+                        color: 'var(--text-primary, #1E2A20)',
                         fontSize: '14px',
                         cursor: 'pointer',
                       }}
@@ -592,11 +597,11 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({
                     height: '52px',
                     borderRadius: '16px',
                     border: 0,
-                    backgroundColor: '#ECEEE6',
+                    backgroundColor: 'var(--color-neutral-bg, #ECEEE6)',
                     fontFamily: 'inherit',
                     fontSize: '17px',
                     fontWeight: 600,
-                    color: '#1E2A20',
+                    color: 'var(--text-primary, #1E2A20)',
                     cursor: 'pointer',
                   }}
                 >
@@ -620,7 +625,8 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({
                         height: '32px',
                         borderRadius: '8px',
                         border: 0,
-                        backgroundColor: '#E3E7DA',
+                        backgroundColor: 'var(--color-neutral-bg, #ECEEE6)',
+                        color: 'var(--text-primary, #1E2A20)',
                         fontSize: '14px',
                         cursor: 'pointer',
                       }}
@@ -640,7 +646,8 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({
                         height: '32px',
                         borderRadius: '8px',
                         border: 0,
-                        backgroundColor: '#E3E7DA',
+                        backgroundColor: 'var(--color-neutral-bg, #ECEEE6)',
+                        color: 'var(--text-primary, #1E2A20)',
                         fontSize: '14px',
                         cursor: 'pointer',
                       }}
@@ -658,24 +665,24 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({
             data-testid="total-day-sleep-card"
             onClick={() => setEditingDaySleep(!editingDaySleep)}
             style={{
-              backgroundColor: '#FFFFFF',
+              backgroundColor: 'var(--color-white, #FFFFFF)',
               borderRadius: '24px',
               padding: '16px',
               display: 'flex',
               flexDirection: 'column',
               gap: '6px',
-              color: '#1E2A20',
+              color: 'var(--text-primary, #1E2A20)',
               cursor: 'pointer',
             }}
           >
-            <span style={{ fontSize: '13px', color: '#4A5A4C' }}>Дневной сон всего</span>
+            <span style={{ fontSize: '13px', color: 'var(--text-muted, #4A5A4C)' }}>Дневной сон всего</span>
             <span
               data-testid="total-day-sleep-value"
-              style={{ fontSize: '26px', fontWeight: 700, letterSpacing: '-0.8px' }}
+              style={{ fontSize: '26px', fontWeight: 700, letterSpacing: '-0.8px', color: 'var(--text-primary, #1E2A20)' }}
             >
               {formatDurationDisplay(settings.totalDaySleepMinutes)}
             </span>
-            <span style={{ fontSize: '13px', color: '#4A5A4C' }}>сумма всех снов</span>
+            <span style={{ fontSize: '13px', color: 'var(--text-muted, #4A5A4C)' }}>сумма всех снов</span>
 
             {editingDaySleep && (
               <div
@@ -695,7 +702,8 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({
                     height: '32px',
                     borderRadius: '8px',
                     border: 0,
-                    backgroundColor: '#ECEEE6',
+                    backgroundColor: 'var(--color-neutral-bg, #ECEEE6)',
+                    color: 'var(--text-primary, #1E2A20)',
                     cursor: 'pointer',
                   }}
                 >
@@ -714,7 +722,8 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({
                     height: '32px',
                     borderRadius: '8px',
                     border: 0,
-                    backgroundColor: '#ECEEE6',
+                    backgroundColor: 'var(--color-neutral-bg, #ECEEE6)',
+                    color: 'var(--text-primary, #1E2A20)',
                     cursor: 'pointer',
                   }}
                 >
@@ -729,24 +738,24 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({
             data-testid="total-wake-card"
             onClick={() => setEditingWakeTime(!editingWakeTime)}
             style={{
-              backgroundColor: '#FFFFFF',
+              backgroundColor: 'var(--color-white, #FFFFFF)',
               borderRadius: '24px',
               padding: '16px',
               display: 'flex',
               flexDirection: 'column',
               gap: '6px',
-              color: '#1E2A20',
+              color: 'var(--text-primary, #1E2A20)',
               cursor: 'pointer',
             }}
           >
-            <span style={{ fontSize: '13px', color: '#4A5A4C' }}>Бодрствование за день</span>
+            <span style={{ fontSize: '13px', color: 'var(--text-muted, #4A5A4C)' }}>Бодрствование за день</span>
             <span
               data-testid="total-wake-value"
-              style={{ fontSize: '26px', fontWeight: 700, letterSpacing: '-0.8px' }}
+              style={{ fontSize: '26px', fontWeight: 700, letterSpacing: '-0.8px', color: 'var(--text-primary, #1E2A20)' }}
             >
               {formatDurationDisplay(settings.totalWakeMinutes)}
             </span>
-            <span style={{ fontSize: '13px', color: '#4A5A4C' }}>от подъёма до отбоя</span>
+            <span style={{ fontSize: '13px', color: 'var(--text-muted, #4A5A4C)' }}>от подъёма до отбоя</span>
 
             {editingWakeTime && (
               <div
@@ -766,7 +775,8 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({
                     height: '32px',
                     borderRadius: '8px',
                     border: 0,
-                    backgroundColor: '#ECEEE6',
+                    backgroundColor: 'var(--color-neutral-bg, #ECEEE6)',
+                    color: 'var(--text-primary, #1E2A20)',
                     cursor: 'pointer',
                   }}
                 >
@@ -785,7 +795,8 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({
                     height: '32px',
                     borderRadius: '8px',
                     border: 0,
-                    backgroundColor: '#ECEEE6',
+                    backgroundColor: 'var(--color-neutral-bg, #ECEEE6)',
+                    color: 'var(--text-primary, #1E2A20)',
                     cursor: 'pointer',
                   }}
                 >
@@ -845,6 +856,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({
             <button
               type="button"
               data-testid="theme-option-light"
+              aria-pressed={currentTheme === 'light'}
               onClick={() => handleThemeSelect('light')}
               style={{
                 height: '40px',
@@ -864,6 +876,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({
             <button
               type="button"
               data-testid="theme-option-dark"
+              aria-pressed={currentTheme === 'dark'}
               onClick={() => handleThemeSelect('dark')}
               style={{
                 height: '40px',
@@ -883,6 +896,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({
             <button
               type="button"
               data-testid="theme-option-system"
+              aria-pressed={currentTheme === 'system'}
               onClick={() => handleThemeSelect('system')}
               style={{
                 height: '40px',
@@ -917,7 +931,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({
         <section
           data-testid="section-family"
           style={{
-            backgroundColor: '#FFFFFF',
+            backgroundColor: 'var(--color-white, #FFFFFF)',
             borderRadius: '24px',
             padding: '6px 16px',
             display: 'flex',
@@ -941,7 +955,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({
                   display: 'flex',
                   alignItems: 'center',
                   gap: '12px',
-                  borderBottom: '1px solid #E3E7DA',
+                  borderBottom: '1px solid var(--color-border, #E3E7DA)',
                 }}
               >
                 <div
@@ -960,11 +974,11 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({
                 >
                   {initial}
                 </div>
-                <div style={{ flexGrow: 1, fontSize: '16px', fontWeight: 500 }}>
+                <div style={{ flexGrow: 1, fontSize: '16px', fontWeight: 500, color: 'var(--text-primary, #1E2A20)' }}>
                   {member.name}{' '}
-                  {isMom && <span style={{ color: '#4A5A4C', fontWeight: 400 }}>· вы</span>}
+                  {isMom && <span style={{ color: 'var(--text-muted, #4A5A4C)', fontWeight: 400 }}>· вы</span>}
                 </div>
-                <div style={{ fontSize: '13px', color: '#4A5A4C' }}>записи и настройки</div>
+                <div style={{ fontSize: '13px', color: 'var(--text-muted, #4A5A4C)' }}>записи и настройки</div>
               </div>
             );
           })}
@@ -982,7 +996,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({
               fontFamily: 'inherit',
               fontSize: '16px',
               fontWeight: 500,
-              color: '#2F5A3A',
+              color: 'var(--color-link, #2F5A3A)',
               textAlign: 'left',
               cursor: 'pointer',
               display: 'flex',
@@ -1018,7 +1032,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({
                 padding: '4px 0',
                 backgroundColor: 'transparent',
                 border: 0,
-                borderTop: '1px solid #E3E7DA',
+                borderTop: '1px solid var(--color-border, #E3E7DA)',
                 fontFamily: 'inherit',
                 fontSize: '14px',
                 fontWeight: 500,

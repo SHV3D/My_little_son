@@ -322,7 +322,7 @@ export const TodaySleepingPage: React.FC<TodaySleepingPageProps> = ({
           <section
             data-testid="card-bedtime"
             style={{
-              background: '#FFFFFF',
+              background: 'var(--color-white, #FFFFFF)',
               borderRadius: '24px',
               padding: '16px',
               display: 'flex',
@@ -332,7 +332,7 @@ export const TodaySleepingPage: React.FC<TodaySleepingPageProps> = ({
               boxShadow: 'var(--shadow-sm, 0 1px 3px rgba(30, 42, 32, 0.05))',
             }}
           >
-            <div style={{ fontSize: '13px', fontWeight: 500, color: '#4A5A4C' }}>
+            <div style={{ fontSize: '13px', fontWeight: 500, color: 'var(--text-muted, #4A5A4C)' }}>
               Ночной сон
             </div>
             <div
@@ -342,14 +342,14 @@ export const TodaySleepingPage: React.FC<TodaySleepingPageProps> = ({
                 fontWeight: 700,
                 letterSpacing: '-1px',
                 fontVariantNumeric: 'tabular-nums',
-                color: '#1E2A20',
+                color: 'var(--text-primary, #1E2A20)',
               }}
             >
               {bedtimeTime}
             </div>
             <div
               data-testid="bedtime-status"
-              style={{ fontSize: '13px', color: '#4A5A4C' }}
+              style={{ fontSize: '13px', color: 'var(--text-muted, #4A5A4C)' }}
             >
               {bedtimeStatus}
             </div>
@@ -360,7 +360,7 @@ export const TodaySleepingPage: React.FC<TodaySleepingPageProps> = ({
             data-testid="card-subsequent-nap"
             style={{
               gridColumn: 'span 2',
-              background: '#FFFFFF',
+              background: 'var(--color-white, #FFFFFF)',
               borderRadius: '24px',
               padding: '14px 16px',
               display: 'flex',
@@ -372,7 +372,7 @@ export const TodaySleepingPage: React.FC<TodaySleepingPageProps> = ({
           >
             <div
               data-testid="subsequent-nap-title"
-              style={{ fontSize: '13px', fontWeight: 500, color: '#4A5A4C', flexGrow: 1 }}
+              style={{ fontSize: '13px', fontWeight: 500, color: 'var(--text-muted, #4A5A4C)', flexGrow: 1 }}
             >
               {subsequentNapTitle}
             </div>
@@ -381,7 +381,7 @@ export const TodaySleepingPage: React.FC<TodaySleepingPageProps> = ({
               style={{
                 fontSize: '16px',
                 fontWeight: 600,
-                color: '#1E2A20',
+                color: 'var(--text-primary, #1E2A20)',
                 fontVariantNumeric: 'tabular-nums',
               }}
             >

@@ -103,7 +103,7 @@ export const DayLogsList: React.FC<DayLogsListProps> = ({
       className={`day-logs-list ${className}`.trim()}
       data-testid="day-logs-list"
       style={{
-        background: '#FFFFFF',
+        background: 'var(--color-white, #FFFFFF)',
         borderRadius: '24px',
         padding: '6px 16px 10px',
         display: 'flex',
@@ -120,7 +120,7 @@ export const DayLogsList: React.FC<DayLogsListProps> = ({
           padding: '10px 0 4px',
           fontSize: '13px',
           fontWeight: 500,
-          color: '#4A5A4C',
+          color: 'var(--text-muted, #4A5A4C)',
         }}
       >
         Записи за день
@@ -143,9 +143,9 @@ export const DayLogsList: React.FC<DayLogsListProps> = ({
                 padding: '0',
                 background: 'none',
                 border: '0',
-                borderBottom: isLast ? 'none' : '1px solid #E3E7DA',
+                borderBottom: isLast ? 'none' : '1px solid var(--color-border, #E3E7DA)',
                 fontFamily: 'inherit',
-                color: '#1E2A20',
+                color: 'var(--text-primary, #1E2A20)',
                 textAlign: 'left',
                 width: '100%',
                 cursor: onRecordClick ? 'pointer' : 'default',
@@ -158,7 +158,7 @@ export const DayLogsList: React.FC<DayLogsListProps> = ({
                   flexGrow: 1,
                   fontSize: '15px',
                   fontWeight: 400,
-                  color: '#1E2A20',
+                  color: 'var(--text-primary, #1E2A20)',
                 }}
               >
                 {record.title}
@@ -168,9 +168,9 @@ export const DayLogsList: React.FC<DayLogsListProps> = ({
                 style={{
                   padding: '3px 8px',
                   borderRadius: '8px',
-                  backgroundColor: '#ECEEE6',
+                  backgroundColor: 'var(--color-neutral-bg, #ECEEE6)',
                   fontSize: '12px',
-                  color: '#4A5A4C',
+                  color: 'var(--text-muted, #4A5A4C)',
                   fontWeight: 500,
                 }}
               >
@@ -184,7 +184,7 @@ export const DayLogsList: React.FC<DayLogsListProps> = ({
                   width: '104px',
                   textAlign: 'right',
                   fontVariantNumeric: 'tabular-nums',
-                  color: '#1E2A20',
+                  color: 'var(--text-primary, #1E2A20)',
                 }}
               >
                 {record.time}

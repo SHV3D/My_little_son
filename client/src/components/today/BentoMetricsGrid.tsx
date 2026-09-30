@@ -155,7 +155,7 @@ export const BentoMetricsGrid: React.FC<BentoMetricsGridProps> = ({
       <section
         data-testid="card-bedtime"
         style={{
-          background: '#FFFFFF',
+          background: 'var(--color-white, #FFFFFF)',
           borderRadius: '24px',
           padding: '16px',
           display: 'flex',
@@ -165,7 +165,7 @@ export const BentoMetricsGrid: React.FC<BentoMetricsGridProps> = ({
           boxSizing: 'border-box',
         }}
       >
-        <div style={{ fontSize: '13px', fontWeight: 500, color: '#4A5A4C' }}>
+        <div style={{ fontSize: '13px', fontWeight: 500, color: 'var(--text-muted, #4A5A4C)' }}>
           Ночной сон
         </div>
         <div
@@ -174,7 +174,7 @@ export const BentoMetricsGrid: React.FC<BentoMetricsGridProps> = ({
             fontSize: '30px',
             fontWeight: 700,
             letterSpacing: '-1px',
-            color: '#1E2A20',
+            color: 'var(--text-primary, #1E2A20)',
             lineHeight: 1.1,
           }}
         >
@@ -184,7 +184,7 @@ export const BentoMetricsGrid: React.FC<BentoMetricsGridProps> = ({
           data-testid="bedtime-status"
           style={{
             fontSize: '13px',
-            color: '#4A5A4C',
+            color: 'var(--text-muted, #4A5A4C)',
             fontWeight: 400,
             marginTop: 'auto',
           }}
@@ -197,7 +197,7 @@ export const BentoMetricsGrid: React.FC<BentoMetricsGridProps> = ({
       <section
         data-testid="card-day-sleep"
         style={{
-          background: '#FFFFFF',
+          background: 'var(--color-white, #FFFFFF)',
           borderRadius: '24px',
           padding: '16px',
           display: 'flex',
@@ -206,7 +206,7 @@ export const BentoMetricsGrid: React.FC<BentoMetricsGridProps> = ({
           boxSizing: 'border-box',
         }}
       >
-        <div style={{ fontSize: '13px', fontWeight: 500, color: '#4A5A4C' }}>
+        <div style={{ fontSize: '13px', fontWeight: 500, color: 'var(--text-muted, #4A5A4C)' }}>
           Днём
         </div>
         <div
@@ -215,12 +215,12 @@ export const BentoMetricsGrid: React.FC<BentoMetricsGridProps> = ({
             fontSize: '22px',
             fontWeight: 700,
             letterSpacing: '-0.5px',
-            color: '#1E2A20',
+            color: 'var(--text-primary, #1E2A20)',
             lineHeight: 1.2,
           }}
         >
           {daySleepCurrent}{' '}
-          <span style={{ fontSize: '15px', fontWeight: 500, color: '#4A5A4C' }}>
+          <span style={{ fontSize: '15px', fontWeight: 500, color: 'var(--text-muted, #4A5A4C)' }}>
             / {daySleepTarget}
           </span>
         </div>
@@ -229,7 +229,7 @@ export const BentoMetricsGrid: React.FC<BentoMetricsGridProps> = ({
           style={{
             height: '8px',
             borderRadius: '4px',
-            backgroundColor: '#E3E7DA',
+            backgroundColor: 'var(--color-border, #E3E7DA)',
             position: 'relative',
             overflow: 'hidden',
             width: '100%',
@@ -255,7 +255,7 @@ export const BentoMetricsGrid: React.FC<BentoMetricsGridProps> = ({
       <section
         data-testid="card-remaining-naps"
         style={{
-          background: '#FFFFFF',
+          background: 'var(--color-white, #FFFFFF)',
           borderRadius: '24px',
           padding: '16px',
           display: 'flex',
@@ -264,7 +264,7 @@ export const BentoMetricsGrid: React.FC<BentoMetricsGridProps> = ({
           boxSizing: 'border-box',
         }}
       >
-        <div style={{ fontSize: '13px', fontWeight: 500, color: '#4A5A4C' }}>
+        <div style={{ fontSize: '13px', fontWeight: 500, color: 'var(--text-muted, #4A5A4C)' }}>
           Осталось снов
         </div>
         <div
@@ -299,7 +299,7 @@ export const BentoMetricsGrid: React.FC<BentoMetricsGridProps> = ({
           data-testid="remaining-naps-text"
           style={{
             fontSize: '13px',
-            color: '#4A5A4C',
+            color: 'var(--text-muted, #4A5A4C)',
             fontWeight: 400,
           }}
         >
@@ -312,7 +312,7 @@ export const BentoMetricsGrid: React.FC<BentoMetricsGridProps> = ({
         data-testid="card-subsequent-nap"
         style={{
           gridColumn: 'span 2',
-          background: '#FFFFFF',
+          background: 'var(--color-white, #FFFFFF)',
           borderRadius: '24px',
           padding: '14px 16px',
           display: 'flex',
@@ -326,7 +326,7 @@ export const BentoMetricsGrid: React.FC<BentoMetricsGridProps> = ({
           style={{
             fontSize: '13px',
             fontWeight: 500,
-            color: '#4A5A4C',
+            color: 'var(--text-muted, #4A5A4C)',
             flexGrow: 1,
           }}
         >
@@ -337,7 +337,7 @@ export const BentoMetricsGrid: React.FC<BentoMetricsGridProps> = ({
           style={{
             fontSize: '16px',
             fontWeight: 600,
-            color: '#1E2A20',
+            color: 'var(--text-primary, #1E2A20)',
           }}
         >
           {subsequentNapDetails}

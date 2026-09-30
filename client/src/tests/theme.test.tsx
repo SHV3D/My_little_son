@@ -139,13 +139,21 @@ describe('SettingsPage theme settings', () => {
     expect(darkBtn.textContent).toContain('Тёмная');
     expect(systemBtn.textContent).toContain('Системная');
 
+    expect(lightBtn.getAttribute('aria-pressed')).toBe('true');
+    expect(darkBtn.getAttribute('aria-pressed')).toBe('false');
+    expect(systemBtn.getAttribute('aria-pressed')).toBe('false');
+
     fireEvent.click(darkBtn);
     expect(handleThemeChange).toHaveBeenCalledWith('dark');
+    expect(darkBtn.getAttribute('aria-pressed')).toBe('true');
+    expect(lightBtn.getAttribute('aria-pressed')).toBe('false');
 
     fireEvent.click(systemBtn);
     expect(handleThemeChange).toHaveBeenCalledWith('system');
+    expect(systemBtn.getAttribute('aria-pressed')).toBe('true');
 
     fireEvent.click(lightBtn);
     expect(handleThemeChange).toHaveBeenCalledWith('light');
+    expect(lightBtn.getAttribute('aria-pressed')).toBe('true');
   });
 });
