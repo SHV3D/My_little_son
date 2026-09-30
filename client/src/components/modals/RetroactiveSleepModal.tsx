@@ -46,6 +46,8 @@ export const RetroactiveSleepModal: React.FC<RetroactiveSleepModalProps> = ({
   // Swipe-down tracking
   const touchStartY = useRef<number>(0);
   const touchCurrentY = useRef<number>(0);
+  const isTouchFromDragHandle = useRef<boolean>(false);
+  const isTouchFromTop = useRef<boolean>(false);
 
   useEffect(() => {
     if (currentDate) {
@@ -70,18 +72,24 @@ export const RetroactiveSleepModal: React.FC<RetroactiveSleepModalProps> = ({
     return null;
   }
 
-  const handleTouchStart = (e: React.TouchEvent) => {
+  const handleTouchStart = (e: React.TouchEvent<HTMLElement>) => {
     touchStartY.current = e.touches[0].clientY;
     touchCurrentY.current = e.touches[0].clientY;
+    const target = e.target as HTMLElement | null;
+    isTouchFromDragHandle.current = Boolean(target?.closest?.('[data-testid="modal-drag-handle"]'));
+    isTouchFromTop.current = (e.currentTarget?.scrollTop ?? 0) <= 0;
   };
 
-  const handleTouchMove = (e: React.TouchEvent) => {
+  const handleTouchMove = (e: React.TouchEvent<HTMLElement>) => {
     touchCurrentY.current = e.touches[0].clientY;
   };
 
-  const handleTouchEnd = () => {
+  const handleTouchEnd = (e: React.TouchEvent<HTMLElement>) => {
     const diff = touchCurrentY.current - touchStartY.current;
-    if (diff > 70) {
+    const isAtTop = (e.currentTarget?.scrollTop ?? 0) <= 0;
+    const canDismiss = isTouchFromDragHandle.current || (isTouchFromTop.current && isAtTop);
+
+    if (canDismiss && diff > 70) {
       onClose();
     }
   };

@@ -3,7 +3,7 @@ import { Header } from '../components/common/Header';
 import { BottomNav } from '../components/common/BottomNav';
 import { AwakeHeroCard } from '../components/today/AwakeHeroCard';
 import { BentoMetricsGrid } from '../components/today/BentoMetricsGrid';
-import { SleepActionModal, SleepActionConfirmPayload } from '../components/modals/SleepActionModal';
+import { SleepActionModal, SleepActionConfirmPayload, getCurrentTimeHHMM } from '../components/modals/SleepActionModal';
 import { useFamilySync } from '../hooks/useFamilySync';
 import { fetchScheduleStatus, DayStatusResponse, recordFellAsleepApi } from '../api/sleepApi';
 import { formatMinutesToHoursAndMinutes } from '@shared/sleepEngine';
@@ -86,10 +86,7 @@ export const TodayAwakePage: React.FC<TodayAwakePageProps> = ({
 
   const handleConfirmFellAsleep = async (payload: SleepActionConfirmPayload) => {
     setIsModalOpen(false);
-    const time =
-      payload.source === 'MANUAL' && payload.time
-        ? payload.time
-        : statusData?.currentTime || '13:05';
+    const time = payload.time || statusData?.currentTime || getCurrentTimeHHMM();
 
     // Optimistic UI update
     setStatusData((prev) =>
@@ -108,7 +105,7 @@ export const TodayAwakePage: React.FC<TodayAwakePageProps> = ({
     );
 
     try {
-      await recordFellAsleepApi(childId, payload.time, payload.source);
+      await recordFellAsleepApi(childId, time, payload.source);
       await loadStatus();
     } catch {
       await loadStatus();

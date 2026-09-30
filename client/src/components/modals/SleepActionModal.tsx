@@ -63,12 +63,22 @@ export const SleepActionModal: React.FC<SleepActionModalProps> = ({
   const touchStartY = useRef<number>(0);
   const touchCurrentY = useRef<number>(0);
 
-  // Update base nowTime when currentTime prop changes
   useEffect(() => {
-    if (currentTime) {
-      setNowTime(currentTime);
+    if (isOpen) {
+      const base = currentTime || getCurrentTimeHHMM();
+      setNowTime(base);
+      if (initialTime) {
+        setSelectedTime(initialTime);
+        setActiveOffset(null);
+      } else if (defaultOffsetMinutes > 0) {
+        setSelectedTime(subtractMinutes(base, defaultOffsetMinutes));
+        setActiveOffset(defaultOffsetMinutes);
+      } else {
+        setSelectedTime(base);
+        setActiveOffset(null);
+      }
     }
-  }, [currentTime]);
+  }, [isOpen, currentTime, initialTime, defaultOffsetMinutes]);
 
   // Keep live time ticking if currentTime prop is not specified
   useEffect(() => {

@@ -199,6 +199,57 @@ describe('SleepActionModal Component', () => {
 
     expect(container.firstChild).toBeNull();
   });
+
+  it('reopening SleepActionModal with a new currentTime refreshes nowTime and selectedTime correctly', () => {
+    const { rerender } = render(
+      <SleepActionModal
+        isOpen={true}
+        type="FELL_ASLEEP"
+        currentTime="13:05"
+        defaultOffsetMinutes={15}
+        onClose={vi.fn()}
+        onConfirm={vi.fn()}
+      />
+    );
+
+    // Initially displays 13:05 and 12:50
+    expect(screen.getByTestId('action-now-time').textContent).toBe('13:05');
+    const input = screen.getByTestId('manual-time-input') as HTMLInputElement;
+    expect(input.value).toBe('12:50');
+    expect(screen.getByTestId('action-save-btn').textContent).toBe('Сохранить: уснул в 12:50');
+
+    // Close the modal
+    rerender(
+      <SleepActionModal
+        isOpen={false}
+        type="FELL_ASLEEP"
+        currentTime="13:05"
+        defaultOffsetMinutes={15}
+        onClose={vi.fn()}
+        onConfirm={vi.fn()}
+      />
+    );
+    expect(screen.queryByTestId('sleep-action-modal')).toBeNull();
+
+    // Reopen modal with new currentTime: 14:20
+    rerender(
+      <SleepActionModal
+        isOpen={true}
+        type="FELL_ASLEEP"
+        currentTime="14:20"
+        defaultOffsetMinutes={15}
+        onClose={vi.fn()}
+        onConfirm={vi.fn()}
+      />
+    );
+
+    // Refreshed state should show 14:20 and 14:05 (14:20 - 15 min)
+    expect(screen.getByTestId('action-now-time').textContent).toBe('14:20');
+    const updatedInput = screen.getByTestId('manual-time-input') as HTMLInputElement;
+    expect(updatedInput.value).toBe('14:05');
+    expect(screen.getByTestId('action-save-btn').textContent).toBe('Сохранить: уснул в 14:05');
+    expect(screen.getByTestId('offset-chip-15').getAttribute('data-active')).toBe('true');
+  });
 });
 
 describe('RetroactiveSleepModal Component', () => {
@@ -292,6 +343,56 @@ describe('RetroactiveSleepModal Component', () => {
 
     const closeBtn = screen.getByTestId('retroactive-close-btn');
     fireEvent.click(closeBtn);
+    expect(handleClose).toHaveBeenCalledTimes(1);
+  });
+
+  it('triggers onClose on swipe down when container scroll is at top', () => {
+    const handleClose = vi.fn();
+    render(
+      <RetroactiveSleepModal
+        isOpen={true}
+        onClose={handleClose}
+        onSave={vi.fn()}
+      />
+    );
+
+    const modal = screen.getByTestId('retroactive-modal');
+    Object.defineProperty(modal, 'scrollTop', { value: 0, writable: true });
+
+    fireEvent.touchStart(modal, { touches: [{ clientY: 100 }] });
+    fireEvent.touchMove(modal, { touches: [{ clientY: 180 }] });
+    fireEvent.touchEnd(modal);
+
+    expect(handleClose).toHaveBeenCalledTimes(1);
+  });
+
+  it('does not trigger onClose on swipe down when container is scrolled down unless touched on drag handle', () => {
+    const handleClose = vi.fn();
+    render(
+      <RetroactiveSleepModal
+        isOpen={true}
+        onClose={handleClose}
+        onSave={vi.fn()}
+      />
+    );
+
+    const modal = screen.getByTestId('retroactive-modal');
+    Object.defineProperty(modal, 'scrollTop', { value: 80, writable: true });
+
+    // Touch inside modal body (not drag handle) while scrolled down
+    const dateInput = screen.getByTestId('retroactive-date');
+    fireEvent.touchStart(dateInput, { touches: [{ clientY: 100 }] });
+    fireEvent.touchMove(dateInput, { touches: [{ clientY: 190 }] });
+    fireEvent.touchEnd(modal);
+
+    expect(handleClose).not.toHaveBeenCalled();
+
+    // Now touch on drag handle even while scrolled down
+    const dragHandle = screen.getByTestId('modal-drag-handle');
+    fireEvent.touchStart(dragHandle, { touches: [{ clientY: 100 }] });
+    fireEvent.touchMove(dragHandle, { touches: [{ clientY: 190 }] });
+    fireEvent.touchEnd(modal);
+
     expect(handleClose).toHaveBeenCalledTimes(1);
   });
 });
@@ -411,6 +512,111 @@ describe('Modal Integration in Pages and App', () => {
 
     // Modal closes and view shifts optimistically to TodaySleepingPage
     expect(screen.queryByTestId('sleep-action-modal')).toBeNull();
+  });
+
+  it('App preserves payload.time when confirming with source: "NOW"', async () => {
+    let capturedBody: any = null;
+    global.fetch = vi.fn().mockImplementation((url: string, init?: RequestInit) => {
+      if (typeof url === 'string' && url.includes('/api/sleep/fell-asleep')) {
+        if (init?.body) {
+          capturedBody = JSON.parse(init.body as string);
+        }
+        return Promise.resolve({
+          ok: true,
+          json: () => Promise.resolve({ success: true }),
+        });
+      }
+      return Promise.resolve({
+        ok: true,
+        json: () => Promise.resolve(mockAwakeStatus),
+      });
+    });
+
+    render(<App />);
+
+    const fellAsleepBtn = await screen.findByTestId('fell-asleep-btn');
+    fireEvent.click(fellAsleepBtn);
+
+    const nowBtn = screen.getByTestId('action-now-btn');
+    await act(async () => {
+      fireEvent.click(nowBtn);
+    });
+
+    expect(capturedBody).toEqual({
+      childId: 'demo-child-1',
+      time: '13:05',
+      source: 'NOW',
+    });
+  });
+
+  it('TodayAwakePage preserves payload.time when confirming with source: "NOW"', async () => {
+    let capturedBody: any = null;
+    global.fetch = vi.fn().mockImplementation((url: string, init?: RequestInit) => {
+      if (typeof url === 'string' && url.includes('/api/sleep/fell-asleep')) {
+        if (init?.body) {
+          capturedBody = JSON.parse(init.body as string);
+        }
+        return Promise.resolve({
+          ok: true,
+          json: () => Promise.resolve({ success: true }),
+        });
+      }
+      return Promise.resolve({
+        ok: true,
+        json: () => Promise.resolve(mockAwakeStatus),
+      });
+    });
+
+    render(<TodayAwakePage initialData={mockAwakeStatus} />);
+
+    const fellAsleepBtn = screen.getByTestId('fell-asleep-btn');
+    fireEvent.click(fellAsleepBtn);
+
+    const nowBtn = screen.getByTestId('action-now-btn');
+    await act(async () => {
+      fireEvent.click(nowBtn);
+    });
+
+    expect(capturedBody).toEqual({
+      childId: 'demo-child-1',
+      time: '13:05',
+      source: 'NOW',
+    });
+  });
+
+  it('TodaySleepingPage preserves payload.time when confirming with source: "NOW"', async () => {
+    let capturedBody: any = null;
+    global.fetch = vi.fn().mockImplementation((url: string, init?: RequestInit) => {
+      if (typeof url === 'string' && url.includes('/api/sleep/woke-up')) {
+        if (init?.body) {
+          capturedBody = JSON.parse(init.body as string);
+        }
+        return Promise.resolve({
+          ok: true,
+          json: () => Promise.resolve({ success: true }),
+        });
+      }
+      return Promise.resolve({
+        ok: true,
+        json: () => Promise.resolve(mockSleepingStatus),
+      });
+    });
+
+    render(<TodaySleepingPage initialData={mockSleepingStatus} />);
+
+    const wokeUpBtn = screen.getByTestId('woke-up-btn');
+    fireEvent.click(wokeUpBtn);
+
+    const nowBtn = screen.getByTestId('action-now-btn');
+    await act(async () => {
+      fireEvent.click(nowBtn);
+    });
+
+    expect(capturedBody).toEqual({
+      childId: 'demo-child-1',
+      time: '13:30',
+      source: 'NOW',
+    });
   });
 });
 

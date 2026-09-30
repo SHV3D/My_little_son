@@ -13,6 +13,7 @@ import {
   SleepActionConfirmPayload,
   RetroactiveSleepModal,
   RetroactiveSavePayload,
+  getCurrentTimeHHMM,
 } from './components/modals';
 import { useFamilySync } from './hooks/useFamilySync';
 
@@ -51,10 +52,7 @@ export default function App() {
 
   const handleFellAsleepConfirm = async (payload: SleepActionConfirmPayload) => {
     setActiveModal(null);
-    const time =
-      payload.source === 'MANUAL' && payload.time
-        ? payload.time
-        : status?.currentTime || '13:05';
+    const time = payload.time || status?.currentTime || getCurrentTimeHHMM();
 
     // Optimistic UI: immediate transition to SLEEPING
     if (status) {
@@ -71,7 +69,7 @@ export default function App() {
     }
 
     try {
-      await recordFellAsleepApi(status?.child?.id || 'demo-child-1', payload.time, payload.source);
+      await recordFellAsleepApi(status?.child?.id || 'demo-child-1', time, payload.source);
       await loadStatus();
     } catch {
       await loadStatus();
@@ -80,10 +78,7 @@ export default function App() {
 
   const handleWokeUpConfirm = async (payload: SleepActionConfirmPayload) => {
     setActiveModal(null);
-    const time =
-      payload.source === 'MANUAL' && payload.time
-        ? payload.time
-        : status?.currentTime || '14:50';
+    const time = payload.time || status?.currentTime || getCurrentTimeHHMM();
 
     // Optimistic UI: immediate transition to AWAKE
     if (status) {
@@ -100,7 +95,7 @@ export default function App() {
     }
 
     try {
-      await recordWokeUpApi(status?.child?.id || 'demo-child-1', payload.time, payload.source);
+      await recordWokeUpApi(status?.child?.id || 'demo-child-1', time, payload.source);
       await loadStatus();
     } catch {
       await loadStatus();

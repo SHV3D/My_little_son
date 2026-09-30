@@ -8,6 +8,7 @@ import {
   SleepActionConfirmPayload,
   RetroactiveSleepModal,
   RetroactiveSavePayload,
+  getCurrentTimeHHMM,
 } from '../components/modals';
 import { useFamilySync } from '../hooks/useFamilySync';
 import {
@@ -116,10 +117,7 @@ export const TodaySleepingPage: React.FC<TodaySleepingPageProps> = ({
 
   const handleConfirmWokeUp = async (payload: SleepActionConfirmPayload) => {
     setIsActionModalOpen(false);
-    const time =
-      payload.source === 'MANUAL' && payload.time
-        ? payload.time
-        : statusData?.currentTime || '14:50';
+    const time = payload.time || statusData?.currentTime || getCurrentTimeHHMM();
 
     // Optimistic UI update
     setStatusData((prev) =>
@@ -138,7 +136,7 @@ export const TodaySleepingPage: React.FC<TodaySleepingPageProps> = ({
     );
 
     try {
-      await recordWokeUpApi(childId, payload.time, payload.source);
+      await recordWokeUpApi(childId, time, payload.source);
       await loadStatus();
     } catch {
       await loadStatus();
