@@ -489,8 +489,8 @@ export const DayDetailCard: React.FC<DayDetailCardProps> = ({
             eventRows.map((item) => {
               const isClickable = Boolean(onEventClick || onEditRecord);
               const handleRowClick = () => {
-                onEventClick?.(item);
-                onEditRecord?.(item);
+                const handler = onEventClick || onEditRecord;
+                handler?.(item);
               };
 
               return (

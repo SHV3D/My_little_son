@@ -147,6 +147,12 @@ export const TodayAwakePage: React.FC<TodayAwakePageProps> = ({
     loadStatus();
   }, [loadStatus]);
 
+  useEffect(() => {
+    if (initialData) {
+      setStatusData(initialData);
+    }
+  }, [initialData]);
+
   const schedule = statusData?.schedule;
 
   // Header Title

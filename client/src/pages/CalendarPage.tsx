@@ -242,7 +242,6 @@ export const CalendarPage: React.FC<CalendarPageProps> = ({
           targetNapsCount={monthData?.targetNapsCount}
           targetBedtime={monthData?.targetBedtime}
           onEventClick={onEditRecord}
-          onEditRecord={onEditRecord}
           onEditClick={handleEditClick}
         />
       </div>

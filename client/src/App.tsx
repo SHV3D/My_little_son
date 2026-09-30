@@ -152,7 +152,7 @@ export default function App() {
     const childId = status?.child?.id || 'demo-child-1';
     try {
       const result = await updateSleepEventApi(eventId, data, childId);
-      if (result?.status) {
+      if (result?.status && (!status?.date || result.status.date === status.date)) {
         setStatus(result.status);
       } else {
         await loadStatus();

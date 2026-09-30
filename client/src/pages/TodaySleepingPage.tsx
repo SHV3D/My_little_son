@@ -182,6 +182,12 @@ export const TodaySleepingPage: React.FC<TodaySleepingPageProps> = ({
     loadStatus();
   }, [loadStatus]);
 
+  useEffect(() => {
+    if (initialData) {
+      setStatusData(initialData);
+    }
+  }, [initialData]);
+
   const schedule = statusData?.schedule;
 
   // Header Title
