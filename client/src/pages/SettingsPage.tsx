@@ -94,7 +94,17 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({
     [settings, childName, childId]
   );
 
-  // Live local validation
+  const copyTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (copyTimerRef.current) {
+        clearTimeout(copyTimerRef.current);
+      }
+    };
+  }, []);
+
+  // Live local validation (validates wakeIntervalMinMinutes and wakeIntervalMaxMinutes accurately against day structure)
   const validation: ValidationResult = useMemo(() => {
     return validateSettings({
       napsPerDay: settings.napsPerDay,
@@ -103,7 +113,6 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({
       totalDaySleepMinutes: settings.totalDaySleepMinutes,
       typicalWakeupTime: settings.typicalWakeupTime,
       targetBedtime: settings.targetBedtime,
-      totalWakeMinutes: settings.totalWakeMinutes,
     });
   }, [settings]);
 
@@ -142,7 +151,8 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({
     } catch {
       setCopyFeedback(`Код: ${inviteCode}`);
     }
-    setTimeout(() => {
+    if (copyTimerRef.current) clearTimeout(copyTimerRef.current);
+    copyTimerRef.current = setTimeout(() => {
       setCopyFeedback(null);
     }, 3000);
   };
@@ -160,10 +170,17 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({
     return `${h}:${String(m).padStart(2, '0')}`;
   };
 
+  const familyMembers = data?.family?.members && data.family.members.length > 0
+    ? data.family.members
+    : [
+        { id: 'user-mom-1', name: 'Мама', role: 'Мама', email: 'mama@mail.ru' },
+        { id: 'user-dad-1', name: 'Папа', role: 'Папа', email: 'papa@mail.ru' },
+      ];
+
   return (
     <div
       data-testid="settings-page"
-      className={`settings-screen ${className}`.trim()}
+      className={`mobile-viewport-wrapper settings-screen ${className}`.trim()}
       style={{
         maxWidth: '430px',
         minHeight: '100vh',
@@ -178,8 +195,10 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({
       }}
     >
       <div
+        className="screen-content"
         style={{
           flexGrow: 1,
+          overflowY: 'auto',
           display: 'flex',
           flexDirection: 'column',
           gap: '10px',
@@ -780,69 +799,50 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({
             flexDirection: 'column',
           }}
         >
-          {/* Mom row */}
-          <div
-            data-testid="family-member-mom"
-            style={{
-              minHeight: '60px',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '12px',
-              borderBottom: '1px solid #E3E7DA',
-            }}
-          >
-            <div
-              style={{
-                width: '36px',
-                height: '36px',
-                borderRadius: '12px',
-                backgroundColor: '#D4F27A',
-                color: '#1E2A20',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                fontWeight: 700,
-                fontSize: '15px',
-              }}
-            >
-              М
-            </div>
-            <div style={{ flexGrow: 1, fontSize: '16px', fontWeight: 500 }}>
-              Мама <span style={{ color: '#4A5A4C', fontWeight: 400 }}>· вы</span>
-            </div>
-            <div style={{ fontSize: '13px', color: '#4A5A4C' }}>записи и настройки</div>
-          </div>
+          {familyMembers.map((member) => {
+            const isMom = member.role.toLowerCase() === 'мама' || member.role.toLowerCase() === 'mom';
+            const isDad = member.role.toLowerCase() === 'папа' || member.role.toLowerCase() === 'dad';
+            const avatarBg = isMom ? '#D4F27A' : '#23372A';
+            const avatarColor = isMom ? '#1E2A20' : '#F1F4EA';
+            const initial = member.name ? member.name.charAt(0).toUpperCase() : (isMom ? 'М' : 'П');
+            const testId = isMom ? 'family-member-mom' : isDad ? 'family-member-dad' : `family-member-${member.id}`;
 
-          {/* Dad row */}
-          <div
-            data-testid="family-member-dad"
-            style={{
-              minHeight: '60px',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '12px',
-              borderBottom: '1px solid #E3E7DA',
-            }}
-          >
-            <div
-              style={{
-                width: '36px',
-                height: '36px',
-                borderRadius: '12px',
-                backgroundColor: '#23372A',
-                color: '#F1F4EA',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                fontWeight: 700,
-                fontSize: '15px',
-              }}
-            >
-              П
-            </div>
-            <div style={{ flexGrow: 1, fontSize: '16px', fontWeight: 500 }}>Папа</div>
-            <div style={{ fontSize: '13px', color: '#4A5A4C' }}>записи и настройки</div>
-          </div>
+            return (
+              <div
+                key={member.id}
+                data-testid={testId}
+                style={{
+                  minHeight: '60px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '12px',
+                  borderBottom: '1px solid #E3E7DA',
+                }}
+              >
+                <div
+                  style={{
+                    width: '36px',
+                    height: '36px',
+                    borderRadius: '12px',
+                    backgroundColor: avatarBg,
+                    color: avatarColor,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontWeight: 700,
+                    fontSize: '15px',
+                  }}
+                >
+                  {initial}
+                </div>
+                <div style={{ flexGrow: 1, fontSize: '16px', fontWeight: 500 }}>
+                  {member.name}{' '}
+                  {isMom && <span style={{ color: '#4A5A4C', fontWeight: 400 }}>· вы</span>}
+                </div>
+                <div style={{ fontSize: '13px', color: '#4A5A4C' }}>записи и настройки</div>
+              </div>
+            );
+          })}
 
           {/* Invite button */}
           <button

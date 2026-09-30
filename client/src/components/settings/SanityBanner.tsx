@@ -19,6 +19,8 @@ export const SanityBanner: React.FC<SanityBannerProps> = ({
   return (
     <section
       data-testid="sanity-banner"
+      role="status"
+      aria-live="polite"
       className={`sanity-banner ${className}`.trim()}
       style={{
         gridColumn: 'span 2',

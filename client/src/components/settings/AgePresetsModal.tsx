@@ -112,6 +112,9 @@ export const AgePresetsModal: React.FC<AgePresetsModalProps> = ({
       }}
     >
       <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="presets-modal-title"
         style={{
           width: '100%',
           maxWidth: '430px',
@@ -144,6 +147,7 @@ export const AgePresetsModal: React.FC<AgePresetsModalProps> = ({
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <div>
             <h2
+              id="presets-modal-title"
               style={{
                 margin: 0,
                 fontSize: '20px',
