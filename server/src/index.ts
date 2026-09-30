@@ -1,4 +1,6 @@
 import http from 'http';
+import path from 'path';
+import fs from 'fs';
 import express, { Request, Response } from 'express';
 import cors from 'cors';
 import { initDatabase } from './db/database';
@@ -27,6 +29,18 @@ app.use('/api/auth', authRoutes);
 app.use('/api/settings', settingsRoutes);
 app.use('/api/sleep', sleepRoutes);
 app.use('/api/calendar', calendarRoutes);
+
+// Static files from built client for production
+const clientDistPath = path.resolve(__dirname, '../../client/dist');
+if (fs.existsSync(clientDistPath)) {
+  app.use(express.static(clientDistPath));
+  app.get('*', (req: Request, res: Response, next) => {
+    if (req.path.startsWith('/api') || req.path.startsWith('/ws')) {
+      return next();
+    }
+    res.sendFile(path.join(clientDistPath, 'index.html'));
+  });
+}
 
 const server = http.createServer(app);
 const wss = setupWebSocketServer(server);
