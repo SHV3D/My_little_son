@@ -12,9 +12,12 @@ import {
   validateSettings,
   ValidationResult,
 } from '@shared/sleepEngine';
+import { ThemeMode } from '../hooks/useTheme';
 
 export interface SettingsPageProps {
   childId?: string;
+  theme?: ThemeMode;
+  onThemeChange?: (theme: ThemeMode) => void;
   onSelectTab?: (tab: string) => void;
   onLogout?: () => void;
   className?: string;
@@ -35,6 +38,8 @@ const DEFAULT_SETTINGS: ChildSettingsDto = {
 
 export const SettingsPage: React.FC<SettingsPageProps> = ({
   childId = 'demo-child-1',
+  theme,
+  onThemeChange,
   onSelectTab,
   onLogout,
   className = '',
@@ -43,6 +48,21 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({
   const [data, setData] = useState<SettingsResponse | null>(null);
   const [childName, setChildName] = useState<string>('Сын');
   const [settings, setSettings] = useState<ChildSettingsDto>(DEFAULT_SETTINGS);
+  const [internalTheme, setInternalTheme] = useState<ThemeMode>(theme || 'system');
+
+  useEffect(() => {
+    if (theme !== undefined) {
+      setInternalTheme(theme);
+    }
+  }, [theme]);
+
+  const currentTheme = theme !== undefined ? theme : internalTheme;
+
+  const handleThemeSelect = (selected: ThemeMode) => {
+    setInternalTheme(selected);
+    onThemeChange?.(selected);
+  };
+
   const [isPresetsOpen, setIsPresetsOpen] = useState(false);
   const [copyFeedback, setCopyFeedback] = useState<string | null>(null);
   const [editingBedtime, setEditingBedtime] = useState(false);
@@ -778,6 +798,109 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({
           {/* Card 6: SanityBanner */}
           <SanityBanner validation={validation} />
         </div>
+
+        {/* Section: Appearance */}
+        <h2
+          style={{
+            margin: '10px 0 0 4px',
+            fontSize: '18px',
+            fontWeight: 700,
+            letterSpacing: '-0.4px',
+          }}
+        >
+          Оформление
+        </h2>
+
+        <section
+          data-testid="theme-settings-card"
+          style={{
+            backgroundColor: 'var(--color-white, #FFFFFF)',
+            borderRadius: '24px',
+            padding: '16px',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '12px',
+          }}
+        >
+          <div
+            style={{
+              fontSize: '13px',
+              fontWeight: 500,
+              color: 'var(--text-muted, #4A5A4C)',
+            }}
+          >
+            Оформление
+          </div>
+
+          <div
+            style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(3, minmax(0, 1fr))',
+              gap: '8px',
+              backgroundColor: 'var(--color-neutral-bg, #F4F5EF)',
+              padding: '4px',
+              borderRadius: '16px',
+            }}
+          >
+            <button
+              type="button"
+              data-testid="theme-option-light"
+              onClick={() => handleThemeSelect('light')}
+              style={{
+                height: '40px',
+                borderRadius: '12px',
+                border: 0,
+                backgroundColor: currentTheme === 'light' ? 'var(--color-lime, #D4F27A)' : 'transparent',
+                color: currentTheme === 'light' ? '#1E2A20' : 'var(--text-muted, #4A5A4C)',
+                fontWeight: currentTheme === 'light' ? 600 : 500,
+                fontSize: '14px',
+                fontFamily: 'inherit',
+                cursor: 'pointer',
+                transition: 'all 0.15s ease',
+              }}
+            >
+              Светлая
+            </button>
+            <button
+              type="button"
+              data-testid="theme-option-dark"
+              onClick={() => handleThemeSelect('dark')}
+              style={{
+                height: '40px',
+                borderRadius: '12px',
+                border: 0,
+                backgroundColor: currentTheme === 'dark' ? 'var(--color-lime, #D4F27A)' : 'transparent',
+                color: currentTheme === 'dark' ? '#1E2A20' : 'var(--text-muted, #4A5A4C)',
+                fontWeight: currentTheme === 'dark' ? 600 : 500,
+                fontSize: '14px',
+                fontFamily: 'inherit',
+                cursor: 'pointer',
+                transition: 'all 0.15s ease',
+              }}
+            >
+              Тёмная
+            </button>
+            <button
+              type="button"
+              data-testid="theme-option-system"
+              onClick={() => handleThemeSelect('system')}
+              style={{
+                height: '40px',
+                borderRadius: '12px',
+                border: 0,
+                backgroundColor: currentTheme === 'system' ? 'var(--color-lime, #D4F27A)' : 'transparent',
+                color: currentTheme === 'system' ? '#1E2A20' : 'var(--text-muted, #4A5A4C)',
+                fontWeight: currentTheme === 'system' ? 600 : 500,
+                fontSize: '14px',
+                fontFamily: 'inherit',
+                cursor: 'pointer',
+                transition: 'all 0.15s ease',
+              }}
+            >
+              Системная
+            </button>
+          </div>
+        </section>
 
         {/* Section 3: Family */}
         <h2

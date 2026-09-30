@@ -45,6 +45,29 @@
   --transition-spring: 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
+[data-theme="dark"] {
+  --bg-primary: #142017;
+  --color-white: #223427;
+  --color-dark: #1A281E;
+  --color-neutral-bg: #1B291F;
+  --color-border: #2C3F30;
+  --text-primary: #F1F4EA;
+  --text-muted: #A6B8A5;
+  --text-subtle: #70846F;
+  --color-lime: #D4F27A;
+  --color-dark-secondary: #273D2C;
+  --color-light-sage: #283A2D;
+  --color-bar-inactive: #3B4E3E;
+  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.25);
+  --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.35);
+  --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.45);
+  --shadow-mobile: 0 16px 40px rgba(0, 0, 0, 0.6);
+}
+
+[data-theme="dark"] body {
+  background-color: #0E1711;
+}
+
 /* Base Body Setup */
 body {
   margin: 0;
@@ -85,6 +108,10 @@ body {
     align-items: center;
     min-height: 100vh;
     padding: 20px 0;
+  }
+
+  [data-theme="dark"] body {
+    background-color: #0E1711;
   }
 
   .mobile-viewport-wrapper {

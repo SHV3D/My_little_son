@@ -60,6 +60,9 @@ export interface TodaySleepingPageProps {
    */
   initialData?: DayStatusResponse;
 
+  theme?: 'light' | 'dark';
+  onToggleTheme?: () => void;
+
   className?: string;
   style?: React.CSSProperties;
 }
@@ -89,6 +92,8 @@ export const TodaySleepingPage: React.FC<TodaySleepingPageProps> = ({
   childId = 'demo-child-1',
   familyId = 'demo-family-1',
   initialData,
+  theme,
+  onToggleTheme,
   className = '',
   style,
 }) => {
@@ -228,11 +233,11 @@ export const TodaySleepingPage: React.FC<TodaySleepingPageProps> = ({
         maxWidth: '430px',
         minHeight: '100vh',
         margin: '0 auto',
-        backgroundColor: '#ECEEE6',
+        backgroundColor: 'var(--bg-primary, #ECEEE6)',
         display: 'flex',
         flexDirection: 'column',
         fontFamily: "'Geologica', system-ui, sans-serif",
-        color: '#1E2A20',
+        color: 'var(--text-primary, #1E2A20)',
         boxSizing: 'border-box',
         ...style,
       }}
@@ -254,6 +259,8 @@ export const TodaySleepingPage: React.FC<TodaySleepingPageProps> = ({
           title={headerDate}
           roles={onlineRoles.length > 0 ? onlineRoles : ['Мама', 'Папа']}
           isOnline={isConnected}
+          theme={theme}
+          onToggleTheme={onToggleTheme}
         />
 
         {/* Bento Grid */}

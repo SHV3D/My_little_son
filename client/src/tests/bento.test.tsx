@@ -189,6 +189,24 @@ describe('Header Component', () => {
     expect(screen.getByTestId('header-roles').textContent).toContain('Мама');
     expect(screen.getByTestId('online-indicator').getAttribute('data-online')).toBe('false');
   });
+
+  it('renders theme toggle button and calls onToggleTheme', () => {
+    const handleToggle = vi.fn();
+    render(
+      <Header
+        title="Пятница, 02.10"
+        theme="dark"
+        onToggleTheme={handleToggle}
+      />
+    );
+
+    const toggleBtn = screen.getByTestId('theme-toggle-btn');
+    expect(toggleBtn).toBeDefined();
+    expect(toggleBtn.getAttribute('aria-label')).toBe('Включить светлую тему');
+
+    fireEvent.click(toggleBtn);
+    expect(handleToggle).toHaveBeenCalledTimes(1);
+  });
 });
 
 describe('BentoCard Component', () => {

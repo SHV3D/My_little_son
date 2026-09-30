@@ -308,7 +308,7 @@ export const DayDetailCard: React.FC<DayDetailCardProps> = ({
             fontSize: '18px',
             fontWeight: 700,
             letterSpacing: '-0.4px',
-            color: '#1E2A20',
+            color: 'var(--text-primary, #1E2A20)',
           }}
         >
           {dateTitle}
@@ -329,11 +329,11 @@ export const DayDetailCard: React.FC<DayDetailCardProps> = ({
             padding: '0 14px',
             borderRadius: '14px',
             border: 0,
-            background: '#FFFFFF',
+            background: 'var(--color-white, #FFFFFF)',
             fontFamily: 'inherit',
             fontSize: '14px',
             fontWeight: 500,
-            color: '#1E2A20',
+            color: 'var(--text-primary, #1E2A20)',
             cursor: 'pointer',
             userSelect: 'none',
           }}
@@ -355,7 +355,7 @@ export const DayDetailCard: React.FC<DayDetailCardProps> = ({
         <section
           data-testid="summary-card-day-sleep"
           style={{
-            background: '#FFFFFF',
+            background: 'var(--color-white, #FFFFFF)',
             borderRadius: '22px',
             padding: '14px 12px',
             display: 'flex',
@@ -364,14 +364,14 @@ export const DayDetailCard: React.FC<DayDetailCardProps> = ({
             boxSizing: 'border-box',
           }}
         >
-          <div style={{ fontSize: '12px', color: '#4A5A4C' }}>Днём</div>
+          <div style={{ fontSize: '12px', color: 'var(--text-muted, #4A5A4C)' }}>Днём</div>
           <div
             data-testid="day-sleep-duration"
             style={{
               fontSize: '20px',
               fontWeight: 700,
               letterSpacing: '-0.5px',
-              color: '#1E2A20',
+              color: 'var(--text-primary, #1E2A20)',
             }}
           >
             {formattedDaySleep}
@@ -388,7 +388,7 @@ export const DayDetailCard: React.FC<DayDetailCardProps> = ({
         <section
           data-testid="summary-card-naps"
           style={{
-            background: '#FFFFFF',
+            background: 'var(--color-white, #FFFFFF)',
             borderRadius: '22px',
             padding: '14px 12px',
             display: 'flex',
@@ -397,14 +397,14 @@ export const DayDetailCard: React.FC<DayDetailCardProps> = ({
             boxSizing: 'border-box',
           }}
         >
-          <div style={{ fontSize: '12px', color: '#4A5A4C' }}>Снов</div>
+          <div style={{ fontSize: '12px', color: 'var(--text-muted, #4A5A4C)' }}>Снов</div>
           <div
             data-testid="naps-count"
             style={{
               fontSize: '20px',
               fontWeight: 700,
               letterSpacing: '-0.5px',
-              color: '#1E2A20',
+              color: 'var(--text-primary, #1E2A20)',
             }}
           >
             {`${napsCount} / ${effectiveTargetNaps}`}
@@ -421,7 +421,7 @@ export const DayDetailCard: React.FC<DayDetailCardProps> = ({
         <section
           data-testid="summary-card-bedtime"
           style={{
-            background: '#FFFFFF',
+            background: 'var(--color-white, #FFFFFF)',
             borderRadius: '22px',
             padding: '14px 12px',
             display: 'flex',
@@ -430,21 +430,21 @@ export const DayDetailCard: React.FC<DayDetailCardProps> = ({
             boxSizing: 'border-box',
           }}
         >
-          <div style={{ fontSize: '12px', color: '#4A5A4C' }}>Отбой</div>
+          <div style={{ fontSize: '12px', color: 'var(--text-muted, #4A5A4C)' }}>Отбой</div>
           <div
             data-testid="bedtime-value"
             style={{
               fontSize: '20px',
               fontWeight: 700,
               letterSpacing: '-0.5px',
-              color: '#1E2A20',
+              color: 'var(--text-primary, #1E2A20)',
             }}
           >
             {bedtime}
           </div>
           <div
             data-testid="bedtime-target"
-            style={{ fontSize: '12px', color: '#4A5A4C' }}
+            style={{ fontSize: '12px', color: 'var(--text-muted, #4A5A4C)' }}
           >
             {`цель ${effectiveTargetBedtime}`}
           </div>
@@ -455,8 +455,8 @@ export const DayDetailCard: React.FC<DayDetailCardProps> = ({
       <section
         data-testid="daily-timeline-card"
         style={{
-          background: '#23372A',
-          color: '#F1F4EA',
+          background: 'var(--color-dark, #23372A)',
+          color: 'var(--text-primary, #F1F4EA)',
           borderRadius: '24px',
           padding: '16px',
           display: 'flex',

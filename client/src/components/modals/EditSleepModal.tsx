@@ -325,7 +325,7 @@ export const EditSleepModal: React.FC<EditSleepModalProps> = ({
         style={{
           width: '100%',
           maxWidth: '430px',
-          backgroundColor: '#ECEEE6',
+          backgroundColor: 'var(--bg-primary, #ECEEE6)',
           borderRadius: '32px 32px 0 0',
           padding: '10px 16px 32px',
           display: 'flex',
@@ -334,7 +334,7 @@ export const EditSleepModal: React.FC<EditSleepModalProps> = ({
           boxSizing: 'border-box',
           boxShadow: '0 -8px 32px rgba(18, 28, 21, 0.24)',
           fontFamily: "'Geologica', system-ui, sans-serif",
-          color: '#1E2A20',
+          color: 'var(--text-primary, #1E2A20)',
           animation: 'bento-slide-up 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards',
           maxHeight: '90vh',
           overflowY: 'auto',
@@ -349,7 +349,7 @@ export const EditSleepModal: React.FC<EditSleepModalProps> = ({
             width: '40px',
             height: '5px',
             borderRadius: '3px',
-            backgroundColor: '#C5CCBC',
+            backgroundColor: 'var(--color-border, #C5CCBC)',
             marginBottom: '4px',
             cursor: 'grab',
           }}
@@ -372,7 +372,7 @@ export const EditSleepModal: React.FC<EditSleepModalProps> = ({
               fontSize: '24px',
               fontWeight: 700,
               letterSpacing: '-0.6px',
-              color: '#1E2A20',
+              color: 'var(--text-primary, #1E2A20)',
             }}
           >
             Редактировать запись
@@ -387,8 +387,8 @@ export const EditSleepModal: React.FC<EditSleepModalProps> = ({
               width: '44px',
               height: '44px',
               borderRadius: '14px',
-              backgroundColor: '#FFFFFF',
-              color: '#1E2A20',
+              backgroundColor: 'var(--color-white, #FFFFFF)',
+              color: 'var(--text-primary, #1E2A20)',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
@@ -418,7 +418,7 @@ export const EditSleepModal: React.FC<EditSleepModalProps> = ({
             display: 'grid',
             gridTemplateColumns: 'repeat(3, minmax(0, 1fr))',
             gap: '6px',
-            backgroundColor: '#FFFFFF',
+            backgroundColor: 'var(--color-white, #FFFFFF)',
             borderRadius: '16px',
             padding: '6px',
             boxShadow: 'var(--shadow-sm, 0 1px 3px rgba(30, 42, 32, 0.05))',
@@ -433,8 +433,8 @@ export const EditSleepModal: React.FC<EditSleepModalProps> = ({
               height: '40px',
               borderRadius: '12px',
               border: 'none',
-              backgroundColor: eventType === 'WAKEUP' ? '#23372A' : 'transparent',
-              color: eventType === 'WAKEUP' ? '#D4F27A' : '#1E2A20',
+              backgroundColor: eventType === 'WAKEUP' ? 'var(--color-dark, #23372A)' : 'transparent',
+              color: eventType === 'WAKEUP' ? 'var(--color-lime, #D4F27A)' : 'var(--text-primary, #1E2A20)',
               fontSize: '13px',
               fontWeight: eventType === 'WAKEUP' ? 600 : 500,
               fontFamily: 'inherit',
@@ -453,8 +453,8 @@ export const EditSleepModal: React.FC<EditSleepModalProps> = ({
               height: '40px',
               borderRadius: '12px',
               border: 'none',
-              backgroundColor: eventType === 'NAP' ? '#23372A' : 'transparent',
-              color: eventType === 'NAP' ? '#D4F27A' : '#1E2A20',
+              backgroundColor: eventType === 'NAP' ? 'var(--color-dark, #23372A)' : 'transparent',
+              color: eventType === 'NAP' ? 'var(--color-lime, #D4F27A)' : 'var(--text-primary, #1E2A20)',
               fontSize: '13px',
               fontWeight: eventType === 'NAP' ? 600 : 500,
               fontFamily: 'inherit',
@@ -473,8 +473,8 @@ export const EditSleepModal: React.FC<EditSleepModalProps> = ({
               height: '40px',
               borderRadius: '12px',
               border: 'none',
-              backgroundColor: eventType === 'NIGHT_SLEEP' ? '#23372A' : 'transparent',
-              color: eventType === 'NIGHT_SLEEP' ? '#D4F27A' : '#1E2A20',
+              backgroundColor: eventType === 'NIGHT_SLEEP' ? 'var(--color-dark, #23372A)' : 'transparent',
+              color: eventType === 'NIGHT_SLEEP' ? 'var(--color-lime, #D4F27A)' : 'var(--text-primary, #1E2A20)',
               fontSize: '13px',
               fontWeight: eventType === 'NIGHT_SLEEP' ? 600 : 500,
               fontFamily: 'inherit',
@@ -489,7 +489,7 @@ export const EditSleepModal: React.FC<EditSleepModalProps> = ({
         {/* Date and Time Inputs Card */}
         <div
           style={{
-            backgroundColor: '#FFFFFF',
+            backgroundColor: 'var(--color-white, #FFFFFF)',
             borderRadius: '24px',
             padding: '16px',
             display: 'flex',
@@ -503,7 +503,7 @@ export const EditSleepModal: React.FC<EditSleepModalProps> = ({
           <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
             <label
               htmlFor="edit-sleep-date"
-              style={{ fontSize: '13px', fontWeight: 500, color: '#4A5A4C' }}
+              style={{ fontSize: '13px', fontWeight: 500, color: 'var(--text-muted, #4A5A4C)' }}
             >
               Дата
             </label>
@@ -516,13 +516,13 @@ export const EditSleepModal: React.FC<EditSleepModalProps> = ({
               style={{
                 height: '48px',
                 borderRadius: '14px',
-                border: '1.5px solid #E3E7DA',
-                backgroundColor: '#F6F7F2',
+                border: '1.5px solid var(--color-border, #E3E7DA)',
+                backgroundColor: 'var(--color-neutral-bg, #F6F7F2)',
                 padding: '0 12px',
                 fontFamily: 'inherit',
                 fontSize: '16px',
                 fontWeight: 500,
-                color: '#1E2A20',
+                color: 'var(--text-primary, #1E2A20)',
                 outline: 'none',
               }}
             />
@@ -540,7 +540,7 @@ export const EditSleepModal: React.FC<EditSleepModalProps> = ({
             <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
               <label
                 htmlFor="edit-sleep-start-time"
-                style={{ fontSize: '13px', fontWeight: 500, color: '#4A5A4C' }}
+                style={{ fontSize: '13px', fontWeight: 500, color: 'var(--text-muted, #4A5A4C)' }}
               >
                 {eventType === 'WAKEUP' ? 'Время подъёма' : 'Начало сна'}
               </label>
@@ -553,13 +553,13 @@ export const EditSleepModal: React.FC<EditSleepModalProps> = ({
                 style={{
                   height: '52px',
                   borderRadius: '14px',
-                  border: '2px solid #23372A',
-                  backgroundColor: '#F6F7F2',
+                  border: '2px solid var(--color-dark, #23372A)',
+                  backgroundColor: 'var(--color-neutral-bg, #F6F7F2)',
                   padding: '0 12px',
                   fontFamily: 'inherit',
                   fontSize: '22px',
                   fontWeight: 600,
-                  color: '#1E2A20',
+                  color: 'var(--text-primary, #1E2A20)',
                   outline: 'none',
                   fontVariantNumeric: 'tabular-nums',
                 }}
@@ -574,7 +574,7 @@ export const EditSleepModal: React.FC<EditSleepModalProps> = ({
                   style={{
                     fontSize: '13px',
                     fontWeight: 500,
-                    color: isOngoing ? '#A6B8A5' : '#4A5A4C',
+                    color: isOngoing ? 'var(--text-subtle, #A6B8A5)' : 'var(--text-muted, #4A5A4C)',
                   }}
                 >
                   Конец сна
@@ -589,13 +589,13 @@ export const EditSleepModal: React.FC<EditSleepModalProps> = ({
                   style={{
                     height: '52px',
                     borderRadius: '14px',
-                    border: '1.5px solid #E3E7DA',
-                    backgroundColor: isOngoing ? '#ECEEE6' : '#F6F7F2',
+                    border: '1.5px solid var(--color-border, #E3E7DA)',
+                    backgroundColor: isOngoing ? 'var(--color-border, #ECEEE6)' : 'var(--color-neutral-bg, #F6F7F2)',
                     padding: '0 12px',
                     fontFamily: 'inherit',
                     fontSize: '22px',
                     fontWeight: 600,
-                    color: isOngoing ? '#889886' : '#1E2A20',
+                    color: isOngoing ? 'var(--text-subtle, #889886)' : 'var(--text-primary, #1E2A20)',
                     outline: 'none',
                     fontVariantNumeric: 'tabular-nums',
                     opacity: isOngoing ? 0.6 : 1,
@@ -615,7 +615,7 @@ export const EditSleepModal: React.FC<EditSleepModalProps> = ({
                 cursor: 'pointer',
                 fontSize: '14px',
                 fontWeight: 500,
-                color: '#4A5A4C',
+                color: 'var(--text-muted, #4A5A4C)',
                 paddingTop: '2px',
               }}
             >
@@ -633,7 +633,7 @@ export const EditSleepModal: React.FC<EditSleepModalProps> = ({
                 style={{
                   width: '18px',
                   height: '18px',
-                  accentColor: '#23372A',
+                  accentColor: 'var(--color-dark, #23372A)',
                   cursor: 'pointer',
                 }}
               />
@@ -651,7 +651,7 @@ export const EditSleepModal: React.FC<EditSleepModalProps> = ({
                 paddingTop: '4px',
               }}
             >
-              <span style={{ fontSize: '13px', fontWeight: 500, color: '#4A5A4C' }}>
+              <span style={{ fontSize: '13px', fontWeight: 500, color: 'var(--text-muted, #4A5A4C)' }}>
                 Номер дневного сна
               </span>
               <div style={{ display: 'flex', gap: '6px' }}>
@@ -666,8 +666,8 @@ export const EditSleepModal: React.FC<EditSleepModalProps> = ({
                       height: '36px',
                       borderRadius: '10px',
                       border: 'none',
-                      backgroundColor: napNumber === num ? '#23372A' : '#ECEEE6',
-                      color: napNumber === num ? '#D4F27A' : '#1E2A20',
+                      backgroundColor: napNumber === num ? 'var(--color-dark, #23372A)' : 'var(--color-neutral-bg, #ECEEE6)',
+                      color: napNumber === num ? 'var(--color-lime, #D4F27A)' : 'var(--text-primary, #1E2A20)',
                       fontSize: '14px',
                       fontWeight: 600,
                       fontFamily: 'inherit',
@@ -687,8 +687,8 @@ export const EditSleepModal: React.FC<EditSleepModalProps> = ({
             style={{
               padding: '8px 12px',
               borderRadius: '12px',
-              backgroundColor: isOngoing ? 'rgba(212, 242, 122, 0.25)' : '#F4F5EF',
-              color: '#1E2A20',
+              backgroundColor: isOngoing ? 'rgba(212, 242, 122, 0.25)' : 'var(--color-neutral-bg, #F4F5EF)',
+              color: 'var(--text-primary, #1E2A20)',
               fontSize: '13px',
               fontWeight: 600,
               display: 'inline-flex',

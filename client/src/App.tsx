@@ -25,8 +25,10 @@ import {
 } from './components/modals';
 import { EditSleepModal } from './components/modals/EditSleepModal';
 import { useFamilySync } from './hooks/useFamilySync';
+import { useTheme } from './hooks/useTheme';
 
 export default function App() {
+  const { theme, resolvedTheme, setTheme, toggleTheme } = useTheme();
   const [authView, setAuthView] = useState<'app' | 'login' | 'register'>('app');
   const [activeTab, setActiveTab] = useState<string>('today');
   const [status, setStatus] = useState<DayStatusResponse | null>(null);
@@ -219,6 +221,8 @@ export default function App() {
       ) : activeTab === 'settings' ? (
         <SettingsPage
           childId={status?.child?.id || 'demo-child-1'}
+          theme={theme}
+          onThemeChange={setTheme}
           onSelectTab={(tab) => setActiveTab(tab)}
           onLogout={() => {
             clearAuthSession();
@@ -228,6 +232,8 @@ export default function App() {
       ) : status?.state === 'SLEEPING' ? (
         <TodaySleepingPage
           initialData={status}
+          theme={resolvedTheme}
+          onToggleTheme={toggleTheme}
           onSelectTab={(tab) => setActiveTab(tab)}
           onWokeUpClick={() => setActiveModal({ type: 'WOKE_UP' })}
           onAddRetroactiveClick={() => setActiveModal({ type: 'RETROACTIVE' })}
@@ -236,6 +242,8 @@ export default function App() {
       ) : (
         <TodayAwakePage
           initialData={status || undefined}
+          theme={resolvedTheme}
+          onToggleTheme={toggleTheme}
           onSelectTab={(tab) => setActiveTab(tab)}
           onFellAsleepClick={() => setActiveModal({ type: 'FELL_ASLEEP' })}
           onAddRetroactiveClick={() => setActiveModal({ type: 'RETROACTIVE' })}

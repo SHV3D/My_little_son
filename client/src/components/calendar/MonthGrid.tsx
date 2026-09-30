@@ -80,7 +80,7 @@ export const MonthGrid: React.FC<MonthGridProps> = ({
       data-testid="month-grid"
       className={`month-grid-card ${className}`.trim()}
       style={{
-        background: '#FFFFFF',
+        background: 'var(--color-white, #FFFFFF)',
         borderRadius: '28px',
         padding: '16px 12px 14px',
         display: 'flex',
@@ -97,7 +97,7 @@ export const MonthGrid: React.FC<MonthGridProps> = ({
           padding: '0 4px',
           fontSize: '17px',
           fontWeight: 600,
-          color: '#1E2A20',
+          color: 'var(--text-primary, #1E2A20)',
           lineHeight: '1.2',
         }}
       >
@@ -112,7 +112,7 @@ export const MonthGrid: React.FC<MonthGridProps> = ({
           gridTemplateColumns: 'repeat(7, minmax(0, 1fr))',
           gap: '4px',
           fontSize: '12px',
-          color: '#4A5A4C',
+          color: 'var(--text-muted, #4A5A4C)',
           textAlign: 'center',
           userSelect: 'none',
         }}
@@ -263,9 +263,9 @@ export const MonthGrid: React.FC<MonthGridProps> = ({
                 height: '52px',
                 borderRadius: '14px',
                 border: 0,
-                background: '#F4F5EF',
+                background: 'var(--color-neutral-bg, #F4F5EF)',
                 fontFamily: 'inherit',
-                color: '#1E2A20',
+                color: 'var(--text-primary, #1E2A20)',
                 display: 'flex',
                 flexDirection: 'column',
                 alignItems: 'center',
@@ -283,7 +283,7 @@ export const MonthGrid: React.FC<MonthGridProps> = ({
                   width: '24px',
                   height: '5px',
                   borderRadius: '3px',
-                  background: '#E3E7DA',
+                  background: 'var(--color-border, #E3E7DA)',
                   position: 'relative',
                   overflow: 'hidden',
                   display: 'block',
@@ -298,7 +298,7 @@ export const MonthGrid: React.FC<MonthGridProps> = ({
                       width: '100%',
                       height: '100%',
                       borderRadius: '3px',
-                      background: isNormMet ? '#23372A' : '#D08A1E',
+                      background: isNormMet ? 'var(--color-dark, #23372A)' : '#D08A1E',
                     }}
                   />
                 )}
@@ -316,7 +316,7 @@ export const MonthGrid: React.FC<MonthGridProps> = ({
           gap: '14px',
           padding: '4px 4px 0',
           fontSize: '12px',
-          color: '#4A5A4C',
+          color: 'var(--text-muted, #4A5A4C)',
           userSelect: 'none',
         }}
       >
