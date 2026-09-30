@@ -1,12 +1,30 @@
 import { useState, useEffect, useCallback } from 'react';
 import { TodayAwakePage } from './pages/TodayAwakePage';
 import { TodaySleepingPage } from './pages/TodaySleepingPage';
-import { fetchScheduleStatus, DayStatusResponse } from './api/sleepApi';
+import {
+  fetchScheduleStatus,
+  DayStatusResponse,
+  recordFellAsleepApi,
+  recordWokeUpApi,
+  recordRetroactiveApi,
+} from './api/sleepApi';
+import {
+  SleepActionModal,
+  SleepActionConfirmPayload,
+  RetroactiveSleepModal,
+  RetroactiveSavePayload,
+} from './components/modals';
 import { useFamilySync } from './hooks/useFamilySync';
 
 export default function App() {
   const [, setActiveTab] = useState<string>('today');
   const [status, setStatus] = useState<DayStatusResponse | null>(null);
+  const [activeModal, setActiveModal] = useState<
+    | { type: 'FELL_ASLEEP' }
+    | { type: 'WOKE_UP' }
+    | { type: 'RETROACTIVE' }
+    | null
+  >(null);
 
   const loadStatus = useCallback(async () => {
     try {
@@ -31,28 +49,121 @@ export default function App() {
     loadStatus();
   }, [loadStatus]);
 
-  if (status?.state === 'SLEEPING') {
-    return (
-      <TodaySleepingPage
-        initialData={status}
-        onSelectTab={(tab) => setActiveTab(tab)}
-        onWokeUpClick={() => {
-          // Will open woke up modal (Task 8)
-        }}
-        onAddRetroactiveClick={() => {
-          // Will open retroactive sleep modal (Task 8)
-        }}
-      />
-    );
-  }
+  const handleFellAsleepConfirm = async (payload: SleepActionConfirmPayload) => {
+    setActiveModal(null);
+    const time =
+      payload.source === 'MANUAL' && payload.time
+        ? payload.time
+        : status?.currentTime || '13:05';
+
+    // Optimistic UI: immediate transition to SLEEPING
+    if (status) {
+      setStatus({
+        ...status,
+        state: 'SLEEPING',
+        schedule: {
+          ...status.schedule,
+          state: 'SLEEPING',
+          sleepStartTime: time,
+          currentNapNumber: (status.schedule?.completedNapsCount || 0) + 1,
+        },
+      });
+    }
+
+    try {
+      await recordFellAsleepApi(status?.child?.id || 'demo-child-1', payload.time, payload.source);
+      await loadStatus();
+    } catch {
+      await loadStatus();
+    }
+  };
+
+  const handleWokeUpConfirm = async (payload: SleepActionConfirmPayload) => {
+    setActiveModal(null);
+    const time =
+      payload.source === 'MANUAL' && payload.time
+        ? payload.time
+        : status?.currentTime || '14:50';
+
+    // Optimistic UI: immediate transition to AWAKE
+    if (status) {
+      setStatus({
+        ...status,
+        state: 'AWAKE',
+        schedule: {
+          ...status.schedule,
+          state: 'AWAKE',
+          lastWakeTime: time,
+          completedNapsCount: (status.schedule?.completedNapsCount || 0) + 1,
+        },
+      });
+    }
+
+    try {
+      await recordWokeUpApi(status?.child?.id || 'demo-child-1', payload.time, payload.source);
+      await loadStatus();
+    } catch {
+      await loadStatus();
+    }
+  };
+
+  const handleRetroactiveSave = async (payload: RetroactiveSavePayload) => {
+    setActiveModal(null);
+    try {
+      await recordRetroactiveApi({
+        childId: status?.child?.id || 'demo-child-1',
+        date: payload.date || status?.date,
+        eventType: payload.eventType,
+        startTime: payload.startTime,
+        endTime: payload.endTime,
+        napNumber: payload.napNumber,
+      });
+      await loadStatus();
+    } catch {
+      await loadStatus();
+    }
+  };
 
   return (
-    <TodayAwakePage
-      initialData={status || undefined}
-      onSelectTab={(tab) => setActiveTab(tab)}
-      onFellAsleepClick={() => {
-        // Will open fell asleep modal (Task 8)
-      }}
-    />
+    <>
+      {status?.state === 'SLEEPING' ? (
+        <TodaySleepingPage
+          initialData={status}
+          onSelectTab={(tab) => setActiveTab(tab)}
+          onWokeUpClick={() => setActiveModal({ type: 'WOKE_UP' })}
+          onAddRetroactiveClick={() => setActiveModal({ type: 'RETROACTIVE' })}
+        />
+      ) : (
+        <TodayAwakePage
+          initialData={status || undefined}
+          onSelectTab={(tab) => setActiveTab(tab)}
+          onFellAsleepClick={() => setActiveModal({ type: 'FELL_ASLEEP' })}
+        />
+      )}
+
+      {/* Sleep Action Modals */}
+      <SleepActionModal
+        isOpen={activeModal?.type === 'FELL_ASLEEP'}
+        type="FELL_ASLEEP"
+        currentTime={status?.currentTime}
+        onClose={() => setActiveModal(null)}
+        onConfirm={handleFellAsleepConfirm}
+      />
+
+      <SleepActionModal
+        isOpen={activeModal?.type === 'WOKE_UP'}
+        type="WOKE_UP"
+        currentTime={status?.currentTime}
+        onClose={() => setActiveModal(null)}
+        onConfirm={handleWokeUpConfirm}
+      />
+
+      <RetroactiveSleepModal
+        isOpen={activeModal?.type === 'RETROACTIVE'}
+        currentDate={status?.date}
+        onClose={() => setActiveModal(null)}
+        onSave={handleRetroactiveSave}
+      />
+    </>
   );
 }

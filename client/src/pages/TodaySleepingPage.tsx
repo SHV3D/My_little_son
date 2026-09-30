@@ -3,8 +3,19 @@ import { Header } from '../components/common/Header';
 import { BottomNav } from '../components/common/BottomNav';
 import { SleepingHeroCard } from '../components/today/SleepingHeroCard';
 import { DayLogsList, DayLogRecord } from '../components/today/DayLogsList';
+import {
+  SleepActionModal,
+  SleepActionConfirmPayload,
+  RetroactiveSleepModal,
+  RetroactiveSavePayload,
+} from '../components/modals';
 import { useFamilySync } from '../hooks/useFamilySync';
-import { fetchScheduleStatus, DayStatusResponse } from '../api/sleepApi';
+import {
+  fetchScheduleStatus,
+  DayStatusResponse,
+  recordWokeUpApi,
+  recordRetroactiveApi,
+} from '../api/sleepApi';
 import { formatDurationRussian } from '@shared/sleepEngine';
 
 export interface TodaySleepingPageProps {
@@ -75,6 +86,8 @@ export const TodaySleepingPage: React.FC<TodaySleepingPageProps> = ({
   style,
 }) => {
   const [statusData, setStatusData] = useState<DayStatusResponse | undefined>(initialData);
+  const [isActionModalOpen, setIsActionModalOpen] = useState(false);
+  const [isRetroactiveModalOpen, setIsRetroactiveModalOpen] = useState(false);
 
   const loadStatus = useCallback(async () => {
     try {
@@ -84,6 +97,70 @@ export const TodaySleepingPage: React.FC<TodaySleepingPageProps> = ({
       // Graceful fallback to retain current data
     }
   }, [childId]);
+
+  const handleWokeUpBtnClick = () => {
+    if (onWokeUpClick) {
+      onWokeUpClick();
+    } else {
+      setIsActionModalOpen(true);
+    }
+  };
+
+  const handleAddRetroactiveBtnClick = () => {
+    if (onAddRetroactiveClick) {
+      onAddRetroactiveClick();
+    } else {
+      setIsRetroactiveModalOpen(true);
+    }
+  };
+
+  const handleConfirmWokeUp = async (payload: SleepActionConfirmPayload) => {
+    setIsActionModalOpen(false);
+    const time =
+      payload.source === 'MANUAL' && payload.time
+        ? payload.time
+        : statusData?.currentTime || '14:50';
+
+    // Optimistic UI update
+    setStatusData((prev) =>
+      prev
+        ? {
+            ...prev,
+            state: 'AWAKE',
+            schedule: {
+              ...prev.schedule,
+              state: 'AWAKE',
+              lastWakeTime: time,
+              completedNapsCount: (prev.schedule?.completedNapsCount || 0) + 1,
+            },
+          }
+        : undefined
+    );
+
+    try {
+      await recordWokeUpApi(childId, payload.time, payload.source);
+      await loadStatus();
+    } catch {
+      await loadStatus();
+    }
+  };
+
+  const handleSaveRetroactive = async (payload: RetroactiveSavePayload) => {
+    setIsRetroactiveModalOpen(false);
+    try {
+      await recordRetroactiveApi({
+        childId,
+        date: payload.date || statusData?.date,
+        eventType: payload.eventType,
+        startTime: payload.startTime,
+        endTime: payload.endTime,
+        napNumber: payload.napNumber,
+      });
+      await loadStatus();
+    } catch {
+      await loadStatus();
+    }
+  };
 
   // Real-time synchronization
   const { isConnected, onlineRoles } = useFamilySync({
@@ -300,7 +377,7 @@ export const TodaySleepingPage: React.FC<TodaySleepingPageProps> = ({
         <button
           type="button"
           data-testid="woke-up-btn"
-          onClick={onWokeUpClick}
+          onClick={handleWokeUpBtnClick}
           className="bento-interactive"
           aria-label="Зафиксировать, что ребёнок проснулся"
           style={{
@@ -343,13 +420,30 @@ export const TodaySleepingPage: React.FC<TodaySleepingPageProps> = ({
         {/* Day Logs List */}
         <DayLogsList
           events={statusData?.events}
-          onAddRetroactiveClick={onAddRetroactiveClick}
+          onAddRetroactiveClick={handleAddRetroactiveBtnClick}
           onRecordClick={onRecordClick}
         />
       </div>
 
       {/* Bottom Navigation */}
       <BottomNav activeTab="today" onSelectTab={onSelectTab} />
+
+      {/* Sleep Action Modal (Woke Up) */}
+      <SleepActionModal
+        isOpen={isActionModalOpen}
+        type="WOKE_UP"
+        currentTime={statusData?.currentTime}
+        onClose={() => setIsActionModalOpen(false)}
+        onConfirm={handleConfirmWokeUp}
+      />
+
+      {/* Retroactive Sleep Modal */}
+      <RetroactiveSleepModal
+        isOpen={isRetroactiveModalOpen}
+        currentDate={statusData?.date}
+        onClose={() => setIsRetroactiveModalOpen(false)}
+        onSave={handleSaveRetroactive}
+      />
     </div>
   );
 };

@@ -3,8 +3,9 @@ import { Header } from '../components/common/Header';
 import { BottomNav } from '../components/common/BottomNav';
 import { AwakeHeroCard } from '../components/today/AwakeHeroCard';
 import { BentoMetricsGrid } from '../components/today/BentoMetricsGrid';
+import { SleepActionModal, SleepActionConfirmPayload } from '../components/modals/SleepActionModal';
 import { useFamilySync } from '../hooks/useFamilySync';
-import { fetchScheduleStatus, DayStatusResponse } from '../api/sleepApi';
+import { fetchScheduleStatus, DayStatusResponse, recordFellAsleepApi } from '../api/sleepApi';
 import { formatMinutesToHoursAndMinutes } from '@shared/sleepEngine';
 
 export interface TodayAwakePageProps {
@@ -64,6 +65,7 @@ export const TodayAwakePage: React.FC<TodayAwakePageProps> = ({
   style,
 }) => {
   const [statusData, setStatusData] = useState<DayStatusResponse | undefined>(initialData);
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   const loadStatus = useCallback(async () => {
     try {
@@ -73,6 +75,45 @@ export const TodayAwakePage: React.FC<TodayAwakePageProps> = ({
       // Graceful fallback to retain current data or mock defaults
     }
   }, [childId]);
+
+  const handleFellAsleepBtnClick = () => {
+    if (onFellAsleepClick) {
+      onFellAsleepClick();
+    } else {
+      setIsModalOpen(true);
+    }
+  };
+
+  const handleConfirmFellAsleep = async (payload: SleepActionConfirmPayload) => {
+    setIsModalOpen(false);
+    const time =
+      payload.source === 'MANUAL' && payload.time
+        ? payload.time
+        : statusData?.currentTime || '13:05';
+
+    // Optimistic UI update
+    setStatusData((prev) =>
+      prev
+        ? {
+            ...prev,
+            state: 'SLEEPING',
+            schedule: {
+              ...prev.schedule,
+              state: 'SLEEPING',
+              sleepStartTime: time,
+              currentNapNumber: (prev.schedule?.completedNapsCount || 0) + 1,
+            },
+          }
+        : undefined
+    );
+
+    try {
+      await recordFellAsleepApi(childId, payload.time, payload.source);
+      await loadStatus();
+    } catch {
+      await loadStatus();
+    }
+  };
 
   // Real-time synchronization
   const { isConnected, onlineRoles } = useFamilySync({
@@ -189,7 +230,7 @@ export const TodayAwakePage: React.FC<TodayAwakePageProps> = ({
         <button
           type="button"
           data-testid="fell-asleep-btn"
-          onClick={onFellAsleepClick}
+          onClick={handleFellAsleepBtnClick}
           className="bento-interactive"
           aria-label="Зафиксировать, что ребёнок уснул"
           style={{
@@ -230,6 +271,15 @@ export const TodayAwakePage: React.FC<TodayAwakePageProps> = ({
 
       {/* Bottom Navigation */}
       <BottomNav activeTab="today" onSelectTab={onSelectTab} />
+
+      {/* Sleep Action Modal (Fell Asleep) */}
+      <SleepActionModal
+        isOpen={isModalOpen}
+        type="FELL_ASLEEP"
+        currentTime={statusData?.currentTime}
+        onClose={() => setIsModalOpen(false)}
+        onConfirm={handleConfirmFellAsleep}
+      />
     </div>
   );
 };
