@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { TodayAwakePage } from './pages/TodayAwakePage';
 import { TodaySleepingPage } from './pages/TodaySleepingPage';
 import { CalendarPage } from './pages/CalendarPage';
-import { BottomNav } from './components/common/BottomNav';
+import { SettingsPage } from './pages/SettingsPage';
 import {
   fetchScheduleStatus,
   DayStatusResponse,
@@ -131,23 +131,10 @@ export default function App() {
           onEditDay={() => setActiveModal({ type: 'RETROACTIVE' })}
         />
       ) : activeTab === 'settings' ? (
-        <div
-          data-testid="settings-page"
-          style={{
-            maxWidth: '390px',
-            minHeight: '100vh',
-            margin: '0 auto',
-            backgroundColor: '#ECEEE6',
-            display: 'flex',
-            flexDirection: 'column',
-            justifyContent: 'space-between',
-          }}
-        >
-          <div style={{ padding: '24px 16px' }}>
-            <h1 style={{ fontSize: '26px', fontWeight: 700 }}>Настройки</h1>
-          </div>
-          <BottomNav activeTab="settings" onSelectTab={(tab) => setActiveTab(tab)} />
-        </div>
+        <SettingsPage
+          childId={status?.child?.id || 'demo-child-1'}
+          onSelectTab={(tab) => setActiveTab(tab)}
+        />
       ) : status?.state === 'SLEEPING' ? (
         <TodaySleepingPage
           initialData={status}
