@@ -169,6 +169,17 @@ export class FamilySocket {
   }
 
   private handleDisconnect(): void {
+    if (this.ws) {
+      this.ws.onopen = null;
+      this.ws.onerror = null;
+      this.ws.onclose = null;
+      this.ws.onmessage = null;
+      this.ws = null;
+    }
+
+    this.onlineRoles = [];
+    this.notifyPresenceListeners([]);
+
     const wasConnected = this.connected;
     this.connected = false;
     this.clearTimers();
@@ -218,12 +229,18 @@ export class FamilySocket {
     this.isExplicitlyClosed = true;
     this.clearTimers();
     if (this.ws) {
+      this.ws.onopen = null;
+      this.ws.onerror = null;
+      this.ws.onclose = null;
+      this.ws.onmessage = null;
       try {
         this.ws.close();
       } catch {}
       this.ws = null;
     }
     this.connected = false;
+    this.onlineRoles = [];
+    this.notifyPresenceListeners([]);
     this.notifyStatusListeners(false);
   }
 

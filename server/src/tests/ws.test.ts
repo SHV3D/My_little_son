@@ -3,8 +3,10 @@ import { AddressInfo } from 'net';
 import WebSocket from 'ws';
 import request from 'supertest';
 import { server, app } from '../index';
-import { closeWebSocketServer } from '../ws/wsServer';
+import { closeWebSocketServer, getFamilyIdForChild } from '../ws/wsServer';
 import { initDatabase, setDb } from '../db/database';
+import { JWT_SECRET } from '../services/authService';
+import jwt from 'jsonwebtoken';
 import Database from 'better-sqlite3';
 
 function connectClient(port: number): Promise<WebSocket> {
@@ -289,5 +291,69 @@ describe('WebSocket Server and Family Synchronization', () => {
     const presence = await presencePromise;
     expect(presence.onlineRoles).toContain('Мама');
     expect(presence.onlineRoles).not.toContain('Папа');
+  });
+
+  it('getFamilyIdForChild returns familyId for valid child and null for non-existent child (no LIMIT 1 fallback)', () => {
+    expect(getFamilyIdForChild('demo-child-1')).toBe('demo-family-1');
+    expect(getFamilyIdForChild('non-existent-child-id')).toBeNull();
+  });
+
+  it('prioritizes JWT token claims over client-provided familyId in JOIN_FAMILY message', async () => {
+    const ws = await connectClient(serverPort);
+    openClients.push(ws);
+
+    const token = jwt.sign(
+      {
+        userId: 'jwt-user-papa',
+        familyId: 'demo-family-1',
+        role: 'Папа',
+      },
+      JWT_SECRET
+    );
+
+    const joinedPromise = waitForMessage(ws, (m) => m.type === 'JOINED_FAMILY');
+
+    // Attempt to spoof familyId to 'family-2'
+    ws.send(
+      JSON.stringify({
+        type: 'JOIN_FAMILY',
+        familyId: 'family-2',
+        role: 'Бабушка',
+        token,
+      })
+    );
+
+    const joinedMsg = await joinedPromise;
+    expect(joinedMsg.familyId).toBe('demo-family-1');
+    expect(joinedMsg.role).toBe('Папа');
+    expect(joinedMsg.userId).toBe('jwt-user-papa');
+  });
+
+  it('prioritizes JWT token claims over query parameters during WS connection', async () => {
+    const token = jwt.sign(
+      {
+        userId: 'jwt-user-query',
+        familyId: 'demo-family-1',
+        role: 'Мама',
+      },
+      JWT_SECRET
+    );
+
+    // Pass token for demo-family-1, but query param familyId=family-2
+    const ws = new WebSocket(
+      `ws://localhost:${serverPort}/ws?token=${encodeURIComponent(token)}&familyId=family-2&role=Дедушка`
+    );
+    const joinedPromise = waitForMessage(ws, (m) => m.type === 'JOINED_FAMILY');
+    await new Promise((resolve, reject) => {
+      ws.on('open', () => resolve(ws));
+      ws.on('error', reject);
+    });
+    openClients.push(ws);
+
+    const joinedMsg = await joinedPromise;
+
+    expect(joinedMsg.familyId).toBe('demo-family-1');
+    expect(joinedMsg.role).toBe('Мама');
+    expect(joinedMsg.userId).toBe('jwt-user-query');
   });
 });

@@ -85,8 +85,12 @@ export function useFamilySync(options: UseFamilySyncOptions = {}): UseFamilySync
     };
   }, [familyId, role, userId, token]);
 
-  const isMomOnline = onlineRoles.includes('Мама');
-  const isDadOnline = onlineRoles.includes('Папа');
+  const isMomOnline =
+    isConnected &&
+    onlineRoles.some((r) => r.toLowerCase() === 'мама' || r.toLowerCase() === 'mom');
+  const isDadOnline =
+    isConnected &&
+    onlineRoles.some((r) => r.toLowerCase() === 'папа' || r.toLowerCase() === 'dad');
 
   const sendMessage = useCallback((msg: any) => {
     familySocket.send(msg);

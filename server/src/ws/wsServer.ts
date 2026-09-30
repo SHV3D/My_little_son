@@ -31,13 +31,7 @@ export function getFamilyIdForChild(childId: string): string | null {
     const row = db.prepare('SELECT family_id FROM children WHERE id = ?').get(childId) as
       | { family_id: string }
       | undefined;
-    if (row?.family_id) {
-      return row.family_id;
-    }
-    const anyFamily = db.prepare('SELECT id FROM families LIMIT 1').get() as
-      | { id: string }
-      | undefined;
-    return anyFamily ? anyFamily.id : null;
+    return row?.family_id || null;
   } catch {
     return null;
   }
@@ -178,9 +172,9 @@ export function setupWebSocketServer(server: http.Server): WebSocketServer {
         try {
           const decoded = jwt.verify(token, JWT_SECRET) as any;
           if (decoded) {
-            resolvedFamilyId = resolvedFamilyId || decoded.familyId;
-            resolvedRole = resolvedRole || decoded.role;
-            resolvedUserId = resolvedUserId || decoded.userId;
+            resolvedFamilyId = decoded.familyId || resolvedFamilyId;
+            resolvedRole = decoded.role || resolvedRole;
+            resolvedUserId = decoded.userId || resolvedUserId;
           }
         } catch {
           // Token verification failed, fallback to explicit params
@@ -235,9 +229,9 @@ export function setupWebSocketServer(server: http.Server): WebSocketServer {
           try {
             const decoded = jwt.verify(msg.token, JWT_SECRET) as any;
             if (decoded) {
-              familyId = familyId || decoded.familyId;
-              role = role || decoded.role;
-              userId = userId || decoded.userId;
+              familyId = decoded.familyId || familyId;
+              role = decoded.role || role;
+              userId = decoded.userId || userId;
             }
           } catch {
             ws.send(JSON.stringify({ type: 'ERROR', error: 'Неверный токен авторизации' }));
