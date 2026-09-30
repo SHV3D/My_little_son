@@ -16,6 +16,7 @@ import {
 export interface SettingsPageProps {
   childId?: string;
   onSelectTab?: (tab: string) => void;
+  onLogout?: () => void;
   className?: string;
   style?: React.CSSProperties;
 }
@@ -35,6 +36,7 @@ const DEFAULT_SETTINGS: ChildSettingsDto = {
 export const SettingsPage: React.FC<SettingsPageProps> = ({
   childId = 'demo-child-1',
   onSelectTab,
+  onLogout,
   className = '',
   style,
 }) => {
@@ -882,6 +884,29 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({
               </span>
             )}
           </button>
+
+          {onLogout && (
+            <button
+              type="button"
+              data-testid="btn-logout"
+              onClick={onLogout}
+              style={{
+                minHeight: '44px',
+                padding: '4px 0',
+                backgroundColor: 'transparent',
+                border: 0,
+                borderTop: '1px solid #E3E7DA',
+                fontFamily: 'inherit',
+                fontSize: '14px',
+                fontWeight: 500,
+                color: '#6E422F',
+                textAlign: 'left',
+                cursor: 'pointer',
+              }}
+            >
+              Сменить аккаунт / Выйти
+            </button>
+          )}
         </section>
       </div>
 

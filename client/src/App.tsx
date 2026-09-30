@@ -3,6 +3,9 @@ import { TodayAwakePage } from './pages/TodayAwakePage';
 import { TodaySleepingPage } from './pages/TodaySleepingPage';
 import { CalendarPage } from './pages/CalendarPage';
 import { SettingsPage } from './pages/SettingsPage';
+import { LoginPage } from './pages/LoginPage';
+import { RegisterPage } from './pages/RegisterPage';
+import { clearAuthSession } from './api/authApi';
 import {
   fetchScheduleStatus,
   DayStatusResponse,
@@ -20,6 +23,7 @@ import {
 import { useFamilySync } from './hooks/useFamilySync';
 
 export default function App() {
+  const [authView, setAuthView] = useState<'app' | 'login' | 'register'>('app');
   const [activeTab, setActiveTab] = useState<string>('today');
   const [status, setStatus] = useState<DayStatusResponse | null>(null);
 
@@ -122,6 +126,30 @@ export default function App() {
     }
   };
 
+  if (authView === 'login') {
+    return (
+      <LoginPage
+        onSuccess={() => {
+          setAuthView('app');
+          loadStatus();
+        }}
+        onNavigateToRegister={() => setAuthView('register')}
+      />
+    );
+  }
+
+  if (authView === 'register') {
+    return (
+      <RegisterPage
+        onSuccess={() => {
+          setAuthView('app');
+          loadStatus();
+        }}
+        onNavigateToLogin={() => setAuthView('login')}
+      />
+    );
+  }
+
   return (
     <>
       {activeTab === 'calendar' ? (
@@ -134,6 +162,10 @@ export default function App() {
         <SettingsPage
           childId={status?.child?.id || 'demo-child-1'}
           onSelectTab={(tab) => setActiveTab(tab)}
+          onLogout={() => {
+            clearAuthSession();
+            setAuthView('login');
+          }}
         />
       ) : status?.state === 'SLEEPING' ? (
         <TodaySleepingPage
