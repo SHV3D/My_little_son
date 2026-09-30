@@ -5,6 +5,7 @@ import { describe, it, expect, vi } from 'vitest';
 import { render, screen, fireEvent, act } from '@testing-library/react';
 import { SleepActionModal } from '../components/modals/SleepActionModal';
 import { RetroactiveSleepModal } from '../components/modals/RetroactiveSleepModal';
+import { EditSleepModal } from '../components/modals/EditSleepModal';
 import { TodayAwakePage } from '../pages/TodayAwakePage';
 import { TodaySleepingPage } from '../pages/TodaySleepingPage';
 import App from '../App';
@@ -394,6 +395,264 @@ describe('RetroactiveSleepModal Component', () => {
     fireEvent.touchEnd(modal);
 
     expect(handleClose).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('EditSleepModal Component', () => {
+  const mockEvent = {
+    id: 'ev-test-1',
+    title: 'Сон 1 · 1:15',
+    author: 'Мама',
+    time: '09:40 – 10:55',
+    eventType: 'NAP' as const,
+    startTime: '09:40',
+    endTime: '10:55',
+    date: '2026-09-30',
+  };
+
+  it('renders modal with event values when open', () => {
+    render(
+      <EditSleepModal
+        isOpen={true}
+        event={mockEvent}
+        onClose={vi.fn()}
+        onSave={vi.fn()}
+        onDelete={vi.fn()}
+      />
+    );
+    expect(screen.getByTestId('edit-sleep-modal')).toBeDefined();
+    expect(screen.getByTestId('edit-sleep-title').textContent).toBe('Редактировать запись');
+    expect(screen.getByDisplayValue('09:40')).toBeDefined();
+    expect(screen.getByDisplayValue('10:55')).toBeDefined();
+    expect(screen.getByTestId('edit-sleep-duration-preview').textContent).toContain('1 ч 15 мин');
+  });
+
+  it('submits updated values on Save click', async () => {
+    const handleSave = vi.fn().mockResolvedValue(undefined);
+    render(
+      <EditSleepModal
+        isOpen={true}
+        event={mockEvent}
+        onClose={vi.fn()}
+        onSave={handleSave}
+        onDelete={vi.fn()}
+      />
+    );
+
+    const saveBtn = screen.getByTestId('edit-sleep-save-btn');
+    await act(async () => {
+      fireEvent.click(saveBtn);
+    });
+    expect(handleSave).toHaveBeenCalledWith('ev-test-1', expect.objectContaining({
+      eventType: 'NAP',
+      startTime: '09:40',
+      endTime: '10:55',
+      date: '2026-09-30',
+      napNumber: 1,
+    }));
+  });
+
+  it('allows changing fields before saving', async () => {
+    const handleSave = vi.fn().mockResolvedValue(undefined);
+    render(
+      <EditSleepModal
+        isOpen={true}
+        event={mockEvent}
+        onClose={vi.fn()}
+        onSave={handleSave}
+        onDelete={vi.fn()}
+      />
+    );
+
+    const startInput = screen.getByTestId('edit-sleep-start-time');
+    const endInput = screen.getByTestId('edit-sleep-end-time');
+    act(() => {
+      fireEvent.change(startInput, { target: { value: '10:00' } });
+      fireEvent.change(endInput, { target: { value: '11:30' } });
+    });
+
+    expect(screen.getByTestId('edit-sleep-duration-preview').textContent).toContain('1 ч 30 мин');
+
+    const saveBtn = screen.getByTestId('edit-sleep-save-btn');
+    await act(async () => {
+      fireEvent.click(saveBtn);
+    });
+    expect(handleSave).toHaveBeenCalledWith('ev-test-1', expect.objectContaining({
+      eventType: 'NAP',
+      startTime: '10:00',
+      endTime: '11:30',
+    }));
+  });
+
+  it('requires two-step confirmation to delete', async () => {
+    const handleDelete = vi.fn().mockResolvedValue(undefined);
+    render(
+      <EditSleepModal
+        isOpen={true}
+        event={mockEvent}
+        onClose={vi.fn()}
+        onSave={vi.fn()}
+        onDelete={handleDelete}
+      />
+    );
+
+    const deleteBtn = screen.getByTestId('edit-sleep-delete-btn');
+    expect(deleteBtn.textContent).toBe('Удалить запись');
+    act(() => {
+      fireEvent.click(deleteBtn);
+    });
+
+    // Second click should be confirmation
+    expect(screen.getByTestId('edit-sleep-delete-btn').textContent).toBe('Точно удалить?');
+    await act(async () => {
+      fireEvent.click(screen.getByTestId('edit-sleep-delete-btn'));
+    });
+    expect(handleDelete).toHaveBeenCalledWith('ev-test-1');
+  });
+
+  it('switches event type and hides end time for WAKEUP', async () => {
+    const handleSave = vi.fn().mockResolvedValue(undefined);
+    render(
+      <EditSleepModal
+        isOpen={true}
+        event={mockEvent}
+        onClose={vi.fn()}
+        onSave={handleSave}
+        onDelete={vi.fn()}
+      />
+    );
+
+    // Switch to WAKEUP
+    act(() => {
+      fireEvent.click(screen.getByTestId('edit-sleep-type-wakeup'));
+    });
+    expect(screen.queryByTestId('edit-sleep-end-time')).toBeNull();
+    expect(screen.getByTestId('edit-sleep-duration-preview').textContent).toContain('Момент пробуждения');
+
+    await act(async () => {
+      fireEvent.click(screen.getByTestId('edit-sleep-save-btn'));
+    });
+    expect(handleSave).toHaveBeenCalledWith('ev-test-1', expect.objectContaining({
+      eventType: 'WAKEUP',
+      startTime: '09:40',
+      endTime: null,
+      napNumber: null,
+    }));
+  });
+
+  it('toggles ongoing sleep, disabling end time and updating preview', async () => {
+    const handleSave = vi.fn().mockResolvedValue(undefined);
+    render(
+      <EditSleepModal
+        isOpen={true}
+        event={mockEvent}
+        onClose={vi.fn()}
+        onSave={handleSave}
+        onDelete={vi.fn()}
+      />
+    );
+
+    const toggle = screen.getByTestId('edit-sleep-ongoing-toggle');
+    act(() => {
+      fireEvent.click(toggle);
+    });
+
+    expect((screen.getByTestId('edit-sleep-end-time') as HTMLInputElement).disabled).toBe(true);
+    expect(screen.getByTestId('edit-sleep-duration-preview').textContent).toContain('Сон идёт');
+
+    await act(async () => {
+      fireEvent.click(screen.getByTestId('edit-sleep-save-btn'));
+    });
+    expect(handleSave).toHaveBeenCalledWith('ev-test-1', expect.objectContaining({
+      eventType: 'NAP',
+      startTime: '09:40',
+      endTime: null,
+    }));
+  });
+
+  it('allows picking nap number for NAP events', async () => {
+    const handleSave = vi.fn().mockResolvedValue(undefined);
+    render(
+      <EditSleepModal
+        isOpen={true}
+        event={mockEvent}
+        onClose={vi.fn()}
+        onSave={handleSave}
+        onDelete={vi.fn()}
+      />
+    );
+
+    const nap3 = screen.getByTestId('edit-sleep-nap-number-3');
+    act(() => {
+      fireEvent.click(nap3);
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByTestId('edit-sleep-save-btn'));
+    });
+    expect(handleSave).toHaveBeenCalledWith('ev-test-1', expect.objectContaining({
+      eventType: 'NAP',
+      napNumber: 3,
+    }));
+  });
+
+  it('parses time from time string when startTime/endTime are not explicit in event', () => {
+    const stringTimeEvent = {
+      id: 'ev-test-2',
+      title: 'Сон 2 · 1:30',
+      author: 'Папа',
+      time: '14:15 – 15:45',
+    };
+
+    render(
+      <EditSleepModal
+        isOpen={true}
+        event={stringTimeEvent}
+        onClose={vi.fn()}
+        onSave={vi.fn()}
+        onDelete={vi.fn()}
+      />
+    );
+
+    expect(screen.getByDisplayValue('14:15')).toBeDefined();
+    expect(screen.getByDisplayValue('15:45')).toBeDefined();
+    expect(screen.getByTestId('edit-sleep-duration-preview').textContent).toContain('1 ч 30 мин');
+  });
+
+  it('triggers onClose when close button or backdrop is clicked', () => {
+    const handleClose = vi.fn();
+    render(
+      <EditSleepModal
+        isOpen={true}
+        event={mockEvent}
+        onClose={handleClose}
+        onSave={vi.fn()}
+        onDelete={vi.fn()}
+      />
+    );
+
+    act(() => {
+      fireEvent.click(screen.getByTestId('edit-sleep-close-btn'));
+    });
+    expect(handleClose).toHaveBeenCalledTimes(1);
+
+    act(() => {
+      fireEvent.click(screen.getByTestId('edit-sleep-modal-backdrop'));
+    });
+    expect(handleClose).toHaveBeenCalledTimes(2);
+  });
+
+  it('does not render when isOpen is false', () => {
+    const { container } = render(
+      <EditSleepModal
+        isOpen={false}
+        event={mockEvent}
+        onClose={vi.fn()}
+        onSave={vi.fn()}
+        onDelete={vi.fn()}
+      />
+    );
+    expect(container.firstChild).toBeNull();
   });
 });
 

@@ -159,6 +159,48 @@ export const recordFellAsleepApi = postFellAsleep;
 export const recordWokeUpApi = postWokeUp;
 export const recordRetroactiveApi = postRetroactive;
 
+export interface UpdateSleepEventInput {
+  eventType?: 'WAKEUP' | 'NAP' | 'NIGHT_SLEEP';
+  startTime?: string;
+  endTime?: string | null;
+  napNumber?: number | null;
+  date?: string;
+}
+
+export async function updateSleepEventApi(
+  eventId: string,
+  data: UpdateSleepEventInput,
+  childId?: string
+): Promise<{ event: FormattedSleepEvent; status: DayStatusResponse }> {
+  const query = childId ? `?childId=${encodeURIComponent(childId)}` : '';
+  const resp = await fetch(`/api/sleep/events/${eventId}${query}`, {
+    method: 'PUT',
+    headers: getAuthHeaders({ 'Content-Type': 'application/json' }),
+    body: JSON.stringify(data),
+  });
+  if (!resp.ok) {
+    const err = await resp.json().catch(() => ({}));
+    throw new Error(err.error || 'Ошибка обновления записи');
+  }
+  return resp.json();
+}
+
+export async function deleteSleepEventApi(
+  eventId: string,
+  childId?: string
+): Promise<{ success: boolean; id: string }> {
+  const query = childId ? `?childId=${encodeURIComponent(childId)}` : '';
+  const resp = await fetch(`/api/sleep/events/${eventId}${query}`, {
+    method: 'DELETE',
+    headers: getAuthHeaders(),
+  });
+  if (!resp.ok) {
+    const err = await resp.json().catch(() => ({}));
+    throw new Error(err.error || 'Ошибка удаления записи');
+  }
+  return resp.json();
+}
+
 export interface CalendarDaySummary {
   date: string;
   dayNumber: number;
