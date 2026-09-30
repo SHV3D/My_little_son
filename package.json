@@ -13,9 +13,10 @@
     "build": "npm run build --workspace=server && npm run build --workspace=client",
     "build:server": "npm run build --workspace=server",
     "build:client": "npm run build --workspace=client",
-    "test": "npm run test --workspace=server && npm run test --workspace=client"
+    "test": "vitest run"
   },
   "devDependencies": {
-    "concurrently": "^9.1.2"
+    "concurrently": "^9.1.2",
+    "vitest": "^3.0.5"
   }
 }
