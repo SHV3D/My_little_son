@@ -147,3 +147,52 @@ export async function postRetroactive(payload: RetroactiveSleepPayload): Promise
 export const recordFellAsleepApi = postFellAsleep;
 export const recordWokeUpApi = postWokeUp;
 export const recordRetroactiveApi = postRetroactive;
+
+export interface CalendarDaySummary {
+  date: string;
+  dayNumber: number;
+  dayOfWeek: string;
+  totalDaySleepMinutes: number;
+  formattedTotalDaySleep: string;
+  napsCount: number;
+  targetNapsCount: number;
+  bedtime: string | null;
+  targetBedtime: string;
+  wakeupTime: string | null;
+  isNormMet: boolean;
+  differenceFromNormMinutes: number;
+  formattedDifference: string;
+  events: FormattedSleepEvent[];
+}
+
+export interface MonthSummaryResponse {
+  year: number;
+  month: number;
+  childId: string;
+  targetDaySleepMinutes: number;
+  targetNapsCount: number;
+  targetBedtime: string;
+  averageDaySleepMinutes: number;
+  daysNormMetCount: number;
+  totalLoggedDays: number;
+  days: CalendarDaySummary[];
+}
+
+export async function fetchMonthSummary(
+  childId?: string,
+  year?: number,
+  month?: number
+): Promise<MonthSummaryResponse> {
+  const params = new URLSearchParams();
+  if (childId) params.append('childId', childId);
+  if (year) params.append('year', String(year));
+  if (month) params.append('month', String(month));
+
+  const url = `/api/calendar/month${params.toString() ? `?${params.toString()}` : ''}`;
+  const res = await fetch(url);
+  if (!res.ok) {
+    throw new Error(`Failed to fetch calendar month: ${res.status} ${res.statusText}`);
+  }
+  return res.json();
+}
+

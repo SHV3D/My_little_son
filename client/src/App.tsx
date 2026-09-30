@@ -1,6 +1,8 @@
 import { useState, useEffect, useCallback } from 'react';
 import { TodayAwakePage } from './pages/TodayAwakePage';
 import { TodaySleepingPage } from './pages/TodaySleepingPage';
+import { CalendarPage } from './pages/CalendarPage';
+import { BottomNav } from './components/common/BottomNav';
 import {
   fetchScheduleStatus,
   DayStatusResponse,
@@ -18,8 +20,9 @@ import {
 import { useFamilySync } from './hooks/useFamilySync';
 
 export default function App() {
-  const [, setActiveTab] = useState<string>('today');
+  const [activeTab, setActiveTab] = useState<string>('today');
   const [status, setStatus] = useState<DayStatusResponse | null>(null);
+
   const [activeModal, setActiveModal] = useState<
     | { type: 'FELL_ASLEEP' }
     | { type: 'WOKE_UP' }
@@ -121,7 +124,31 @@ export default function App() {
 
   return (
     <>
-      {status?.state === 'SLEEPING' ? (
+      {activeTab === 'calendar' ? (
+        <CalendarPage
+          childId={status?.child?.id || 'demo-child-1'}
+          onSelectTab={(tab) => setActiveTab(tab)}
+          onEditDay={() => setActiveModal({ type: 'RETROACTIVE' })}
+        />
+      ) : activeTab === 'settings' ? (
+        <div
+          data-testid="settings-page"
+          style={{
+            maxWidth: '390px',
+            minHeight: '100vh',
+            margin: '0 auto',
+            backgroundColor: '#ECEEE6',
+            display: 'flex',
+            flexDirection: 'column',
+            justifyContent: 'space-between',
+          }}
+        >
+          <div style={{ padding: '24px 16px' }}>
+            <h1 style={{ fontSize: '26px', fontWeight: 700 }}>Настройки</h1>
+          </div>
+          <BottomNav activeTab="settings" onSelectTab={(tab) => setActiveTab(tab)} />
+        </div>
+      ) : status?.state === 'SLEEPING' ? (
         <TodaySleepingPage
           initialData={status}
           onSelectTab={(tab) => setActiveTab(tab)}
@@ -135,6 +162,7 @@ export default function App() {
           onFellAsleepClick={() => setActiveModal({ type: 'FELL_ASLEEP' })}
         />
       )}
+
 
       {/* Sleep Action Modals */}
       <SleepActionModal
