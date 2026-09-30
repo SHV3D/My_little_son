@@ -9,6 +9,10 @@ export default defineConfig({
       '@shared': path.resolve(__dirname, '../shared'),
     },
   },
+  test: {
+    environment: 'happy-dom',
+    globals: true,
+  },
   server: {
     port: 3000,
     proxy: {

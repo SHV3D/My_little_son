@@ -1,0 +1,159 @@
+:root {
+  /* Geologica Bento Design System Colors */
+  --bg-primary: #ECEEE6;
+  --color-dark: #23372A;
+  --color-lime: #D4F27A;
+  --color-white: #FFFFFF;
+  --color-dark-secondary: #34493B;
+  --color-bar-inactive: #4E6552;
+  --text-primary: #1E2A20;
+  --text-muted: #4A5A4C;
+  --text-subtle: #B7C4B4;
+  --color-border: #E3E7DA;
+  --color-warning: #D08A1E;
+  --color-success: #2F6E42;
+
+  /* Additional Palette Accents */
+  --color-light-sage: #F1F4EA;
+  --color-dark-accent: #1E3D27;
+  --color-link: #2F5A3A;
+  --color-neutral-bg: #F4F5EF;
+
+  /* Typography */
+  --font-family: 'Geologica', system-ui, -apple-system, sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, monospace;
+
+  /* Radii */
+  --radius-xs: 4px;
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 22px;
+  --radius-2xl: 24px;
+  --radius-3xl: 28px;
+  --radius-full: 9999px;
+
+  /* Shadows */
+  --shadow-sm: 0 2px 8px rgba(35, 55, 42, 0.04);
+  --shadow-md: 0 4px 16px rgba(35, 55, 42, 0.06);
+  --shadow-lg: 0 8px 24px rgba(35, 55, 42, 0.08);
+  --shadow-mobile: 0 16px 40px rgba(35, 55, 42, 0.12);
+
+  /* Transitions & Springs */
+  --transition-fast: 0.15s ease;
+  --transition-normal: 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  --transition-spring: 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+/* Base Body Setup */
+body {
+  margin: 0;
+  padding: 0;
+  font-family: var(--font-family);
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  line-height: 1.4;
+  overflow-x: hidden;
+}
+
+/* Mobile Viewport Wrapper */
+.mobile-viewport-wrapper {
+  width: 100%;
+  max-width: 430px;
+  min-height: 100vh;
+  min-height: 100dvh;
+  margin: 0 auto;
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+  padding-top: env(safe-area-inset-top, 0px);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+  padding-left: env(safe-area-inset-left, 0px);
+  padding-right: env(safe-area-inset-right, 0px);
+}
+
+@media (min-width: 480px) {
+  body {
+    background-color: #E2E5DC;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    padding: 20px 0;
+  }
+
+  .mobile-viewport-wrapper {
+    border-radius: 36px;
+    box-shadow: var(--shadow-mobile);
+    overflow: hidden;
+    height: 92vh;
+    max-height: 920px;
+  }
+}
+
+/* Screen Content Area */
+.screen-content {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 16px 16px 16px;
+  box-sizing: border-box;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Animations */
+@keyframes bento-pulse {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.15);
+    opacity: 0.8;
+  }
+}
+
+@keyframes bento-fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes bento-slide-up {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-in {
+  animation: bento-fade-in 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.animate-pulse-dot {
+  animation: bento-pulse 2s infinite ease-in-out;
+}
+
+/* Interactive Feedback */
+.bento-interactive {
+  transition: transform var(--transition-fast), opacity var(--transition-fast);
+  cursor: pointer;
+}
+
+.bento-interactive:active {
+  transform: scale(0.98);
+}
