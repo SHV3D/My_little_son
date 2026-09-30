@@ -1,0 +1,306 @@
+ block \u2014 not a Design Component.");return}N.props&&(h.propsMeta=N.props),N.preview&&(h.preview=N.preview),N.template&&!h.html&&m(p,N.template),N.js&&!h.Logic&&S(p,N.js)}).catch(C=>console.error('[dc-runtime] sibling fetch for "'+p+'" threw:',y,C))}let u=null;function f(p,h){h.tplStale=!1;try{h.tpl=ge(h.html,c)}catch(y){console.error("[dc-runtime] template compile FAILED for",p,y)}}function g(p){const h=r.get(p);h.tplStale&&f(p,h)}function m(p,h){const y=r.get(p);if(y.html=h,p===u){const E=Xe.exec(h)?.[1]??null;(E||!y.htmlStreaming)&&s.setDesignDocMode(E)}y.subs.size===0?y.tplStale=!0:f(p,y),r.bump(p)}function S(p,h){const y=r.get(p),E=y.jsSeq=(y.jsSeq||0)+1;try{const x=Ie(h);if(y.jsSeq!==E)return;typeof x!="function"?y.logicError=p+".dc.html: <script data-dc-script> must define `class Component extends DCLogic`":(y.logicError=null,y.Logic=x)}catch(x){if(y.jsSeq!==E)return;console.error("[dc-runtime] logic class eval FAILED for",p,"\u2014 the template renders with props only.",x),y.logicError=p+": "+(x instanceof Error&&x.message?x.message:String(x))}r.bump(p)}function v(p,h,y){const E=r.get(p);h==="html"?E.htmlStreaming=!!y:E.jsStreaming=!!y;let x=!1;for(const R in r.entries){const M=r.entries[R];if(M&&(M.htmlStreaming||M.jsStreaming)){x=!0;break}}t.documentElement.classList.toggle("sc-dc-streaming",x),r.bump(p)}function b(p,h,y,E){if(E&&(r.get(p).fetched=!0),h==="html")v(p,"html",!!E),m(p,y);else if(h==="js")v(p,"js",!!E),E||S(p,y);else if(h==="props"){const{props:x,preview:R}=B(y),M=r.get(p);M.propsMeta=x??void 0,M.preview=R,r.bump(p)}}function k(p,h){r.get(p).propOverrides=h&&typeof h=="object"?{...h}:null,r.bump(p)}function w(p,h){if(!h)return;const y=r.get(p);h.props&&(y.propsMeta=h.props),h.preview&&(y.preview=h.preview),h.template&&m(p,h.template),h.js&&S(p,h.js)}return{registry:r,getDC:l.getDC,updateHtml:m,updateJs:S,dcUpdate:b,setProps:k,seekKeyframes:d,keyframesPlayhead:()=>a,adoptParsed:w,setRootName:p=>{u=p},markFetched:p=>{r.get(p).fetched=!0},annotatedTemplate:p=>{g(p);const h=r.get(p);return h.tpl&&h.tpl.__annotated||null},templateSource:p=>r.get(p).html||null,StreamableLogic:z}}function un(t=6e4,n=Date.now){const e=new Map,r=o=>{const s=e.get(o);return s===void 0?!1:n()-s>t?(e.delete(o),!1):!0};return{push(o,s,i){i!=="dc-model"&&(s?e.set(o,n()):e.delete(o))},live(o){if(o!==void 0)return r(o);for(const s of[...e.keys()])if(r(s))return!0;return!1}}}function dn(){const t=document.createElement("style");t.textContent="x-dc{display:none!important}",document.head.appendChild(t)}function Nt(t,n){return new Promise((e,r)=>{const o=document.createElement("script");o.src=t,n&&(o.integrity=n,o.crossOrigin="anonymous"),o.async=!1,o.onload=()=>e(),o.onerror=()=>r(new Error(`failed to load ${t}`)),document.head.appendChild(o)})}function fn(){const t=window;if(t.React&&t.ReactDOM)return Promise.resolve();const n=X(Be,We),e=X(qe,Ve);return Promise.all([Nt(n.src,n.integrity),Nt(e.src,e.integrity)]).then(()=>{})}function pn(){const t=window.__dcRuntimeMode==="omelette",n=ln(document,{omelette:t});let e="Root",r=!1;const o=document.createElement("style");o.textContent=Ot,document.head.prepend(o);const s=()=>{if(window.parent===window)return;const c=n.registry.entries[e];try{window.parent.postMessage({type:"__dc_booted",rootName:e,mounted:r,propsMeta:c&&c.propsMeta||null,preview:c&&c.preview||null,tellsErrors:!0},"*")}catch{}},i=un();window.parent!==window&&je(De(c=>{try{const a={type:"__dc_render_errors",errors:c};window.parent.postMessage(a,"*")}catch{}},c=>{setTimeout(c,200)},()=>i.live()));const l={__dcUpdate:(c,a,d,_,u)=>{i.push(c,_,u),n.dcUpdate(c,a,d,_),c===e&&!_&&a==="props"&&s()},__dcStreaming:c=>i.live(c),__dcSetProps:(c,a)=>n.setProps(c,a),__dcSeekKeyframes:c=>n.seekKeyframes(c),__dcKeyframesPlayhead:()=>n.keyframesPlayhead(),__dcRootName:()=>e,__dcAnnotatedTemplate:c=>n.annotatedTemplate(c),__dcTemplateSource:c=>n.templateSource(c),__dcBoot:()=>{const c=It(n,document);c!=null&&(e=c,r=!0),s(),ze()},__dcRegistry:n.registry.entries,getDC:c=>n.getDC(c),DCLogic:n.StreamableLogic,StreamableLogic:n.StreamableLogic};Object.assign(window,l),window.__dcContentKeyed=!0,document.readyState!=="loading"?l.__dcBoot():document.addEventListener("DOMContentLoaded",()=>l.__dcBoot())}dn(),fn().then(pn).catch(t=>{throw console.error("[dc] failed to load React or boot:",t),t})})();
+"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<style>/* cyrillic-ext */
+@font-face {
+  font-family: 'Manrope';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("font.woff2") format('woff2');
+  unicode-range: U+0460-052F, U+1C80-1C8A, U+20B4, U+2DE0-2DFF, U+A640-A69F, U+FE2E-FE2F;
+}
+/* cyrillic */
+@font-face {
+  font-family: 'Manrope';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("font.woff2") format('woff2');
+  unicode-range: U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
+}
+/* greek */
+@font-face {
+  font-family: 'Manrope';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("font.woff2") format('woff2');
+  unicode-range: U+0370-0377, U+037A-037F, U+0384-038A, U+038C, U+038E-03A1, U+03A3-03FF;
+}
+/* vietnamese */
+@font-face {
+  font-family: 'Manrope';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("font.woff2") format('woff2');
+  unicode-range: U+0102-0103, U+0110-0111, U+0128-0129, U+0168-0169, U+01A0-01A1, U+01AF-01B0, U+0300-0301, U+0303-0304, U+0308-0309, U+0323, U+0329, U+1EA0-1EF9, U+20AB;
+}
+/* latin-ext */
+@font-face {
+  font-family: 'Manrope';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("font.woff2") format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+/* latin */
+@font-face {
+  font-family: 'Manrope';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("font.woff2") format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+/* cyrillic-ext */
+@font-face {
+  font-family: 'Manrope';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url("font.woff2") format('woff2');
+  unicode-range: U+0460-052F, U+1C80-1C8A, U+20B4, U+2DE0-2DFF, U+A640-A69F, U+FE2E-FE2F;
+}
+/* cyrillic */
+@font-face {
+  font-family: 'Manrope';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url("font.woff2") format('woff2');
+  unicode-range: U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
+}
+/* greek */
+@font-face {
+  font-family: 'Manrope';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url("font.woff2") format('woff2');
+  unicode-range: U+0370-0377, U+037A-037F, U+0384-038A, U+038C, U+038E-03A1, U+03A3-03FF;
+}
+/* vietnamese */
+@font-face {
+  font-family: 'Manrope';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url("font.woff2") format('woff2');
+  unicode-range: U+0102-0103, U+0110-0111, U+0128-0129, U+0168-0169, U+01A0-01A1, U+01AF-01B0, U+0300-0301, U+0303-0304, U+0308-0309, U+0323, U+0329, U+1EA0-1EF9, U+20AB;
+}
+/* latin-ext */
+@font-face {
+  font-family: 'Manrope';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url("font.woff2") format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+/* latin */
+@font-face {
+  font-family: 'Manrope';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url("font.woff2") format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+/* cyrillic-ext */
+@font-face {
+  font-family: 'Manrope';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url("font.woff2") format('woff2');
+  unicode-range: U+0460-052F, U+1C80-1C8A, U+20B4, U+2DE0-2DFF, U+A640-A69F, U+FE2E-FE2F;
+}
+/* cyrillic */
+@font-face {
+  font-family: 'Manrope';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url("font.woff2") format('woff2');
+  unicode-range: U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
+}
+/* greek */
+@font-face {
+  font-family: 'Manrope';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url("font.woff2") format('woff2');
+  unicode-range: U+0370-0377, U+037A-037F, U+0384-038A, U+038C, U+038E-03A1, U+03A3-03FF;
+}
+/* vietnamese */
+@font-face {
+  font-family: 'Manrope';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url("font.woff2") format('woff2');
+  unicode-range: U+0102-0103, U+0110-0111, U+0128-0129, U+0168-0169, U+01A0-01A1, U+01AF-01B0, U+0300-0301, U+0303-0304, U+0308-0309, U+0323, U+0329, U+1EA0-1EF9, U+20AB;
+}
+/* latin-ext */
+@font-face {
+  font-family: 'Manrope';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url("font.woff2") format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+/* latin */
+@font-face {
+  font-family: 'Manrope';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url("font.woff2") format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+/* cyrillic-ext */
+@font-face {
+  font-family: 'Manrope';
+  font-style: normal;
+  font-weight: 800;
+  font-display: swap;
+  src: url("font.woff2") format('woff2');
+  unicode-range: U+0460-052F, U+1C80-1C8A, U+20B4, U+2DE0-2DFF, U+A640-A69F, U+FE2E-FE2F;
+}
+/* cyrillic */
+@font-face {
+  font-family: 'Manrope';
+  font-style: normal;
+  font-weight: 800;
+  font-display: swap;
+  src: url("font.woff2") format('woff2');
+  unicode-range: U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
+}
+/* greek */
+@font-face {
+  font-family: 'Manrope';
+  font-style: normal;
+  font-weight: 800;
+  font-display: swap;
+  src: url("font.woff2") format('woff2');
+  unicode-range: U+0370-0377, U+037A-037F, U+0384-038A, U+038C, U+038E-03A1, U+03A3-03FF;
+}
+/* vietnamese */
+@font-face {
+  font-family: 'Manrope';
+  font-style: normal;
+  font-weight: 800;
+  font-display: swap;
+  src: url("font.woff2") format('woff2');
+  unicode-range: U+0102-0103, U+0110-0111, U+0128-0129, U+0168-0169, U+01A0-01A1, U+01AF-01B0, U+0300-0301, U+0303-0304, U+0308-0309, U+0323, U+0329, U+1EA0-1EF9, U+20AB;
+}
+/* latin-ext */
+@font-face {
+  font-family: 'Manrope';
+  font-style: normal;
+  font-weight: 800;
+  font-display: swap;
+  src: url("font.woff2") format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+/* latin */
+@font-face {
+  font-family: 'Manrope';
+  font-style: normal;
+  font-weight: 800;
+  font-display: swap;
+  src: url("font.woff2") format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+</style>
+<style>
+body{margin:0;font-family:'Manrope',system-ui,sans-serif;background:#0E1124;color:#ECEBFA}
+a{color:#C9BCFF}a:hover{color:#E2DAFF}
+</style>
+</helmet>
+<div style="width: 390px; height: 900px; box-sizing: border-box; background: #0E1124; display: flex; flex-direction: column; font-family: 'Manrope', system-ui, sans-serif; color: #ECEBFA; position: relative; overflow: hidden">
+  <div style="position: absolute; left: 44px; top: 120px; width: 3px; height: 3px; border-radius: 2px; background: #6F74A8"></div>
+  <div style="position: absolute; left: 310px; top: 90px; width: 2px; height: 2px; border-radius: 1px; background: #8A8FC4"></div>
+  <div style="position: absolute; left: 350px; top: 230px; width: 3px; height: 3px; border-radius: 2px; background: #5A5F92"></div>
+  <div style="position: absolute; left: 30px; top: 330px; width: 2px; height: 2px; border-radius: 1px; background: #8A8FC4"></div>
+
+  <div style="flex-grow: 1; display: flex; flex-direction: column; gap: 20px; padding: 56px 20px 16px; position: relative">
+    <div style="display: flex; justify-content: space-between; align-items: center">
+      <div style="display: flex; flex-direction: column; gap: 2px">
+        <div style="font-size: 13px; color: #A3A6C8; font-weight: 500">Среда, 30 сентября</div>
+        <h1 style="margin: 0; font-size: 24px; font-weight: 800">Сегодня</h1>
+      </div>
+      <div style="display: flex">
+        <div style="width: 32px; height: 32px; border-radius: 16px; background: #FFD98A; color: #0E1124; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 800; border: 2px solid #0E1124">М</div>
+        <div style="width: 32px; height: 32px; border-radius: 16px; background: #B7A6FF; color: #0E1124; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 800; border: 2px solid #0E1124; margin-left: -8px">П</div>
+      </div>
+    </div>
+
+    <div style="align-self: center; width: 240px; height: 240px; position: relative; display: flex; align-items: center; justify-content: center">
+      <svg width="240" height="240" sc-camel-view-box="0 0 240 240" style="position: absolute; left: 0; top: 0">
+        <circle cx="120" cy="120" r="104" fill="none" stroke="#22274A" stroke-width="14"></circle>
+        <circle cx="120" cy="120" r="104" fill="none" stroke="#3A3F6E" stroke-width="14" stroke-dasharray="111 542" stroke-dashoffset="-543" stroke-linecap="round" transform="rotate(-90 120 120)"></circle>
+        <circle cx="120" cy="120" r="104" fill="none" stroke="#FFD98A" stroke-width="14" stroke-dasharray="470 653" stroke-linecap="round" transform="rotate(-90 120 120)"></circle>
+      </svg>
+      <div style="display: flex; flex-direction: column; align-items: center; gap: 4px">
+        <div style="font-size: 13px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; color: #FFD98A">Бодрствует</div>
+        <div style="font-size: 56px; font-weight: 800; letter-spacing: -2px; line-height: 1">2:10</div>
+        <div style="font-size: 13px; color: #A3A6C8">с 10:55 · интервал 2:30–3:00</div>
+      </div>
+    </div>
+
+    <div style="text-align: center; font-size: 16px; color: #D5D4EE">Укладывать через <strong style="color: #FFD98A">~20 мин</strong> — в 13:25</div>
+
+    <button type="button" style="height: 64px; border-radius: 32px; border: 0; background: #B7A6FF; color: #0E1124; display: flex; align-items: center; justify-content: center; gap: 10px; font-family: inherit; font-size: 18px; font-weight: 800">
+      <svg width="22" height="22" sc-camel-view-box="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z"></path></svg>
+      Уснул
+    </button>
+
+    <section style="background: #181C38; border-radius: 24px; padding: 16px; display: flex; flex-direction: column; gap: 12px">
+      <div style="display: flex; justify-content: space-between; align-items: baseline">
+        <h2 style="margin: 0; font-size: 16px; font-weight: 700">Осталось: 2 сна</h2>
+        <div style="font-size: 13px; color: #A3A6C8">днём 1:15 из 3:20</div>
+      </div>
+      <div style="display: flex; align-items: center; gap: 12px">
+        <div style="width: 10px; height: 10px; border-radius: 5px; border: 2px solid #B7A6FF"></div>
+        <div style="flex-grow: 1; font-size: 16px; font-weight: 700">13:25 – 14:55</div>
+        <div style="font-size: 15px; color: #D5D4EE">1 ч 30 мин</div>
+      </div>
+      <div style="display: flex; align-items: center; gap: 12px">
+        <div style="width: 10px; height: 10px; border-radius: 5px; border: 2px solid #B7A6FF"></div>
+        <div style="flex-grow: 1; font-size: 16px; font-weight: 700">17:25 – 18:00</div>
+        <div style="font-size: 15px; color: #D5D4EE">35 мин</div>
+      </div>
+      <div style="height: 1px; background: #2A2F55"></div>
+      <div style="display: flex; align-items: center; gap: 12px">
+        <svg width="14" height="14" sc-camel-view-box="0 0 24 24" fill="#FFD98A"><path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z"></path></svg>
+        <div style="flex-grow: 1; font-size: 16px; font-weight: 700">Ночной сон</div>
+        <div style="font-size: 16px; font-weight: 700; color: #FFD98A">20:30</div>
+      </div>
+    </section>
+  </div>
+
+  <nav style="height: 84px; box-sizing: border-box; padding: 8px 12px 24px; background: #0E1124; border-top: 1px solid #22274A; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 4px">
+    <a href="#today" style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; font-size: 12px; font-weight: 700; color: #C9BCFF; text-decoration: none">
+      <svg width="24" height="24" sc-camel-view-box="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4"></circle><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"></path></svg>
+      Сегодня
+    </a>
+    <a href="#calendar" style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; font-size: 12px; font-weight: 500; color: #A3A6C8; text-decoration: none">
+      <svg width="24" height="24" sc-camel-view-box="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="5" width="18" height="16" rx="3"></rect><path d="M3 10h18M8 3v4M16 3v4"></path></svg>
+      Календарь
+    </a>
+    <a href="#settings" style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; font-size: 12px; font-weight: 500; color: #A3A6C8; text-decoration: none">
+      <svg width="24" height="24" sc-camel-view-box="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12"></path><circle cx="16" cy="6" r="2"></circle><circle cx="10" cy="12" r="2"></circle><circle cx="18" cy="18" r="2"></circle></svg>
+      Настройки
+    </a>
+  </nav>
+</div>
