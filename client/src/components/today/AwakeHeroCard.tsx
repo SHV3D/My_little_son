@@ -38,6 +38,21 @@ export interface AwakeHeroCardProps {
    */
   liveTick?: boolean;
 
+  /**
+   * Whether child is currently overtired
+   */
+  isOvertired?: boolean;
+
+  /**
+   * Minutes child is overtired by
+   */
+  overtiredMinutes?: number;
+
+  /**
+   * Remaining minutes until next nap (negative if overdue)
+   */
+  countdownMinutes?: number;
+
   className?: string;
   style?: React.CSSProperties;
 }
@@ -85,9 +100,20 @@ export const AwakeHeroCard: React.FC<AwakeHeroCardProps> = ({
   batteryLevel,
   maxWakeIntervalMinutes = 180,
   liveTick = true,
+  isOvertired,
+  overtiredMinutes,
+  countdownMinutes,
   className = '',
   style,
 }) => {
+  const overtired = Boolean(
+    isOvertired ||
+    (countdownMinutes !== undefined && countdownMinutes <= -15) ||
+    (overtiredMinutes !== undefined && overtiredMinutes > 0)
+  );
+
+  const displayOvertiredMinutes =
+    overtiredMinutes || (countdownMinutes !== undefined ? Math.abs(countdownMinutes) : 0);
   // Determine initial elapsed seconds
   const computeInitialSeconds = (): number => {
     if (lastWakeTimestamp) {
@@ -208,17 +234,39 @@ export const AwakeHeroCard: React.FC<AwakeHeroCardProps> = ({
           justifyContent: 'space-between',
         }}
       >
-        <div
-          data-testid="awake-timer"
-          style={{
-            fontSize: '64px',
-            fontWeight: 600,
-            letterSpacing: '-3px',
-            lineHeight: 0.9,
-            fontVariantNumeric: 'tabular-nums',
-          }}
-        >
-          {displayTimer}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+          <div
+            data-testid="awake-timer"
+            style={{
+              fontSize: '64px',
+              fontWeight: 600,
+              letterSpacing: '-3px',
+              lineHeight: 0.9,
+              fontVariantNumeric: 'tabular-nums',
+            }}
+          >
+            {displayTimer}
+          </div>
+          {overtired && (
+            <div
+              data-testid="awake-overtired-badge"
+              style={{
+                alignSelf: 'flex-start',
+                backgroundColor: 'var(--warning-warn-badge-bg, #E4C078)',
+                color: 'var(--warning-warn-badge-text, #1E2A20)',
+                fontSize: '13px',
+                fontWeight: 600,
+                borderRadius: '12px',
+                padding: '4px 10px',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '4px',
+                lineHeight: 1.2,
+              }}
+            >
+              Перегул +{displayOvertiredMinutes} мин
+            </div>
+          )}
         </div>
         <AwakeBatteryBar level={computedBatteryLevel} />
       </div>

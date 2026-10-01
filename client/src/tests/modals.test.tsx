@@ -396,6 +396,74 @@ describe('RetroactiveSleepModal Component', () => {
 
     expect(handleClose).toHaveBeenCalledTimes(1);
   });
+
+  it('displays collision warning and disables save button when time interval overlaps with existingEvents', () => {
+    const existingEvents = [
+      {
+        id: 'ev-1',
+        eventType: 'NAP' as const,
+        startTime: '10:00',
+        endTime: '11:30',
+        date: '2026-09-30',
+      },
+    ];
+
+    const handleSave = vi.fn();
+    render(
+      <RetroactiveSleepModal
+        isOpen={true}
+        currentDate="2026-09-30"
+        defaultStartTime="10:30"
+        defaultEndTime="12:00"
+        existingEvents={existingEvents}
+        onClose={vi.fn()}
+        onSave={handleSave}
+      />
+    );
+
+    const warning = screen.getByTestId('retroactive-collision-warning');
+    expect(warning).toBeDefined();
+    expect(warning.textContent).toContain('пересекается');
+
+    const saveBtn = screen.getByTestId('retroactive-save-btn') as HTMLButtonElement;
+    expect(saveBtn.disabled).toBe(true);
+
+    fireEvent.click(saveBtn);
+    expect(handleSave).not.toHaveBeenCalled();
+  });
+
+  it('does not display collision warning and allows save when interval is non-overlapping', () => {
+    const existingEvents = [
+      {
+        id: 'ev-1',
+        eventType: 'NAP' as const,
+        startTime: '10:00',
+        endTime: '11:30',
+        date: '2026-09-30',
+      },
+    ];
+
+    const handleSave = vi.fn();
+    render(
+      <RetroactiveSleepModal
+        isOpen={true}
+        currentDate="2026-09-30"
+        defaultStartTime="12:00"
+        defaultEndTime="13:30"
+        existingEvents={existingEvents}
+        onClose={vi.fn()}
+        onSave={handleSave}
+      />
+    );
+
+    expect(screen.queryByTestId('retroactive-collision-warning')).toBeNull();
+
+    const saveBtn = screen.getByTestId('retroactive-save-btn') as HTMLButtonElement;
+    expect(saveBtn.disabled).toBe(false);
+
+    fireEvent.click(saveBtn);
+    expect(handleSave).toHaveBeenCalledTimes(1);
+  });
 });
 
 describe('EditSleepModal Component', () => {
@@ -653,6 +721,58 @@ describe('EditSleepModal Component', () => {
       />
     );
     expect(container.firstChild).toBeNull();
+  });
+
+  it('displays collision warning and disables save when editing event to overlap with another event', () => {
+    const existingEvents = [
+      {
+        id: 'ev-test-1',
+        eventType: 'NAP' as const,
+        startTime: '09:40',
+        endTime: '10:55',
+        date: '2026-09-30',
+      },
+      {
+        id: 'ev-test-2',
+        eventType: 'NAP' as const,
+        startTime: '14:00',
+        endTime: '15:30',
+        date: '2026-09-30',
+      },
+    ];
+
+    const handleSave = vi.fn();
+    render(
+      <EditSleepModal
+        isOpen={true}
+        event={mockEvent}
+        existingEvents={existingEvents}
+        onClose={vi.fn()}
+        onSave={handleSave}
+        onDelete={vi.fn()}
+      />
+    );
+
+    // Editing mockEvent (ev-test-1) without moving it should not collide with itself!
+    expect(screen.queryByTestId('edit-collision-warning')).toBeNull();
+    const saveBtn = screen.getByTestId('edit-sleep-save-btn') as HTMLButtonElement;
+    expect(saveBtn.disabled).toBe(false);
+
+    // Now change time to collide with ev-test-2 (14:00 - 15:30)
+    const startInput = screen.getByTestId('edit-sleep-start-time');
+    const endInput = screen.getByTestId('edit-sleep-end-time');
+    act(() => {
+      fireEvent.change(startInput, { target: { value: '14:30' } });
+      fireEvent.change(endInput, { target: { value: '16:00' } });
+    });
+
+    const warning = screen.getByTestId('edit-collision-warning');
+    expect(warning).toBeDefined();
+    expect(warning.textContent).toContain('пересекается');
+    expect((screen.getByTestId('edit-sleep-save-btn') as HTMLButtonElement).disabled).toBe(true);
+
+    fireEvent.click(screen.getByTestId('edit-sleep-save-btn'));
+    expect(handleSave).not.toHaveBeenCalled();
   });
 });
 

@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { validateEventCollision, SleepEvent } from '@shared/sleepEngine';
 
 export type RetroactiveEventType = 'NAP' | 'WAKEUP' | 'NIGHT_SLEEP';
 
@@ -16,6 +17,7 @@ export interface RetroactiveSleepModalProps {
   defaultEventType?: RetroactiveEventType;
   defaultStartTime?: string;
   defaultEndTime?: string;
+  existingEvents?: SleepEvent[] | any[];
   onClose: () => void;
   onSave: (payload: RetroactiveSavePayload) => void;
 }
@@ -34,6 +36,7 @@ export const RetroactiveSleepModal: React.FC<RetroactiveSleepModalProps> = ({
   defaultEventType = 'NAP',
   defaultStartTime = '13:00',
   defaultEndTime = '14:30',
+  existingEvents = [],
   onClose,
   onSave,
 }) => {
@@ -42,6 +45,13 @@ export const RetroactiveSleepModal: React.FC<RetroactiveSleepModalProps> = ({
   const [startTime, setStartTime] = useState<string>(defaultStartTime);
   const [endTime, setEndTime] = useState<string>(defaultEndTime);
   const [napNumber, setNapNumber] = useState<number>(1);
+
+  const collision = validateEventCollision(existingEvents || [], {
+    startTime,
+    endTime: eventType === 'WAKEUP' ? null : (endTime || null),
+    eventType,
+    date,
+  });
 
   // Swipe-down tracking
   const touchStartY = useRef<number>(0);
@@ -95,7 +105,7 @@ export const RetroactiveSleepModal: React.FC<RetroactiveSleepModalProps> = ({
   };
 
   const handleSave = () => {
-    if (!startTime) return;
+    if (!startTime || collision.hasCollision) return;
     onSave({
       eventType,
       startTime,
@@ -446,10 +456,34 @@ export const RetroactiveSleepModal: React.FC<RetroactiveSleepModalProps> = ({
           )}
         </div>
 
+        {/* Collision Warning Banner */}
+        {collision.hasCollision && (
+          <div
+            data-testid="retroactive-collision-warning"
+            style={{
+              backgroundColor: 'var(--warning-alert-bg, rgba(234, 163, 146, 0.16))',
+              border: '1px solid var(--warning-alert-border, #EAA392)',
+              color: 'var(--warning-alert-text, #6A2417)',
+              borderRadius: '14px',
+              padding: '10px 14px',
+              fontSize: '13px',
+              fontWeight: 500,
+              lineHeight: 1.4,
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+            }}
+          >
+            <span style={{ fontSize: '16px', flexShrink: 0 }}>⚠️</span>
+            <span>{collision.message || 'Пересечение времени событий'}</span>
+          </div>
+        )}
+
         {/* Save Button */}
         <button
           type="button"
           data-testid="retroactive-save-btn"
+          disabled={!startTime || collision.hasCollision}
           onClick={handleSave}
           className="bento-interactive"
           style={{
@@ -463,7 +497,8 @@ export const RetroactiveSleepModal: React.FC<RetroactiveSleepModalProps> = ({
             fontSize: '17px',
             fontWeight: 600,
             border: 'none',
-            cursor: 'pointer',
+            cursor: !startTime || collision.hasCollision ? 'not-allowed' : 'pointer',
+            opacity: !startTime || collision.hasCollision ? 0.5 : 1,
             width: '100%',
             boxSizing: 'border-box',
             boxShadow: 'var(--shadow-md, 0 4px 16px rgba(35, 55, 42, 0.08))',

@@ -224,6 +224,14 @@ export const TodaySleepingPage: React.FC<TodaySleepingPageProps> = ({
     ? formatDurationRussian(schedule.plannedCurrentNapDurationMinutes)
     : '1 ч 30 мин';
 
+  // Check if wake deadline is exceeded or abnormally long nap warning exists
+  const isWakeNow = Boolean(
+    schedule?.isWakeDeadlineExceeded ||
+    schedule?.warnings?.some(
+      (w) => w.code === 'ABNORMALLY_LONG_NAP' || w.actionType === 'WAKE_NOW'
+    )
+  );
+
   return (
     <div
       className={`today-sleeping-page mobile-viewport-wrapper ${className}`.trim()}
@@ -273,13 +281,49 @@ export const TodaySleepingPage: React.FC<TodaySleepingPageProps> = ({
           }}
         >
           {/* Card 0: Sleeping Hero Card (Span 2) */}
-          <SleepingHeroCard
-            napNumber={schedule?.currentNapNumber ?? 2}
-            sleepStartTime={schedule?.sleepStartTime || '13:22'}
-            sleepDuration={schedule?.formattedSleepDuration || '0:25'}
-            plannedDurationMinutes={schedule?.plannedCurrentNapDurationMinutes ?? 90}
-            plannedDurationText={plannedDurationText}
-          />
+          <div
+            data-testid="sleeping-hero-area"
+            style={{
+              gridColumn: 'span 2',
+              position: 'relative',
+              display: 'flex',
+              flexDirection: 'column',
+              width: '100%',
+            }}
+          >
+            <SleepingHeroCard
+              napNumber={schedule?.currentNapNumber ?? 2}
+              sleepStartTime={schedule?.sleepStartTime || '13:22'}
+              sleepDuration={schedule?.formattedSleepDuration || '0:25'}
+              plannedDurationMinutes={schedule?.plannedCurrentNapDurationMinutes ?? 90}
+              plannedDurationText={plannedDurationText}
+              style={{ gridColumn: undefined }}
+            />
+            {isWakeNow && (
+              <div
+                data-testid="sleeping-wake-now-badge"
+                style={{
+                  position: 'absolute',
+                  bottom: '18px',
+                  right: '18px',
+                  backgroundColor: 'var(--warning-alert-badge-bg, #EAA392)',
+                  color: 'var(--warning-alert-badge-text, #1E2A20)',
+                  fontSize: '13px',
+                  fontWeight: 600,
+                  borderRadius: '12px',
+                  padding: '4px 10px',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '4px',
+                  lineHeight: 1.2,
+                  zIndex: 2,
+                  boxShadow: '0 2px 8px rgba(0, 0, 0, 0.12)',
+                }}
+              >
+                Пора будить
+              </div>
+            )}
+          </div>
 
           {/* Card 1: Wake Deadline Card (Lime) */}
           <section
@@ -460,6 +504,7 @@ export const TodaySleepingPage: React.FC<TodaySleepingPageProps> = ({
       <RetroactiveSleepModal
         isOpen={isRetroactiveModalOpen}
         currentDate={statusData?.date}
+        existingEvents={statusData?.events}
         onClose={() => setIsRetroactiveModalOpen(false)}
         onSave={handleSaveRetroactive}
       />

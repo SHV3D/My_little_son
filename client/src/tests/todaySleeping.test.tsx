@@ -372,4 +372,37 @@ describe('TodaySleepingPage Component', () => {
       })
     );
   });
+
+  it('renders "Пора будить" badge when wake deadline is exceeded or abnormally long nap warning exists', async () => {
+    const exceededData: DayStatusResponse = {
+      ...mockSleepingData,
+      schedule: {
+        ...mockSleepingData.schedule!,
+        isWakeDeadlineExceeded: true,
+      },
+    };
+
+    global.fetch = vi.fn().mockImplementation(() =>
+      Promise.resolve({
+        ok: true,
+        json: () => Promise.resolve(exceededData),
+      })
+    );
+
+    await act(async () => {
+      render(<TodaySleepingPage initialData={exceededData} />);
+    });
+
+    const badge = screen.getByTestId('sleeping-wake-now-badge');
+    expect(badge).toBeDefined();
+    expect(badge.textContent).toContain('Пора будить');
+  });
+
+  it('does not render "Пора будить" badge when wake deadline is not exceeded', async () => {
+    await act(async () => {
+      render(<TodaySleepingPage initialData={mockSleepingData} />);
+    });
+
+    expect(screen.queryByTestId('sleeping-wake-now-badge')).toBeNull();
+  });
 });

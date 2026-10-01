@@ -1,11 +1,13 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { UpdateSleepEventInput } from '../../api/sleepApi';
+import { validateEventCollision, SleepEvent } from '@shared/sleepEngine';
 
 export interface EditSleepModalProps {
   isOpen: boolean;
   onClose: () => void;
   event?: any | null; // FormattedSleepEvent or DayLogRecord
   childId?: string;
+  existingEvents?: SleepEvent[] | any[];
   onSave?: (eventId: string, data: UpdateSleepEventInput) => Promise<void> | void;
   onDelete?: (eventId: string) => Promise<void> | void;
   className?: string;
@@ -168,6 +170,7 @@ export const EditSleepModal: React.FC<EditSleepModalProps> = ({
   onClose,
   event,
   childId: _childId,
+  existingEvents = [],
   onSave,
   onDelete,
   className,
@@ -182,6 +185,14 @@ export const EditSleepModal: React.FC<EditSleepModalProps> = ({
   const [isConfirmingDelete, setIsConfirmingDelete] = useState<boolean>(false);
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const [isDeleting, setIsDeleting] = useState<boolean>(false);
+
+  const collision = validateEventCollision(existingEvents || [], {
+    id: event?.id,
+    startTime,
+    endTime: eventType === 'WAKEUP' ? null : (isOngoing ? null : (endTime || null)),
+    eventType,
+    date,
+  });
 
   // Swipe-down tracking
   const touchStartY = useRef<number>(0);
@@ -244,7 +255,7 @@ export const EditSleepModal: React.FC<EditSleepModalProps> = ({
   };
 
   const handleSave = async () => {
-    if (!startTime) return;
+    if (!startTime || collision.hasCollision) return;
     const eventId = event?.id;
     if (!eventId) return;
 
@@ -702,12 +713,35 @@ export const EditSleepModal: React.FC<EditSleepModalProps> = ({
           </div>
         </div>
 
+        {/* Collision Warning Banner */}
+        {collision.hasCollision && (
+          <div
+            data-testid="edit-collision-warning"
+            style={{
+              backgroundColor: 'var(--warning-alert-bg, rgba(234, 163, 146, 0.16))',
+              border: '1px solid var(--warning-alert-border, #EAA392)',
+              color: 'var(--warning-alert-text, #6A2417)',
+              borderRadius: '14px',
+              padding: '10px 14px',
+              fontSize: '13px',
+              fontWeight: 500,
+              lineHeight: 1.4,
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+            }}
+          >
+            <span style={{ fontSize: '16px', flexShrink: 0 }}>⚠️</span>
+            <span>{collision.message || 'Пересечение времени событий'}</span>
+          </div>
+        )}
+
         {/* Action buttons: Save & Delete */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '4px' }}>
           <button
             type="button"
             data-testid="edit-sleep-save-btn"
-            disabled={isSubmitting || !startTime}
+            disabled={isSubmitting || !startTime || collision.hasCollision}
             onClick={handleSave}
             className="bento-interactive"
             style={{
@@ -720,8 +754,8 @@ export const EditSleepModal: React.FC<EditSleepModalProps> = ({
               fontSize: '16px',
               fontWeight: 600,
               fontFamily: 'inherit',
-              cursor: isSubmitting || !startTime ? 'not-allowed' : 'pointer',
-              opacity: isSubmitting || !startTime ? 0.6 : 1,
+              cursor: isSubmitting || !startTime || collision.hasCollision ? 'not-allowed' : 'pointer',
+              opacity: isSubmitting || !startTime || collision.hasCollision ? 0.5 : 1,
               boxShadow: 'var(--shadow-sm, 0 1px 3px rgba(30, 42, 32, 0.05))',
             }}
           >

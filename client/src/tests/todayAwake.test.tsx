@@ -80,6 +80,55 @@ describe('AwakeHeroCard Component', () => {
 
     vi.useRealTimers();
   });
+
+  it('renders overtired badge when isOvertired is true or countdownMinutes <= -15', () => {
+    const { rerender } = render(
+      <AwakeHeroCard
+        awakeDuration="3:25"
+        lastWakeTime="10:00"
+        intervalString="2:30–3:00"
+        batteryLevel={7}
+        liveTick={false}
+        isOvertired={true}
+        overtiredMinutes={25}
+      />
+    );
+
+    const badge = screen.getByTestId('awake-overtired-badge');
+    expect(badge).toBeDefined();
+    expect(badge.textContent).toBe('Перегул +25 мин');
+
+    // Test with countdownMinutes <= -15
+    rerender(
+      <AwakeHeroCard
+        awakeDuration="3:15"
+        lastWakeTime="10:00"
+        intervalString="2:30–3:00"
+        batteryLevel={7}
+        liveTick={false}
+        countdownMinutes={-20}
+      />
+    );
+
+    const badge2 = screen.getByTestId('awake-overtired-badge');
+    expect(badge2.textContent).toBe('Перегул +20 мин');
+  });
+
+  it('does not render overtired badge when child is not overtired', () => {
+    render(
+      <AwakeHeroCard
+        awakeDuration="1:30"
+        lastWakeTime="10:00"
+        intervalString="2:30–3:00"
+        batteryLevel={3}
+        liveTick={false}
+        isOvertired={false}
+        countdownMinutes={60}
+      />
+    );
+
+    expect(screen.queryByTestId('awake-overtired-badge')).toBeNull();
+  });
 });
 
 describe('BentoMetricsGrid Component', () => {
