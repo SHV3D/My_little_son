@@ -1057,3 +1057,150 @@ describe('Smart Sleep Warnings System', () => {
   });
 });
 
+describe('Smart Sleep Warnings - Review Findings & Edge Cases', () => {
+  const baseSettings: ChildSettings = {
+    napsPerDay: 3,
+    wakeIntervalMinMinutes: 150,
+    wakeIntervalMaxMinutes: 180,
+    totalDaySleepMinutes: 200,
+    typicalWakeupTime: '07:00',
+    targetBedtime: '20:30',
+  };
+
+  it('triggers EVENT_TIME_COLLISION in calculateDaySchedule for inverted time events (start > end)', () => {
+    const events: SleepEvent[] = [
+      { eventType: 'WAKEUP', startTime: '07:00' },
+      { eventType: 'NAP', napNumber: 1, startTime: '13:00', endTime: '12:00' },
+    ];
+    const schedule = calculateDaySchedule({
+      settings: baseSettings,
+      currentTime: '14:00',
+      events,
+    });
+    const warning = schedule.warnings?.find(w => w.code === 'EVENT_TIME_COLLISION');
+    expect(warning).toBeDefined();
+    expect(warning?.severity).toBe('alert');
+    expect(warning?.actionType).toBe('CHECK_TIME');
+    expect(warning?.message).toContain('Время окончания должно быть позже времени начала');
+  });
+
+  it('does NOT trigger FALSE_NIGHT_SLEEP when baby is awake at 14:00 after waking up from yesterday night sleep', () => {
+    const events: SleepEvent[] = [
+      { eventType: 'NIGHT_SLEEP', startTime: '18:15', endTime: '07:00' },
+      { eventType: 'WAKEUP', startTime: '07:00' },
+      { eventType: 'NAP', napNumber: 1, startTime: '09:30', endTime: '11:00' },
+    ];
+    const schedule = calculateDaySchedule({
+      settings: baseSettings,
+      currentTime: '14:00',
+      events,
+    });
+    expect(schedule.state).toBe('AWAKE');
+    expect(schedule.warnings?.some(w => w.code === 'FALSE_NIGHT_SLEEP')).toBe(false);
+  });
+
+  it('validateEventCollision with a past date (yesterday) does not falsely flag startMin > currMin as in the future', () => {
+    const existingEvents: SleepEvent[] = [
+      { id: 'ev-today', eventType: 'NAP', startTime: '09:00', endTime: '10:30' },
+    ];
+    // currentTime is 10:00 (600 mins)
+    // Yesterday's nap was at 14:00-15:30 (840 mins > 600 mins)
+    const yesterday = new Date(Date.now() - 86400000).toISOString().slice(0, 10);
+    const result = validateEventCollision(
+      existingEvents,
+      {
+        eventType: 'NAP',
+        startTime: '14:00',
+        endTime: '15:30',
+        date: yesterday,
+      },
+      '10:00'
+    );
+    expect(result.hasCollision).toBe(false);
+
+    // Also verify with explicit ISO currentTime
+    const resultIso = validateEventCollision(
+      existingEvents,
+      {
+        eventType: 'NAP',
+        startTime: '14:00',
+        endTime: '15:30',
+        date: '2026-10-01',
+      },
+      '2026-10-02T10:00:00'
+    );
+    expect(resultIso.hasCollision).toBe(false);
+  });
+
+  it('active night sleep crossing midnight detects overlap at 01:00', () => {
+    // Night sleep started at 21:00, currently 01:00 and still active
+    const existingEvents: SleepEvent[] = [
+      { id: 'night-active', eventType: 'NIGHT_SLEEP', startTime: '21:00' },
+    ];
+
+    // Attempting to log a nap at 00:30-01:00 collides with ongoing night sleep
+    const result = validateEventCollision(
+      existingEvents,
+      {
+        eventType: 'NAP',
+        startTime: '00:30',
+        endTime: '01:00',
+      },
+      '01:00'
+    );
+    expect(result.hasCollision).toBe(true);
+    expect(result.conflictingEvent?.id).toBe('night-active');
+    expect(result.message).toContain('пересекается');
+  });
+
+  it('overnight night sleep does not treat startMin as in the future when currMin <= 14:00', () => {
+    // Night sleep starting at 21:00 validated at 01:00 should not be flagged as future
+    const result = validateEventCollision(
+      [],
+      {
+        eventType: 'NIGHT_SLEEP',
+        startTime: '21:00',
+      },
+      '01:00'
+    );
+    expect(result.hasCollision).toBe(false);
+  });
+
+  it('guard SEVERE_DAY_DEFICIT: only triggers when schedule.state === AWAKE (not when sleeping for the night)', () => {
+    const events: SleepEvent[] = [
+      { eventType: 'WAKEUP', startTime: '07:00' },
+      { eventType: 'NAP', napNumber: 1, startTime: '09:30', endTime: '10:05' },
+      { eventType: 'NAP', napNumber: 2, startTime: '12:35', endTime: '13:10' },
+      { eventType: 'NAP', napNumber: 3, startTime: '15:40', endTime: '16:15' },
+      { eventType: 'NIGHT_SLEEP', startTime: '19:30' }, // already sleeping for the night
+    ];
+    const schedule = calculateDaySchedule({
+      settings: baseSettings,
+      currentTime: '20:00',
+      events,
+    });
+    expect(schedule.state).toBe('SLEEPING');
+    expect(schedule.warnings?.some(w => w.code === 'SEVERE_DAY_DEFICIT')).toBe(false);
+  });
+
+  it('aligns DAY_BUDGET_EXHAUSTED with spec: triggers before 17:00 even with 0 remaining naps', () => {
+    const events: SleepEvent[] = [
+      { eventType: 'WAKEUP', startTime: '06:30' },
+      { eventType: 'NAP', napNumber: 1, startTime: '08:30', endTime: '10:30' }, // 120m
+      { eventType: 'NAP', napNumber: 2, startTime: '12:30', endTime: '14:30' }, // 120m (total 240 >= 200)
+      { eventType: 'NAP', napNumber: 3, startTime: '15:30', endTime: '16:00' }, // 30m (3/3 naps completed)
+    ];
+    const schedule = calculateDaySchedule({
+      settings: baseSettings,
+      currentTime: '16:15', // < 17:00
+      events,
+    });
+    expect(schedule.remainingNapsCount).toBe(0);
+    expect(schedule.completedDaySleepMinutes).toBeGreaterThanOrEqual(baseSettings.totalDaySleepMinutes);
+    const warning = schedule.warnings?.find(w => w.code === 'DAY_BUDGET_EXHAUSTED');
+    expect(warning).toBeDefined();
+    expect(warning?.severity).toBe('warning');
+  });
+});
+
+

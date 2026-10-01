@@ -10,6 +10,7 @@ export interface SleepEvent {
   napNumber?: number; // 1, 2, 3...
   note?: string;
   source?: string;
+  date?: string;
 }
 
 export interface ChildSettings {
@@ -310,6 +311,15 @@ function getIntervalSegments(
   currMins?: number
 ): Array<{ start: number; end: number }> {
   const s = parseTimeToMinutes(startTime);
+
+  // Active night sleep crossing midnight
+  if ((!endTime || endTime.trim() === '') && eventType === 'NIGHT_SLEEP' && currMins !== undefined && currMins < s) {
+    return [
+      { start: s, end: 1440 },
+      { start: 0, end: currMins },
+    ];
+  }
+
   const e =
     endTime && endTime.trim() !== ''
       ? parseTimeToMinutes(endTime)
@@ -371,13 +381,38 @@ export function validateEventCollision(
   // 2. Future check (if currentTime provided)
   if (currentTime) {
     const currMin = parseTimeToMinutes(currentTime);
-    if (startMin > currMin) {
+    const todayDate = currentTime.includes('T')
+      ? currentTime.split('T')[0]
+      : new Date().toISOString().slice(0, 10);
+    const eventDate =
+      newOrUpdatedEvent.date ||
+      (newOrUpdatedEvent.startTime.includes('T') ? newOrUpdatedEvent.startTime.split('T')[0] : undefined);
+
+    const isPastDate = !!(eventDate && eventDate < todayDate);
+    const isFutureDate = !!(eventDate && eventDate > todayDate);
+
+    if (isFutureDate) {
       return { hasCollision: true, message: 'Время события не может быть в будущем' };
     }
-    if (newOrUpdatedEvent.endTime && newOrUpdatedEvent.endTime.trim() !== '') {
-      const endMin = parseTimeToMinutes(newOrUpdatedEvent.endTime);
-      if (startMin < endMin && endMin > currMin) {
-        return { hasCollision: true, message: 'Время окончания события не может быть в будущем' };
+
+    if (!isPastDate) {
+      const isOvernightNightSleep =
+        newOrUpdatedEvent.eventType === 'NIGHT_SLEEP' &&
+        startMin >= 16 * 60 &&
+        currMin <= 14 * 60;
+
+      if (!isOvernightNightSleep && startMin > currMin) {
+        return { hasCollision: true, message: 'Время события не может быть в будущем' };
+      }
+      if (newOrUpdatedEvent.endTime && newOrUpdatedEvent.endTime.trim() !== '') {
+        const endMin = parseTimeToMinutes(newOrUpdatedEvent.endTime);
+        const isNightCrossing = newOrUpdatedEvent.eventType === 'NIGHT_SLEEP' && startMin > endMin;
+        if (!isNightCrossing && startMin < endMin && endMin > currMin) {
+          return { hasCollision: true, message: 'Время окончания события не может быть в будущем' };
+        }
+        if (isNightCrossing && endMin > currMin) {
+          return { hasCollision: true, message: 'Время окончания события не может быть в будущем' };
+        }
       }
     }
   }
@@ -400,6 +435,13 @@ export function validateEventCollision(
     }
     if (event.eventType === 'WAKEUP') {
       continue;
+    }
+
+    if (event.date && newOrUpdatedEvent.date && event.date !== newOrUpdatedEvent.date) {
+      // If neither is night sleep, naps on different dates cannot overlap
+      if (event.eventType !== 'NIGHT_SLEEP' && newOrUpdatedEvent.eventType !== 'NIGHT_SLEEP') {
+        continue;
+      }
     }
 
     const eventSegments = getIntervalSegments(
@@ -465,8 +507,6 @@ export function evaluateSleepWarnings(
   const activeSleep = events.find(
     e => (e.eventType === 'NAP' || e.eventType === 'NIGHT_SLEEP') && !e.endTime
   );
-  const sleepEvents = events.filter(e => e.eventType === 'NAP' || e.eventType === 'NIGHT_SLEEP');
-  const lastSleep = sleepEvents[sleepEvents.length - 1];
 
   // 1. OVERTIRED
   if (schedule.state === 'AWAKE') {
@@ -506,7 +546,10 @@ export function evaluateSleepWarnings(
   }
 
   // 3. DAY_BUDGET_EXHAUSTED
-  if (schedule.completedDaySleepMinutes >= settings.totalDaySleepMinutes && schedule.remainingNapsCount > 0) {
+  if (
+    schedule.completedDaySleepMinutes >= settings.totalDaySleepMinutes &&
+    (schedule.remainingNapsCount > 0 || curMins < 17 * 60)
+  ) {
     const formattedCompleted = formatMinutesToHoursAndMinutes(schedule.completedDaySleepMinutes);
     const formattedTarget = formatMinutesToHoursAndMinutes(settings.totalDaySleepMinutes);
     warnings.push({
@@ -550,7 +593,11 @@ export function evaluateSleepWarnings(
   }
 
   // 5. SEVERE_DAY_DEFICIT
-  if (schedule.remainingNapsCount === 0 && schedule.completedDaySleepMinutes < settings.totalDaySleepMinutes * 0.65) {
+  if (
+    schedule.state === 'AWAKE' &&
+    schedule.remainingNapsCount === 0 &&
+    schedule.completedDaySleepMinutes < settings.totalDaySleepMinutes * 0.65
+  ) {
     const formattedCompleted = formatMinutesToHoursAndMinutes(schedule.completedDaySleepMinutes);
     const formattedTarget = formatMinutesToHoursAndMinutes(settings.totalDaySleepMinutes);
     warnings.push({
@@ -580,30 +627,24 @@ export function evaluateSleepWarnings(
 
   // 7. FALSE_NIGHT_SLEEP
   let isFalseNight = false;
-  let falseNightStartTime = '';
+  let falseNightTime = '';
 
   if (activeSleep && activeSleep.eventType === 'NIGHT_SLEEP') {
     const startMins = parseTimeToMinutes(activeSleep.startTime);
-    if (startMins < 18 * 60 + 30) {
+    if (startMins >= 12 * 60 && startMins < 18 * 60 + 30) {
       isFalseNight = true;
-      falseNightStartTime = activeSleep.startTime.includes('T') ? formatMinutesToTime(startMins) : activeSleep.startTime;
+      falseNightTime = activeSleep.startTime.includes('T')
+        ? formatMinutesToTime(startMins)
+        : activeSleep.startTime;
     }
-  } else if (!activeSleep && lastSleep && lastSleep.eventType === 'NIGHT_SLEEP') {
-    const startMins = parseTimeToMinutes(lastSleep.startTime);
-    if (startMins < 18 * 60 + 30) {
+  } else if (activeSleep && activeSleep.eventType === 'NAP') {
+    const startMins = parseTimeToMinutes(activeSleep.startTime);
+    const isLateNap = (activeSleep.napNumber && activeSleep.napNumber >= 3) || schedule.completedNapsCount >= 2;
+    if (isLateNap && startMins >= 18 * 60 + 30 && (schedule.sleepDurationMinutes || 0) > 35) {
       isFalseNight = true;
-      falseNightStartTime = lastSleep.startTime.includes('T') ? formatMinutesToTime(startMins) : lastSleep.startTime;
-    }
-  }
-
-  if (!isFalseNight && schedule.state === 'SLEEPING') {
-    const napNum = schedule.currentNapNumber ?? (activeSleep?.napNumber ?? 0);
-    if (napNum >= 3 && schedule.sleepStartTime) {
-      const startMins = parseTimeToMinutes(schedule.sleepStartTime);
-      if (startMins >= 18 * 60 + 30 && (schedule.sleepDurationMinutes ?? 0) > 35) {
-        isFalseNight = true;
-        falseNightStartTime = schedule.sleepStartTime;
-      }
+      falseNightTime = activeSleep.startTime.includes('T')
+        ? formatMinutesToTime(startMins)
+        : activeSleep.startTime;
     }
   }
 
@@ -612,7 +653,7 @@ export function evaluateSleepWarnings(
       code: 'FALSE_NIGHT_SLEEP',
       severity: 'info',
       title: 'Ранний уход в ночь?',
-      message: `Сон начался в ${falseNightStartTime}. Если это вечерний сон, разбудите через 25–30 минут, иначе малыш проснется бодрым посреди вечера.`,
+      message: `Сон начался в ${falseNightTime}. Если это вечерний сон, разбудите через 25–30 минут, иначе малыш проснется бодрым посреди вечера.`,
       actionRecommendation: 'Не позволяйте вечернему сну затянуться, если не планируете окончательный ночной отбой.',
     });
   }
@@ -651,7 +692,7 @@ export function evaluateSleepWarnings(
     const ev1 = sleepEventsForCollision[i];
     const otherEvents = sleepEventsForCollision.filter((_, idx) => idx !== i);
     const collision = validateEventCollision(otherEvents, ev1, currentTime);
-    if (collision.hasCollision && collision.conflictingEvent) {
+    if (collision.hasCollision) {
       warnings.push({
         code: 'EVENT_TIME_COLLISION',
         severity: 'alert',
