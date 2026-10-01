@@ -12,7 +12,10 @@ import {
   ChildSettings,
   SleepEvent,
   ScheduleInput,
+  evaluateSleepWarnings,
+  validateEventCollision,
 } from './sleepEngine';
+import type { SleepWarning, SleepWarningCode, WarningSeverity } from './sleepEngine';
 
 describe('sleepEngine - Helper Functions', () => {
   it('parses time strings to minutes from midnight', () => {
@@ -693,3 +696,364 @@ describe('sleepEngine - (e) Settings Sanity Check Validator', () => {
     expect(res5.message).toContain('5 снов × интервал');
   });
 });
+
+describe('Smart Sleep Warnings System', () => {
+  const baseSettings: ChildSettings = {
+    napsPerDay: 3,
+    wakeIntervalMinMinutes: 150, // 2h 30m
+    wakeIntervalMaxMinutes: 180, // 3h 00m
+    totalDaySleepMinutes: 200,   // 3h 20m
+    typicalWakeupTime: '07:00',
+    targetBedtime: '20:30',
+  };
+
+  it('1. OVERTIRED: triggers warning when wake duration > max + 15 min, alert when > max + 40 min', () => {
+    // max is 180 min
+    // 190 min: <= 195 (not overtired yet)
+    const scheduleNormal = calculateDaySchedule({
+      settings: baseSettings,
+      currentTime: '10:10', // 190 min after 07:00
+      events: [{ eventType: 'WAKEUP', startTime: '07:00' }],
+    });
+    expect(scheduleNormal.warnings?.some(w => w.code === 'OVERTIRED')).toBe(false);
+
+    // 200 min: > 180 + 15 (195), <= 180 + 40 (220) -> warning
+    const scheduleWarn = calculateDaySchedule({
+      settings: baseSettings,
+      currentTime: '10:20', // 200 min after 07:00
+      events: [{ eventType: 'WAKEUP', startTime: '07:00' }],
+    });
+    const overtiredWarn = scheduleWarn.warnings?.find(w => w.code === 'OVERTIRED');
+    expect(overtiredWarn).toBeDefined();
+    expect(overtiredWarn?.severity).toBe('warning');
+    expect(overtiredWarn?.title).toBe('Малыш перегуливает');
+    expect(overtiredWarn?.message).toContain('Бодрствует уже');
+
+    // 225 min: > 180 + 40 (220) -> alert
+    const scheduleAlert = calculateDaySchedule({
+      settings: baseSettings,
+      currentTime: '10:45', // 225 min after 07:00
+      events: [{ eventType: 'WAKEUP', startTime: '07:00' }],
+    });
+    const overtiredAlert = scheduleAlert.warnings?.find(w => w.code === 'OVERTIRED');
+    expect(overtiredAlert).toBeDefined();
+    expect(overtiredAlert?.severity).toBe('alert');
+  });
+
+  it('2. UNDERTIRED: triggers info when wake duration < 60% of min interval', () => {
+    // min is 150 min. 60% of 150 = 90 min.
+    // 80 min: < 90 min and > 0 -> info
+    const scheduleUnder = calculateDaySchedule({
+      settings: baseSettings,
+      currentTime: '08:20', // 80 min after 07:00
+      events: [{ eventType: 'WAKEUP', startTime: '07:00' }],
+    });
+    const undertired = scheduleUnder.warnings?.find(w => w.code === 'UNDERTIRED');
+    expect(undertired).toBeDefined();
+    expect(undertired?.severity).toBe('info');
+    expect(undertired?.title).toBe('Малыш ещё не устал?');
+    expect(undertired?.message).toContain('минимальных');
+
+    // 100 min: >= 90 min -> no undertired warning
+    const scheduleNormal = calculateDaySchedule({
+      settings: baseSettings,
+      currentTime: '08:40', // 100 min after 07:00
+      events: [{ eventType: 'WAKEUP', startTime: '07:00' }],
+    });
+    expect(scheduleNormal.warnings?.some(w => w.code === 'UNDERTIRED')).toBe(false);
+  });
+
+  it('3. DAY_BUDGET_EXHAUSTED: triggers warning when completed sleep >= target and naps remain', () => {
+    // totalDaySleepMinutes = 200 min.
+    // 2 completed naps totaling 205 min, 1 nap remaining (napsPerDay = 3).
+    const events: SleepEvent[] = [
+      { eventType: 'WAKEUP', startTime: '07:00' },
+      { eventType: 'NAP', napNumber: 1, startTime: '09:30', endTime: '11:15' }, // 105 min
+      { eventType: 'NAP', napNumber: 2, startTime: '13:45', endTime: '15:25' }, // 100 min (total 205 >= 200)
+    ];
+
+    const schedule = calculateDaySchedule({
+      settings: baseSettings,
+      currentTime: '16:00',
+      events,
+    });
+
+    const warning = schedule.warnings?.find(w => w.code === 'DAY_BUDGET_EXHAUSTED');
+    expect(warning).toBeDefined();
+    expect(warning?.severity).toBe('warning');
+    expect(warning?.title).toBe('Лимит дневного сна исчерпан');
+    expect(warning?.actionType).toBe('SHORT_BRIDGE_NAP');
+    expect(warning?.message).toContain('Выспано');
+  });
+
+  it('4. ABNORMALLY_LONG_NAP: triggers alert when active nap exceeds wake deadline by > 10m or exceeds max threshold', () => {
+    // Active nap #1 started at 09:30.
+    // Case A: sleepDurationMinutes exceeds 135 min (multi-nap baby)
+    const eventsCaseA: SleepEvent[] = [
+      { eventType: 'WAKEUP', startTime: '07:00' },
+      { eventType: 'NAP', napNumber: 1, startTime: '09:30' }, // ongoing
+    ];
+    // at 11:50, duration is 140 min (> 135 min)
+    const scheduleA = calculateDaySchedule({
+      settings: baseSettings,
+      currentTime: '11:50',
+      events: eventsCaseA,
+    });
+    const warningA = scheduleA.warnings?.find(w => w.code === 'ABNORMALLY_LONG_NAP');
+    expect(warningA).toBeDefined();
+    expect(warningA?.severity).toBe('alert');
+    expect(warningA?.title).toBe('Пора будить малыша');
+    expect(warningA?.actionType).toBe('WAKE_NOW');
+
+    // Case B: 1-nap baby with nap > 180 min
+    const settings1Nap: ChildSettings = {
+      ...baseSettings,
+      napsPerDay: 1,
+      totalDaySleepMinutes: 120,
+      wakeIntervalMinMinutes: 240,
+      wakeIntervalMaxMinutes: 300,
+    };
+    const eventsCaseB: SleepEvent[] = [
+      { eventType: 'WAKEUP', startTime: '07:00' },
+      { eventType: 'NAP', napNumber: 1, startTime: '12:00' }, // ongoing
+    ];
+    // 14:05: 125 min (<= 180 min, wake deadline was 14:00 so overshoot 5m <= 10m)
+    const scheduleB1 = calculateDaySchedule({
+      settings: settings1Nap,
+      currentTime: '14:05',
+      events: eventsCaseB,
+    });
+    expect(scheduleB1.warnings?.some(w => w.code === 'ABNORMALLY_LONG_NAP')).toBe(false);
+    // at 15:10: 190 min (> 180 min)
+    const scheduleB2 = calculateDaySchedule({
+      settings: settings1Nap,
+      currentTime: '15:10',
+      events: eventsCaseB,
+    });
+    expect(scheduleB2.warnings?.some(w => w.code === 'ABNORMALLY_LONG_NAP')).toBe(true);
+  });
+
+  it('5. SEVERE_DAY_DEFICIT: triggers warning when all naps completed but daytime sleep < 65% of target', () => {
+    // totalDaySleepMinutes = 200 min. 65% = 130 min.
+    // 3 naps completed, but only total 105 min (35 + 35 + 35).
+    const events: SleepEvent[] = [
+      { eventType: 'WAKEUP', startTime: '07:00' },
+      { eventType: 'NAP', napNumber: 1, startTime: '09:30', endTime: '10:05' }, // 35 min
+      { eventType: 'NAP', napNumber: 2, startTime: '12:35', endTime: '13:10' }, // 35 min
+      { eventType: 'NAP', napNumber: 3, startTime: '15:40', endTime: '16:15' }, // 35 min (total 105 < 130)
+    ];
+
+    const schedule = calculateDaySchedule({
+      settings: baseSettings,
+      currentTime: '17:00',
+      events,
+    });
+
+    const warning = schedule.warnings?.find(w => w.code === 'SEVERE_DAY_DEFICIT');
+    expect(warning).toBeDefined();
+    expect(warning?.severity).toBe('warning');
+    expect(warning?.title).toBe('Дефицит дневного сна');
+    expect(warning?.actionType).toBe('EARLY_BEDTIME');
+    expect(warning?.message).toContain('За день малыш поспал всего');
+  });
+
+  it('6. LATE_NAP_BEDTIME_SHIFT: triggers warning when bedtime is shifted >= 30 min', () => {
+    // Target bedtime 20:30. If naps ran late, bedtime shifts to 21:15 (diff = 45 min >= 30 min).
+    const events: SleepEvent[] = [
+      { eventType: 'WAKEUP', startTime: '07:00' },
+      { eventType: 'NAP', napNumber: 1, startTime: '10:00', endTime: '11:30' },
+      { eventType: 'NAP', napNumber: 2, startTime: '14:30', endTime: '16:00' },
+      { eventType: 'NAP', napNumber: 3, startTime: '18:45', endTime: '19:25' }, // late bridge nap ending at 19:25
+    ];
+    // with final wake window 150 min (2h 30m), bedtime shifts to 21:55
+    const schedule = calculateDaySchedule({
+      settings: baseSettings,
+      currentTime: '19:40',
+      events,
+    });
+
+    expect(schedule.isBedtimeShifted).toBe(true);
+    const warning = schedule.warnings?.find(w => w.code === 'LATE_NAP_BEDTIME_SHIFT');
+    expect(warning).toBeDefined();
+    expect(warning?.severity).toBe('warning');
+    expect(warning?.title).toContain('Отбой сдвигается');
+    expect(warning?.message).toContain('позже плана');
+  });
+
+  it('7. FALSE_NIGHT_SLEEP: triggers info when night sleep starts < 18:30 or late 3rd nap > 35m', () => {
+    // Condition A: Night sleep starts at 17:45 (< 18:30)
+    const eventsNightEarly: SleepEvent[] = [
+      { eventType: 'WAKEUP', startTime: '07:00' },
+      { eventType: 'NIGHT_SLEEP', startTime: '17:45' }, // early night sleep
+    ];
+    const scheduleEarlyNight = calculateDaySchedule({
+      settings: baseSettings,
+      currentTime: '18:00',
+      events: eventsNightEarly,
+    });
+    const warnEarlyNight = scheduleEarlyNight.warnings?.find(w => w.code === 'FALSE_NIGHT_SLEEP');
+    expect(warnEarlyNight).toBeDefined();
+    expect(warnEarlyNight?.severity).toBe('info');
+    expect(warnEarlyNight?.title).toBe('Ранний уход в ночь?');
+
+    // Condition B: Nap #3 starts at 18:45 (> 18:30) and lasts 40 min (> 35 min)
+    const eventsLateNap: SleepEvent[] = [
+      { eventType: 'WAKEUP', startTime: '07:00' },
+      { eventType: 'NAP', napNumber: 1, startTime: '09:30', endTime: '11:00' },
+      { eventType: 'NAP', napNumber: 2, startTime: '14:00', endTime: '15:30' },
+      { eventType: 'NAP', napNumber: 3, startTime: '18:45' }, // ongoing at 19:26 (41 min)
+    ];
+    const scheduleLateNap = calculateDaySchedule({
+      settings: baseSettings,
+      currentTime: '19:26',
+      events: eventsLateNap,
+    });
+    const warnLateNap = scheduleLateNap.warnings?.find(w => w.code === 'FALSE_NIGHT_SLEEP');
+    expect(warnLateNap).toBeDefined();
+    expect(warnLateNap?.severity).toBe('info');
+  });
+
+  it('8. FORGOTTEN_WAKEUP_TIMER: triggers alert when daytime nap > 210m or night sleep active after 09:30', () => {
+    // Condition A: Nap active for 220 min (> 210 min / 3.5h)
+    const eventsLongNap: SleepEvent[] = [
+      { eventType: 'WAKEUP', startTime: '07:00' },
+      { eventType: 'NAP', napNumber: 1, startTime: '10:00' }, // ongoing at 13:45 (225 min)
+    ];
+    const scheduleLongNap = calculateDaySchedule({
+      settings: baseSettings,
+      currentTime: '13:45',
+      events: eventsLongNap,
+    });
+    const warnNap = scheduleLongNap.warnings?.find(w => w.code === 'FORGOTTEN_WAKEUP_TIMER');
+    expect(warnNap).toBeDefined();
+    expect(warnNap?.severity).toBe('alert');
+    expect(warnNap?.actionType).toBe('SET_WAKE_TIME');
+    expect(warnNap?.title).toBe('Таймер сна всё ещё включён');
+
+    // Condition B: Night sleep still active at 10:15 (> 09:30)
+    const eventsNight: SleepEvent[] = [
+      { eventType: 'NIGHT_SLEEP', startTime: '21:00' }, // active from yesterday
+    ];
+    const scheduleNight = calculateDaySchedule({
+      settings: baseSettings,
+      currentTime: '10:15',
+      events: eventsNight,
+    });
+    const warnNight = scheduleNight.warnings?.find(w => w.code === 'FORGOTTEN_WAKEUP_TIMER');
+    expect(warnNight).toBeDefined();
+    expect(warnNight?.severity).toBe('alert');
+
+    // Normal night sleep at 22:00 -> no forgotten timer warning
+    const scheduleNormalNight = calculateDaySchedule({
+      settings: baseSettings,
+      currentTime: '22:00',
+      events: eventsNight,
+    });
+    expect(scheduleNormalNight.warnings?.some(w => w.code === 'FORGOTTEN_WAKEUP_TIMER')).toBe(false);
+  });
+
+  it('9. validateEventCollision: detects overlapping intervals, inverted times, and future events', () => {
+    const existingEvents: SleepEvent[] = [
+      { id: 'ev-1', eventType: 'NAP', startTime: '10:00', endTime: '11:30' },
+      { id: 'ev-2', eventType: 'NAP', startTime: '14:00', endTime: '15:30' },
+    ];
+
+    // Case A: End time before start time
+    const resInverted = validateEventCollision(existingEvents, {
+      startTime: '13:00',
+      endTime: '12:00',
+      eventType: 'NAP',
+    });
+    expect(resInverted.hasCollision).toBe(true);
+    expect(resInverted.message).toContain('Время окончания');
+
+    // Case B: Night sleep crossing midnight is allowed
+    const resNightCrossing = validateEventCollision(existingEvents, {
+      startTime: '21:00',
+      endTime: '07:00',
+      eventType: 'NIGHT_SLEEP',
+    });
+    expect(resNightCrossing.hasCollision).toBe(false);
+
+    // Case C: Event in the future relative to currentTime
+    const resFuture = validateEventCollision(
+      existingEvents,
+      { startTime: '16:00', endTime: '17:00', eventType: 'NAP' },
+      '15:00'
+    );
+    expect(resFuture.hasCollision).toBe(true);
+    expect(resFuture.message).toContain('будущем');
+
+    // Case D: Overlap with existing event (11:00-12:00 overlaps with 10:00-11:30)
+    const resOverlap = validateEventCollision(existingEvents, {
+      startTime: '11:00',
+      endTime: '12:00',
+      eventType: 'NAP',
+    });
+    expect(resOverlap.hasCollision).toBe(true);
+    expect(resOverlap.conflictingEvent?.id).toBe('ev-1');
+    expect(resOverlap.message).toContain('пересекается');
+
+    // Case E: Editing an existing event without conflict with itself
+    const resSelfEdit = validateEventCollision(existingEvents, {
+      id: 'ev-1',
+      startTime: '09:45',
+      endTime: '11:15',
+      eventType: 'NAP',
+    });
+    expect(resSelfEdit.hasCollision).toBe(false);
+
+    // Case F: Adjacent event (touching boundary) is valid
+    const resAdjacent = validateEventCollision(existingEvents, {
+      startTime: '11:30',
+      endTime: '12:30',
+      eventType: 'NAP',
+    });
+    expect(resAdjacent.hasCollision).toBe(false);
+  });
+
+  it('10. sorts warnings by severity: alert first, then warning, then info', () => {
+    // Construct scenario that produces alert, warning, and info
+    // E.g. awake state with overtired > 40m (alert) and day budget exhausted (warning)
+    const events: SleepEvent[] = [
+      { eventType: 'WAKEUP', startTime: '07:00' },
+      { eventType: 'NAP', napNumber: 1, startTime: '09:00', endTime: '10:45' }, // 105 min
+      { eventType: 'NAP', napNumber: 2, startTime: '12:00', endTime: '13:45' }, // 105 min (total 210 >= 200)
+    ];
+    // currentTime: 18:00 (awake for 255 min from 13:45 -> > 180 + 40 -> alert OVERTIRED, and warning DAY_BUDGET_EXHAUSTED)
+    const schedule = calculateDaySchedule({
+      settings: baseSettings,
+      currentTime: '18:00',
+      events,
+    });
+
+    const warnings = schedule.warnings || [];
+    expect(warnings.length).toBeGreaterThanOrEqual(2);
+
+    // Verify ordering
+    const severityValues: Record<WarningSeverity, number> = { alert: 0, warning: 1, info: 2 };
+    for (let i = 0; i < warnings.length - 1; i++) {
+      expect(severityValues[warnings[i].severity]).toBeLessThanOrEqual(
+        severityValues[warnings[i + 1].severity]
+      );
+    }
+  });
+
+  it('11. evaluateSleepWarnings can be called directly as a pure function', () => {
+    const rawSchedule = calculateDaySchedule({
+      settings: baseSettings,
+      currentTime: '10:20',
+      events: [{ eventType: 'WAKEUP', startTime: '07:00' }],
+    });
+    const standaloneWarnings: SleepWarning[] = evaluateSleepWarnings(
+      rawSchedule,
+      baseSettings,
+      [{ eventType: 'WAKEUP', startTime: '07:00' }],
+      '10:20'
+    );
+    expect(standaloneWarnings.length).toBeGreaterThan(0);
+    const code: SleepWarningCode = standaloneWarnings[0].code;
+    expect(code).toBe('OVERTIRED');
+  });
+});
+

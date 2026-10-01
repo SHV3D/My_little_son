@@ -96,6 +96,31 @@ export interface ScheduleOutput {
   // Schedule crunch / adaptation
   isScheduleCrunched: boolean;
   scheduleCrunchReason?: string;
+
+  // Smart Sleep Warnings
+  warnings?: SleepWarning[];
+}
+
+export type SleepWarningCode =
+  | 'OVERTIRED'
+  | 'UNDERTIRED'
+  | 'DAY_BUDGET_EXHAUSTED'
+  | 'ABNORMALLY_LONG_NAP'
+  | 'SEVERE_DAY_DEFICIT'
+  | 'LATE_NAP_BEDTIME_SHIFT'
+  | 'FALSE_NIGHT_SLEEP'
+  | 'FORGOTTEN_WAKEUP_TIMER'
+  | 'EVENT_TIME_COLLISION';
+
+export type WarningSeverity = 'info' | 'warning' | 'alert';
+
+export interface SleepWarning {
+  code: SleepWarningCode;
+  severity: WarningSeverity;
+  title: string;
+  message: string;
+  actionRecommendation?: string;
+  actionType?: 'WAKE_NOW' | 'EARLY_BEDTIME' | 'SHORT_BRIDGE_NAP' | 'SET_WAKE_TIME' | 'CHECK_TIME';
 }
 
 export interface SettingsInput {
@@ -276,6 +301,391 @@ export function validateSettings(settings: SettingsInput): ValidationResult {
 }
 
 /**
+ * Helper to extract interval segments (handling night sleep crossing midnight).
+ */
+function getIntervalSegments(
+  startTime: string,
+  endTime: string | null | undefined,
+  eventType?: SleepEventType,
+  currMins?: number
+): Array<{ start: number; end: number }> {
+  const s = parseTimeToMinutes(startTime);
+  const e =
+    endTime && endTime.trim() !== ''
+      ? parseTimeToMinutes(endTime)
+      : currMins !== undefined
+        ? Math.max(s + 1, currMins)
+        : s + 60;
+
+  if (endTime && endTime.trim() !== '' && eventType === 'NIGHT_SLEEP' && s > e) {
+    return [
+      { start: s, end: 1440 },
+      { start: 0, end: e },
+    ];
+  }
+  return [{ start: s, end: e }];
+}
+
+/**
+ * Validates whether a new or updated event collides with existing events,
+ * has invalid start/end time, or is scheduled in the future relative to currentTime.
+ */
+export function validateEventCollision(
+  events: SleepEvent[] = [],
+  newOrUpdatedEvent: {
+    id?: string;
+    startTime: string;
+    endTime?: string | null;
+    eventType?: SleepEventType;
+    date?: string;
+  },
+  currentTime?: string
+): { hasCollision: boolean; message?: string; conflictingEvent?: SleepEvent } {
+  if (!newOrUpdatedEvent.startTime) {
+    return { hasCollision: false };
+  }
+
+  const startMin = parseTimeToMinutes(newOrUpdatedEvent.startTime);
+
+  // 1. Time range validation: start vs end
+  if (newOrUpdatedEvent.endTime && newOrUpdatedEvent.endTime.trim() !== '') {
+    const endMin = parseTimeToMinutes(newOrUpdatedEvent.endTime);
+    if (newOrUpdatedEvent.eventType === 'NIGHT_SLEEP') {
+      if (startMin === endMin) {
+        return { hasCollision: true, message: 'Время окончания должно отличаться от времени начала' };
+      }
+      if (startMin > endMin) {
+        // Crossing midnight is allowed for night sleep (e.g. start >= 16:00, end <= 14:00)
+        const isValidCrossing = startMin >= 16 * 60 && endMin <= 14 * 60;
+        if (!isValidCrossing) {
+          return { hasCollision: true, message: 'Время окончания должно быть позже времени начала' };
+        }
+      }
+    } else {
+      if (startMin >= endMin) {
+        return { hasCollision: true, message: 'Время окончания должно быть позже времени начала' };
+      }
+    }
+  }
+
+  // 2. Future check (if currentTime provided)
+  if (currentTime) {
+    const currMin = parseTimeToMinutes(currentTime);
+    if (startMin > currMin) {
+      return { hasCollision: true, message: 'Время события не может быть в будущем' };
+    }
+    if (newOrUpdatedEvent.endTime && newOrUpdatedEvent.endTime.trim() !== '') {
+      const endMin = parseTimeToMinutes(newOrUpdatedEvent.endTime);
+      if (startMin < endMin && endMin > currMin) {
+        return { hasCollision: true, message: 'Время окончания события не может быть в будущем' };
+      }
+    }
+  }
+
+  // 3. Temporal overlap with existing events
+  if (newOrUpdatedEvent.eventType === 'WAKEUP') {
+    return { hasCollision: false };
+  }
+
+  const targetSegments = getIntervalSegments(
+    newOrUpdatedEvent.startTime,
+    newOrUpdatedEvent.endTime,
+    newOrUpdatedEvent.eventType,
+    currentTime ? parseTimeToMinutes(currentTime) : undefined
+  );
+
+  for (const event of events) {
+    if (event.id && newOrUpdatedEvent.id && event.id === newOrUpdatedEvent.id) {
+      continue;
+    }
+    if (event.eventType === 'WAKEUP') {
+      continue;
+    }
+
+    const eventSegments = getIntervalSegments(
+      event.startTime,
+      event.endTime,
+      event.eventType,
+      currentTime ? parseTimeToMinutes(currentTime) : undefined
+    );
+
+    let hasOverlap = false;
+    for (const t of targetSegments) {
+      for (const ev of eventSegments) {
+        if (Math.max(t.start, ev.start) < Math.min(t.end, ev.end)) {
+          hasOverlap = true;
+          break;
+        }
+      }
+      if (hasOverlap) break;
+    }
+
+    if (hasOverlap) {
+      const startStr = newOrUpdatedEvent.startTime.includes('T')
+        ? formatMinutesToTime(startMin)
+        : newOrUpdatedEvent.startTime;
+      const endStr = newOrUpdatedEvent.endTime
+        ? newOrUpdatedEvent.endTime.includes('T')
+          ? formatMinutesToTime(parseTimeToMinutes(newOrUpdatedEvent.endTime))
+          : newOrUpdatedEvent.endTime
+        : '...';
+      const evStartM = parseTimeToMinutes(event.startTime);
+      const evStartStr = event.startTime.includes('T') ? formatMinutesToTime(evStartM) : event.startTime;
+      const evEndStr = event.endTime
+        ? event.endTime.includes('T')
+          ? formatMinutesToTime(parseTimeToMinutes(event.endTime))
+          : event.endTime
+        : '...';
+
+      return {
+        hasCollision: true,
+        message: `Время ${startStr} – ${endStr} пересекается с другой записью сна (${evStartStr} – ${evEndStr}). Проверьте указанные часы.`,
+        conflictingEvent: event,
+      };
+    }
+  }
+
+  return { hasCollision: false };
+}
+
+/**
+ * Evaluates active sleep warnings and recommendations based on current schedule,
+ * settings, events, and time of day.
+ * Returns array of warnings sorted by severity: alert -> warning -> info.
+ */
+export function evaluateSleepWarnings(
+  schedule: ScheduleOutput,
+  settings: ChildSettings,
+  events: SleepEvent[] = [],
+  currentTime: string
+): SleepWarning[] {
+  const warnings: SleepWarning[] = [];
+  const curMins = parseTimeToMinutes(currentTime);
+
+  const activeSleep = events.find(
+    e => (e.eventType === 'NAP' || e.eventType === 'NIGHT_SLEEP') && !e.endTime
+  );
+  const sleepEvents = events.filter(e => e.eventType === 'NAP' || e.eventType === 'NIGHT_SLEEP');
+  const lastSleep = sleepEvents[sleepEvents.length - 1];
+
+  // 1. OVERTIRED
+  if (schedule.state === 'AWAKE') {
+    const awakeDuration = schedule.awakeDurationMinutes ?? 0;
+    const maxWake = settings.wakeIntervalMaxMinutes;
+    const isOvertired = awakeDuration > maxWake + 15;
+    if (isOvertired) {
+      const isAlert = awakeDuration > maxWake + 40;
+      const formattedAwake = schedule.formattedAwakeDuration || formatMinutesToHoursAndMinutes(awakeDuration);
+      const formattedMax = formatMinutesToHoursAndMinutes(maxWake);
+      warnings.push({
+        code: 'OVERTIRED',
+        severity: isAlert ? 'alert' : 'warning',
+        title: 'Малыш перегуливает',
+        message: `Бодрствует уже ${formattedAwake} (максимум по норме ${formattedMax}). Вероятны капризы и сопротивление укладыванию.`,
+        actionRecommendation: 'Начните спокойное укладывание в затемнённой комнате без промедления.',
+        actionType: 'WAKE_NOW',
+      });
+    }
+  }
+
+  // 2. UNDERTIRED
+  if (schedule.state === 'AWAKE') {
+    const awakeDuration = schedule.awakeDurationMinutes ?? 0;
+    const minWake = settings.wakeIntervalMinMinutes;
+    if (awakeDuration > 0 && awakeDuration < minWake * 0.6) {
+      const formattedAwake = schedule.formattedAwakeDuration || formatMinutesToHoursAndMinutes(awakeDuration);
+      const formattedMin = formatMinutesToHoursAndMinutes(minWake);
+      warnings.push({
+        code: 'UNDERTIRED',
+        severity: 'info',
+        title: 'Малыш ещё не устал?',
+        message: `Прошло всего ${formattedAwake} из минимальных ${formattedMin}. Если уложить сейчас, сон может быть коротким или беспокойным.`,
+        actionRecommendation: 'Если нет явных признаков усталости, продлите спокойные игры ещё на 15–20 минут.',
+      });
+    }
+  }
+
+  // 3. DAY_BUDGET_EXHAUSTED
+  if (schedule.completedDaySleepMinutes >= settings.totalDaySleepMinutes && schedule.remainingNapsCount > 0) {
+    const formattedCompleted = formatMinutesToHoursAndMinutes(schedule.completedDaySleepMinutes);
+    const formattedTarget = formatMinutesToHoursAndMinutes(settings.totalDaySleepMinutes);
+    warnings.push({
+      code: 'DAY_BUDGET_EXHAUSTED',
+      severity: 'warning',
+      title: 'Лимит дневного сна исчерпан',
+      message: `Выспано ${formattedCompleted} из нормы ${formattedTarget}. Оставшиеся дневные сны лучше ограничить короткими интервалами (20–30 мин).`,
+      actionRecommendation: 'Используйте короткий мостиковый сон, чтобы дотянуть до обычного отбоя.',
+      actionType: 'SHORT_BRIDGE_NAP',
+    });
+  }
+
+  // 4. ABNORMALLY_LONG_NAP
+  if (schedule.state === 'SLEEPING') {
+    const isNight = activeSleep?.eventType === 'NIGHT_SLEEP';
+    if (!isNight) {
+      const deadlineMins = schedule.wakeDeadlineTime ? parseTimeToMinutes(schedule.wakeDeadlineTime) : null;
+      let deadlineExceededOver10 = false;
+      if (schedule.isWakeDeadlineExceeded && deadlineMins !== null) {
+        let diff = curMins - deadlineMins;
+        if (diff < -720) diff += 1440;
+        if (diff > 10) deadlineExceededOver10 = true;
+      }
+
+      const sleepDur = schedule.sleepDurationMinutes ?? 0;
+      const maxThreshold = settings.napsPerDay > 1 ? 135 : 180;
+      const isExceededDuration = sleepDur > maxThreshold;
+
+      if (deadlineExceededOver10 || isExceededDuration) {
+        const formattedDur = schedule.formattedSleepDuration || formatMinutesToHoursAndMinutes(sleepDur);
+        warnings.push({
+          code: 'ABNORMALLY_LONG_NAP',
+          severity: 'alert',
+          title: 'Пора будить малыша',
+          message: `Текущий сон длится уже ${formattedDur}. Если продолжить сон, отбой сдвинется на ${schedule.projectedBedtime} или пострадает ночной сон.`,
+          actionRecommendation: 'Мягко разбудите кроху: приоткройте шторы, включите тихий естественный шум.',
+          actionType: 'WAKE_NOW',
+        });
+      }
+    }
+  }
+
+  // 5. SEVERE_DAY_DEFICIT
+  if (schedule.remainingNapsCount === 0 && schedule.completedDaySleepMinutes < settings.totalDaySleepMinutes * 0.65) {
+    const formattedCompleted = formatMinutesToHoursAndMinutes(schedule.completedDaySleepMinutes);
+    const formattedTarget = formatMinutesToHoursAndMinutes(settings.totalDaySleepMinutes);
+    warnings.push({
+      code: 'SEVERE_DAY_DEFICIT',
+      severity: 'warning',
+      title: 'Дефицит дневного сна',
+      message: `За день малыш поспал всего ${formattedCompleted} (при норме ${formattedTarget}). Вечером возможна сильная усталость.`,
+      actionRecommendation: 'Рекомендуется сдвинуть ночной отбой на 30–40 минут раньше обычного.',
+      actionType: 'EARLY_BEDTIME',
+    });
+  }
+
+  // 6. LATE_NAP_BEDTIME_SHIFT
+  if (schedule.isBedtimeShifted) {
+    let diffMinutes = parseTimeToMinutes(schedule.projectedBedtime) - parseTimeToMinutes(settings.targetBedtime);
+    if (diffMinutes < -720) diffMinutes += 1440;
+    if (diffMinutes >= 30) {
+      warnings.push({
+        code: 'LATE_NAP_BEDTIME_SHIFT',
+        severity: 'warning',
+        title: `Отбой сдвигается на ${schedule.projectedBedtime}`,
+        message: `Из-за смещения дневных снов ночной сон начнется на ${diffMinutes} мин позже плана (${settings.targetBedtime}).`,
+        actionRecommendation: 'Сократите следующий сон или время последнего бодрствования, чтобы вернуть режим.',
+      });
+    }
+  }
+
+  // 7. FALSE_NIGHT_SLEEP
+  let isFalseNight = false;
+  let falseNightStartTime = '';
+
+  if (activeSleep && activeSleep.eventType === 'NIGHT_SLEEP') {
+    const startMins = parseTimeToMinutes(activeSleep.startTime);
+    if (startMins < 18 * 60 + 30) {
+      isFalseNight = true;
+      falseNightStartTime = activeSleep.startTime.includes('T') ? formatMinutesToTime(startMins) : activeSleep.startTime;
+    }
+  } else if (!activeSleep && lastSleep && lastSleep.eventType === 'NIGHT_SLEEP') {
+    const startMins = parseTimeToMinutes(lastSleep.startTime);
+    if (startMins < 18 * 60 + 30) {
+      isFalseNight = true;
+      falseNightStartTime = lastSleep.startTime.includes('T') ? formatMinutesToTime(startMins) : lastSleep.startTime;
+    }
+  }
+
+  if (!isFalseNight && schedule.state === 'SLEEPING') {
+    const napNum = schedule.currentNapNumber ?? (activeSleep?.napNumber ?? 0);
+    if (napNum >= 3 && schedule.sleepStartTime) {
+      const startMins = parseTimeToMinutes(schedule.sleepStartTime);
+      if (startMins >= 18 * 60 + 30 && (schedule.sleepDurationMinutes ?? 0) > 35) {
+        isFalseNight = true;
+        falseNightStartTime = schedule.sleepStartTime;
+      }
+    }
+  }
+
+  if (isFalseNight) {
+    warnings.push({
+      code: 'FALSE_NIGHT_SLEEP',
+      severity: 'info',
+      title: 'Ранний уход в ночь?',
+      message: `Сон начался в ${falseNightStartTime}. Если это вечерний сон, разбудите через 25–30 минут, иначе малыш проснется бодрым посреди вечера.`,
+      actionRecommendation: 'Не позволяйте вечернему сну затянуться, если не планируете окончательный ночной отбой.',
+    });
+  }
+
+  // 8. FORGOTTEN_WAKEUP_TIMER
+  if (schedule.state === 'SLEEPING') {
+    const sleepDur = schedule.sleepDurationMinutes ?? 0;
+    const isNight = activeSleep?.eventType === 'NIGHT_SLEEP' || events.some(e => e.eventType === 'NIGHT_SLEEP' && !e.endTime);
+
+    let isForgotten = false;
+    if (!isNight && sleepDur > 210) {
+      isForgotten = true;
+    } else if (isNight) {
+      if (curMins > parseTimeToMinutes('09:30') && curMins < parseTimeToMinutes('19:00')) {
+        isForgotten = true;
+      }
+    }
+
+    if (isForgotten) {
+      const sleepStartStr = schedule.sleepStartTime || (activeSleep?.startTime ? (activeSleep.startTime.includes('T') ? formatMinutesToTime(parseTimeToMinutes(activeSleep.startTime)) : activeSleep.startTime) : '');
+      const formattedDur = schedule.formattedSleepDuration || formatMinutesToHoursAndMinutes(sleepDur);
+      warnings.push({
+        code: 'FORGOTTEN_WAKEUP_TIMER',
+        severity: 'alert',
+        title: 'Таймер сна всё ещё включён',
+        message: `Сон начался в ${sleepStartStr} и длится уже ${formattedDur}. Возможно, вы забыли отметить пробуждение?`,
+        actionRecommendation: 'Нажмите «Проснулся» и выберите реальное время пробуждения малыша.',
+        actionType: 'SET_WAKE_TIME',
+      });
+    }
+  }
+
+  // 9. EVENT_TIME_COLLISION
+  const sleepEventsForCollision = events.filter(e => e.eventType === 'NAP' || e.eventType === 'NIGHT_SLEEP');
+  for (let i = 0; i < sleepEventsForCollision.length; i++) {
+    const ev1 = sleepEventsForCollision[i];
+    const otherEvents = sleepEventsForCollision.filter((_, idx) => idx !== i);
+    const collision = validateEventCollision(otherEvents, ev1, currentTime);
+    if (collision.hasCollision && collision.conflictingEvent) {
+      warnings.push({
+        code: 'EVENT_TIME_COLLISION',
+        severity: 'alert',
+        title: 'Пересечение во времени',
+        message: collision.message || 'Пересечение времени событий сна.',
+        actionRecommendation: 'Скорректируйте время начала или окончания сна.',
+        actionType: 'CHECK_TIME',
+      });
+      break;
+    }
+  }
+
+  // Deduplicate warnings by code
+  const uniqueWarnings: SleepWarning[] = [];
+  const seenCodes = new Set<SleepWarningCode>();
+  for (const w of warnings) {
+    if (!seenCodes.has(w.code)) {
+      seenCodes.add(w.code);
+      uniqueWarnings.push(w);
+    }
+  }
+
+  // Sort by severity: alert -> warning -> info
+  const severityRank: Record<WarningSeverity, number> = {
+    alert: 0,
+    warning: 1,
+    info: 2,
+  };
+  uniqueWarnings.sort((a, b) => severityRank[a.severity] - severityRank[b.severity]);
+
+  return uniqueWarnings;
+}
+
+/**
  * Core adaptive sleep recommendation algorithm.
  */
 export function calculateDaySchedule(input: ScheduleInput): ScheduleOutput {
@@ -317,11 +727,16 @@ export function calculateDaySchedule(input: ScheduleInput): ScheduleOutput {
       ? formatMinutesToTime(parseTimeToMinutes(activeSleep.startTime))
       : activeSleep.startTime;
     const sleepStartMinutes = parseTimeToMinutes(activeSleep.startTime);
-    const sleepDurationMinutes = Math.max(0, currentMinutes - sleepStartMinutes);
+    let sleepDurationMinutes = currentMinutes - sleepStartMinutes;
+    if (isNightSleep && sleepDurationMinutes < 0) {
+      sleepDurationMinutes += 1440;
+    } else {
+      sleepDurationMinutes = Math.max(0, sleepDurationMinutes);
+    }
     const formattedSleepDuration = formatMinutesToHoursAndMinutes(sleepDurationMinutes);
 
     if (isNightSleep) {
-      return {
+      const output: ScheduleOutput = {
         state: 'SLEEPING',
         sleepDurationMinutes,
         formattedSleepDuration,
@@ -347,6 +762,8 @@ export function calculateDaySchedule(input: ScheduleInput): ScheduleOutput {
         isScheduleCrunched: false,
         scheduleCrunchReason: undefined,
       };
+      output.warnings = evaluateSleepWarnings(output, settings, events, input.currentTime);
+      return output;
     }
 
     const currentNapNumber = activeSleep.napNumber || (completedNapsCount + 1);
@@ -444,7 +861,7 @@ export function calculateDaySchedule(input: ScheduleInput): ScheduleOutput {
       });
     }
 
-    return {
+    const output: ScheduleOutput = {
       state: 'SLEEPING',
       sleepDurationMinutes,
       formattedSleepDuration,
@@ -470,6 +887,8 @@ export function calculateDaySchedule(input: ScheduleInput): ScheduleOutput {
       isScheduleCrunched: isBedtimeShifted,
       scheduleCrunchReason: isBedtimeShifted ? 'Сон затянулся, отбой пересчитан' : undefined,
     };
+    output.warnings = evaluateSleepWarnings(output, settings, events, input.currentTime);
+    return output;
   }
 
   // --- AWAKE STATE ---
@@ -632,7 +1051,7 @@ export function calculateDaySchedule(input: ScheduleInput): ScheduleOutput {
   const projectedBedtime = formatMinutesToTime(projectedBedtimeMinutes);
   const bedtimeStatusMessage = isBedtimeShifted ? 'пересчитано' : 'цель отбоя';
 
-  return {
+  const output: ScheduleOutput = {
     state,
     awakeDurationMinutes,
     formattedAwakeDuration,
@@ -655,4 +1074,6 @@ export function calculateDaySchedule(input: ScheduleInput): ScheduleOutput {
     isScheduleCrunched,
     scheduleCrunchReason,
   };
+  output.warnings = evaluateSleepWarnings(output, settings, events, input.currentTime);
+  return output;
 }
