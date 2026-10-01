@@ -119,7 +119,7 @@ export const AgePresetsModal: React.FC<AgePresetsModalProps> = ({
           width: '100%',
           maxWidth: '430px',
           boxSizing: 'border-box',
-          backgroundColor: '#ECEEE6',
+          backgroundColor: 'var(--bg-primary, #ECEEE6)',
           borderRadius: '32px 32px 0 0',
           padding: '12px 16px max(32px, env(safe-area-inset-bottom, 32px))',
           display: 'flex',
@@ -137,7 +137,7 @@ export const AgePresetsModal: React.FC<AgePresetsModalProps> = ({
             width: '40px',
             height: '4px',
             borderRadius: '2px',
-            backgroundColor: '#C5CCBC',
+            backgroundColor: 'var(--color-border, #C5CCBC)',
             alignSelf: 'center',
             marginBottom: '4px',
           }}
@@ -152,13 +152,13 @@ export const AgePresetsModal: React.FC<AgePresetsModalProps> = ({
                 margin: 0,
                 fontSize: '20px',
                 fontWeight: 700,
-                color: '#1E2A20',
+                color: 'var(--text-primary, #1E2A20)',
                 letterSpacing: '-0.5px',
               }}
             >
               Возрастные нормы
             </h2>
-            <div style={{ fontSize: '13px', color: '#4A5A4C', marginTop: '2px' }}>
+            <div style={{ fontSize: '13px', color: 'var(--text-muted, #4A5A4C)', marginTop: '2px' }}>
               Выберите возраст сына для быстрой настройки
             </div>
           </div>
@@ -167,18 +167,20 @@ export const AgePresetsModal: React.FC<AgePresetsModalProps> = ({
             data-testid="close-presets-modal"
             aria-label="Закрыть"
             onClick={onClose}
+            className="bento-interactive"
             style={{
               width: '40px',
               height: '40px',
               borderRadius: '12px',
               border: 0,
-              backgroundColor: '#FFFFFF',
-              color: '#1E2A20',
+              backgroundColor: 'var(--color-white, #FFFFFF)',
+              color: 'var(--text-primary, #1E2A20)',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
               cursor: 'pointer',
               fontSize: '18px',
+              boxShadow: 'var(--shadow-sm, 0 1px 3px rgba(30, 42, 32, 0.05))',
             }}
           >
             ✕
@@ -198,10 +200,11 @@ export const AgePresetsModal: React.FC<AgePresetsModalProps> = ({
                   onSelectPreset(preset);
                   onClose();
                 }}
+                className="bento-interactive"
                 style={{
-                  background: '#FFFFFF',
+                  background: 'var(--color-white, #FFFFFF)',
                   borderRadius: '20px',
-                  border: isCurrent ? '2px solid #23372A' : '1px solid #E3E7DA',
+                  border: isCurrent ? '2px solid var(--color-dark, #23372A)' : '1px solid var(--color-border, #E3E7DA)',
                   padding: '14px 16px',
                   display: 'flex',
                   flexDirection: 'column',
@@ -210,16 +213,17 @@ export const AgePresetsModal: React.FC<AgePresetsModalProps> = ({
                   cursor: 'pointer',
                   fontFamily: 'inherit',
                   transition: 'all 0.2s ease',
+                  boxShadow: 'var(--shadow-sm, 0 1px 3px rgba(30, 42, 32, 0.05))',
                 }}
               >
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                  <span style={{ fontSize: '16px', fontWeight: 600, color: '#1E2A20' }}>
+                  <span style={{ fontSize: '16px', fontWeight: 600, color: 'var(--text-primary, #1E2A20)' }}>
                     {preset.ageTitle}
                   </span>
                   <span
                     style={{
-                      backgroundColor: isCurrent ? '#23372A' : '#D4F27A',
-                      color: isCurrent ? '#F1F4EA' : '#1E2A20',
+                      backgroundColor: isCurrent ? 'var(--color-dark, #23372A)' : 'var(--color-lime, #D4F27A)',
+                      color: isCurrent ? 'var(--color-lime, #D4F27A)' : '#1E2A20',
                       fontSize: '12px',
                       fontWeight: 600,
                       padding: '4px 10px',
@@ -230,7 +234,7 @@ export const AgePresetsModal: React.FC<AgePresetsModalProps> = ({
                   </span>
                 </div>
 
-                <div style={{ fontSize: '13px', color: '#4A5A4C' }}>
+                <div style={{ fontSize: '13px', color: 'var(--text-muted, #4A5A4C)' }}>
                   {preset.ageSubtitle}
                 </div>
 
@@ -241,20 +245,20 @@ export const AgePresetsModal: React.FC<AgePresetsModalProps> = ({
                     gap: '6px',
                     marginTop: '2px',
                     fontSize: '12px',
-                    color: '#4A5A4C',
+                    color: 'var(--text-muted, #4A5A4C)',
                   }}
                 >
-                  <span style={{ backgroundColor: '#F4F5EF', padding: '3px 8px', borderRadius: '8px' }}>
+                  <span style={{ backgroundColor: 'var(--color-neutral-bg, #F4F5EF)', padding: '3px 8px', borderRadius: '8px', color: 'var(--text-muted, #4A5A4C)' }}>
                     Интервал {Math.floor(preset.wakeIntervalMinMinutes / 60)}:
                     {String(preset.wakeIntervalMinMinutes % 60).padStart(2, '0')}–
                     {Math.floor(preset.wakeIntervalMaxMinutes / 60)}:
                     {String(preset.wakeIntervalMaxMinutes % 60).padStart(2, '0')}
                   </span>
-                  <span style={{ backgroundColor: '#F4F5EF', padding: '3px 8px', borderRadius: '8px' }}>
+                  <span style={{ backgroundColor: 'var(--color-neutral-bg, #F4F5EF)', padding: '3px 8px', borderRadius: '8px', color: 'var(--text-muted, #4A5A4C)' }}>
                     Сон {Math.floor(preset.totalDaySleepMinutes / 60)} ч{' '}
                     {preset.totalDaySleepMinutes % 60 > 0 ? `${preset.totalDaySleepMinutes % 60} м` : ''}
                   </span>
-                  <span style={{ backgroundColor: '#F4F5EF', padding: '3px 8px', borderRadius: '8px' }}>
+                  <span style={{ backgroundColor: 'var(--color-neutral-bg, #F4F5EF)', padding: '3px 8px', borderRadius: '8px', color: 'var(--text-muted, #4A5A4C)' }}>
                     Отбой {preset.targetBedtime}
                   </span>
                 </div>

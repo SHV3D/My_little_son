@@ -213,6 +213,8 @@ export default function App() {
       {activeTab === 'calendar' ? (
         <CalendarPage
           childId={status?.child?.id || 'demo-child-1'}
+          theme={resolvedTheme}
+          onToggleTheme={toggleTheme}
           onSelectTab={(tab) => setActiveTab(tab)}
           onEditDay={() => setActiveModal({ type: 'RETROACTIVE' })}
           onEditRecord={handleOpenEditModal}

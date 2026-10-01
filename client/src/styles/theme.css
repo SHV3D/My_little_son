@@ -18,6 +18,8 @@
   --color-dark-accent: #1E3D27;
   --color-link: #2F5A3A;
   --color-neutral-bg: #F4F5EF;
+  --color-night-block: #23372A;
+  color-scheme: light;
 
   /* Typography */
   --font-family: 'Geologica', system-ui, -apple-system, sans-serif;
@@ -46,6 +48,7 @@
 }
 
 [data-theme="dark"] {
+  color-scheme: dark;
   --bg-primary: #142017;
   --color-white: #223427;
   --color-dark: #1A281E;
@@ -58,6 +61,7 @@
   --color-dark-secondary: #273D2C;
   --color-light-sage: #283A2D;
   --color-bar-inactive: #3B4E3E;
+  --color-night-block: #F1F4EA;
   --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.25);
   --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.35);
   --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.45);

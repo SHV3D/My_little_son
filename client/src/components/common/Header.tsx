@@ -2,6 +2,7 @@ import React from 'react';
 
 export interface HeaderProps {
   title?: string;
+  titleTestId?: string;
   roles?: string[] | string;
   isOnline?: boolean;
   onPillClick?: () => void;
@@ -13,6 +14,7 @@ export interface HeaderProps {
 
 export const Header: React.FC<HeaderProps> = ({
   title = 'Среда, 30.09',
+  titleTestId = 'header-title',
   roles = ['Мама', 'Папа'],
   isOnline = true,
   onPillClick,
@@ -37,7 +39,7 @@ export const Header: React.FC<HeaderProps> = ({
       }}
     >
       <h1
-        data-testid="header-title"
+        data-testid={titleTestId}
         style={{
           margin: 0,
           fontSize: '26px',

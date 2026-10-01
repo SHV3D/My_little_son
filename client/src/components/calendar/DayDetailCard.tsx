@@ -451,18 +451,19 @@ export const DayDetailCard: React.FC<DayDetailCardProps> = ({
         </section>
       </div>
 
-      {/* Dark Bento Daily Timeline card */}
+      {/* Bento Daily Timeline card */}
       <section
         data-testid="daily-timeline-card"
         style={{
-          background: 'var(--color-dark, #23372A)',
-          color: 'var(--text-primary, #F1F4EA)',
+          background: 'var(--color-white, #FFFFFF)',
+          color: 'var(--text-primary, #1E2A20)',
           borderRadius: '24px',
           padding: '16px',
           display: 'flex',
           flexDirection: 'column',
           gap: '14px',
           boxSizing: 'border-box',
+          boxShadow: 'var(--shadow-sm, 0 1px 3px rgba(30, 42, 32, 0.05))',
         }}
       >
         {/* Timeline Bar Component */}
@@ -512,18 +513,18 @@ export const DayDetailCard: React.FC<DayDetailCardProps> = ({
                     alignItems: 'center',
                     cursor: isClickable ? 'pointer' : 'default',
                     borderRadius: '8px',
-                    padding: '3px 6px',
+                    padding: '4px 6px',
                     margin: '0 -6px',
                     transition: 'background-color 0.15s ease',
                   }}
                 >
                   <span
                     data-testid="event-label"
-                    style={{ color: '#B7C4B4', userSelect: 'none' }}
+                    style={{ color: 'var(--text-muted, #4A5A4C)', userSelect: 'none' }}
                   >
                     {item.label}
                   </span>
-                  <span data-testid="event-value" style={{ fontWeight: 600 }}>
+                  <span data-testid="event-value" style={{ fontWeight: 600, color: 'var(--text-primary, #1E2A20)' }}>
                     {item.value}
                   </span>
                 </div>
@@ -533,7 +534,7 @@ export const DayDetailCard: React.FC<DayDetailCardProps> = ({
             <div
               data-testid="empty-events-msg"
               style={{
-                color: '#B7C4B4',
+                color: 'var(--text-muted, #4A5A4C)',
                 fontSize: '14px',
                 textAlign: 'center',
                 padding: '8px 0',

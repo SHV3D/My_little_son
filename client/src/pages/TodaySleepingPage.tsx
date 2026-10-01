@@ -399,6 +399,8 @@ export const TodaySleepingPage: React.FC<TodaySleepingPageProps> = ({
           aria-label="Зафиксировать, что ребёнок проснулся"
           style={{
             height: '64px',
+            minHeight: '64px',
+            flexShrink: 0,
             borderRadius: '22px',
             backgroundColor: '#D4F27A',
             color: '#1E2A20',

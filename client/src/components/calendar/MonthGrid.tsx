@@ -172,9 +172,9 @@ export const MonthGrid: React.FC<MonthGridProps> = ({
                   height: '52px',
                   borderRadius: '14px',
                   border: 0,
-                  background: '#23372A',
+                  background: 'var(--color-dark, #23372A)',
                   fontFamily: 'inherit',
-                  color: '#F1F4EA',
+                  color: 'var(--text-primary, #F1F4EA)',
                   display: 'flex',
                   flexDirection: 'column',
                   alignItems: 'center',
@@ -192,7 +192,7 @@ export const MonthGrid: React.FC<MonthGridProps> = ({
                     width: '24px',
                     height: '5px',
                     borderRadius: '3px',
-                    background: '#4E6552',
+                    background: 'var(--color-bar-inactive, #4E6552)',
                     position: 'relative',
                     overflow: 'hidden',
                     display: 'block',
@@ -207,7 +207,7 @@ export const MonthGrid: React.FC<MonthGridProps> = ({
                         width: '100%',
                         height: '100%',
                         borderRadius: '3px',
-                        background: isNormMet ? '#D4F27A' : '#D08A1E',
+                        background: isNormMet ? 'var(--color-lime, #D4F27A)' : 'var(--color-warning, #D08A1E)',
                       }}
                     />
                   )}
@@ -327,7 +327,7 @@ export const MonthGrid: React.FC<MonthGridProps> = ({
               width: '14px',
               height: '5px',
               borderRadius: '3px',
-              background: '#23372A',
+              background: 'var(--color-dark, #23372A)',
               display: 'inline-block',
             }}
           />
@@ -340,7 +340,7 @@ export const MonthGrid: React.FC<MonthGridProps> = ({
               width: '14px',
               height: '5px',
               borderRadius: '3px',
-              background: '#D08A1E',
+              background: 'var(--color-warning, #D08A1E)',
               display: 'inline-block',
             }}
           />

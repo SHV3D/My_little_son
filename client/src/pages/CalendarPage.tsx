@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { Header } from '../components/common/Header';
 import { MonthGrid } from '../components/calendar/MonthGrid';
 import { DayDetailCard } from '../components/calendar/DayDetailCard';
 import { BottomNav } from '../components/common/BottomNav';
@@ -10,6 +11,8 @@ export interface CalendarPageProps {
   initialSelectedDate?: string;
   initialData?: MonthSummaryResponse;
   childId?: string;
+  theme?: 'light' | 'dark';
+  onToggleTheme?: () => void;
   onSelectTab?: (tab: string) => void;
   onEditDay?: (date: string) => void;
   onEditRecord?: (record: any) => void;
@@ -24,6 +27,8 @@ export const CalendarPage: React.FC<CalendarPageProps> = ({
   initialSelectedDate = '2026-09-29',
   initialData,
   childId = 'demo-child-1',
+  theme,
+  onToggleTheme,
   onSelectTab,
   onEditDay,
   onEditRecord,
@@ -110,11 +115,13 @@ export const CalendarPage: React.FC<CalendarPageProps> = ({
     <div
       data-testid="calendar-page"
       data-loading={isLoading ? 'true' : 'false'}
-      className={`calendar-page-container ${className}`.trim()}
+      className={`mobile-viewport-wrapper ${className}`.trim()}
       style={{
         width: '100%',
-        maxWidth: '390px',
+        maxWidth: '430px',
         minHeight: '100vh',
+        height: '100vh',
+        position: 'relative',
         margin: '0 auto',
         boxSizing: 'border-box',
         backgroundColor: 'var(--bg-primary, #ECEEE6)',
@@ -128,46 +135,57 @@ export const CalendarPage: React.FC<CalendarPageProps> = ({
       }}
     >
       <div
+        className="screen-content"
         style={{
           flexGrow: 1,
           display: 'flex',
           flexDirection: 'column',
-          gap: '10px',
-          padding: 'max(24px, env(safe-area-inset-top, 24px)) 16px 16px',
+          gap: '12px',
+          padding: 'max(20px, env(safe-area-inset-top, 20px)) 16px 16px',
+          boxSizing: 'border-box',
+          overflowY: 'auto',
         }}
       >
-        {/* Header with Title and Month navigation buttons */}
+        {/* App Header with Title, Roles, and Theme Toggle */}
+        <Header
+          title="Календарь"
+          titleTestId="calendar-title"
+          roles={['Мама', 'Папа']}
+          isOnline={true}
+          theme={theme}
+          onToggleTheme={onToggleTheme}
+        />
+
+        {/* Month Navigation Row */}
         <div
           data-testid="calendar-header"
           style={{
             display: 'flex',
             justifyContent: 'space-between',
             alignItems: 'center',
-            padding: '0 4px 4px',
+            padding: '2px 4px 0',
           }}
         >
-          <h1
-            data-testid="calendar-title"
+          <span
             style={{
-              margin: 0,
-              fontSize: '26px',
-              fontWeight: 700,
-              letterSpacing: '-0.8px',
-              color: 'var(--text-primary, #1E2A20)',
+              fontSize: '15px',
+              fontWeight: 600,
+              color: 'var(--text-muted, #4A5A4C)',
             }}
           >
-            Календарь
-          </h1>
+            История сна
+          </span>
           <div style={{ display: 'flex', gap: '6px' }}>
             <button
               type="button"
               aria-label="Предыдущий месяц"
               data-testid="prev-month-btn"
               onClick={handlePrevMonth}
+              className="bento-interactive"
               style={{
-                width: '44px',
-                height: '44px',
-                borderRadius: '14px',
+                width: '40px',
+                height: '40px',
+                borderRadius: '12px',
                 border: 0,
                 background: 'var(--color-white, #FFFFFF)',
                 color: 'var(--text-primary, #1E2A20)',
@@ -176,11 +194,12 @@ export const CalendarPage: React.FC<CalendarPageProps> = ({
                 justifyContent: 'center',
                 cursor: 'pointer',
                 userSelect: 'none',
+                boxShadow: 'var(--shadow-sm, 0 1px 3px rgba(30, 42, 32, 0.05))',
               }}
             >
               <svg
-                width="20"
-                height="20"
+                width="18"
+                height="18"
                 viewBox="0 0 24 24"
                 fill="none"
                 stroke="currentColor"
@@ -196,10 +215,11 @@ export const CalendarPage: React.FC<CalendarPageProps> = ({
               aria-label="Следующий месяц"
               data-testid="next-month-btn"
               onClick={handleNextMonth}
+              className="bento-interactive"
               style={{
-                width: '44px',
-                height: '44px',
-                borderRadius: '14px',
+                width: '40px',
+                height: '40px',
+                borderRadius: '12px',
                 border: 0,
                 background: 'var(--color-white, #FFFFFF)',
                 color: 'var(--text-primary, #1E2A20)',
@@ -208,11 +228,12 @@ export const CalendarPage: React.FC<CalendarPageProps> = ({
                 justifyContent: 'center',
                 cursor: 'pointer',
                 userSelect: 'none',
+                boxShadow: 'var(--shadow-sm, 0 1px 3px rgba(30, 42, 32, 0.05))',
               }}
             >
               <svg
-                width="20"
-                height="20"
+                width="18"
+                height="18"
                 viewBox="0 0 24 24"
                 fill="none"
                 stroke="currentColor"

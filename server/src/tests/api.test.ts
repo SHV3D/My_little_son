@@ -300,8 +300,10 @@ describe('My Little Son - REST API Integration Tests', () => {
     });
 
     it('PUT /api/sleep/events/:id updates start and end time and recalculates status', async () => {
-      // 1. Get current status to find an event ID
-      const statusRes = await request(app).get('/api/sleep/status?childId=demo-child-1');
+      // 1. Get status for 2026-09-30 to find an event ID
+      const statusRes = await request(app)
+        .get(`/api/sleep/status?childId=${mamaChildId}&date=2026-09-30`)
+        .set('Authorization', `Bearer ${mamaToken}`);
       expect(statusRes.status).toBe(200);
       const nap = statusRes.body.events.find((e: any) => e.eventType === 'NAP' && e.endTime);
       expect(nap).toBeDefined();
@@ -309,7 +311,9 @@ describe('My Little Son - REST API Integration Tests', () => {
       // 2. Update the event
       const updateRes = await request(app)
         .put(`/api/sleep/events/${nap.id}`)
+        .set('Authorization', `Bearer ${mamaToken}`)
         .send({
+          childId: mamaChildId,
           startTime: '10:00',
           endTime: '11:30',
           eventType: 'NAP',

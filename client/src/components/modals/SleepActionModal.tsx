@@ -184,7 +184,7 @@ export const SleepActionModal: React.FC<SleepActionModalProps> = ({
         style={{
           width: '100%',
           maxWidth: '430px',
-          backgroundColor: '#ECEEE6',
+          backgroundColor: 'var(--bg-primary, #ECEEE6)',
           borderRadius: '32px 32px 0 0',
           padding: '10px 16px 32px',
           display: 'flex',
@@ -193,7 +193,7 @@ export const SleepActionModal: React.FC<SleepActionModalProps> = ({
           boxSizing: 'border-box',
           boxShadow: '0 -8px 32px rgba(18, 28, 21, 0.24)',
           fontFamily: "'Geologica', system-ui, sans-serif",
-          color: '#1E2A20',
+          color: 'var(--text-primary, #1E2A20)',
           animation: 'bento-slide-up 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards',
         }}
       >
@@ -205,7 +205,7 @@ export const SleepActionModal: React.FC<SleepActionModalProps> = ({
             width: '40px',
             height: '5px',
             borderRadius: '3px',
-            backgroundColor: '#C5CCBC',
+            backgroundColor: 'var(--color-border, #C5CCBC)',
             marginBottom: '4px',
             cursor: 'grab',
           }}
@@ -228,7 +228,7 @@ export const SleepActionModal: React.FC<SleepActionModalProps> = ({
               fontSize: '24px',
               fontWeight: 700,
               letterSpacing: '-0.6px',
-              color: '#1E2A20',
+              color: 'var(--text-primary, #1E2A20)',
             }}
           >
             {titleText}
@@ -243,8 +243,8 @@ export const SleepActionModal: React.FC<SleepActionModalProps> = ({
               width: '44px',
               height: '44px',
               borderRadius: '14px',
-              backgroundColor: '#FFFFFF',
-              color: '#1E2A20',
+              backgroundColor: 'var(--color-white, #FFFFFF)',
+              color: 'var(--text-primary, #1E2A20)',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
@@ -316,7 +316,7 @@ export const SleepActionModal: React.FC<SleepActionModalProps> = ({
         <div
           data-testid="custom-time-card"
           style={{
-            backgroundColor: '#FFFFFF',
+            backgroundColor: 'var(--color-white, #FFFFFF)',
             borderRadius: '24px',
             padding: '16px',
             display: 'flex',
@@ -328,7 +328,7 @@ export const SleepActionModal: React.FC<SleepActionModalProps> = ({
         >
           <label
             htmlFor="sleep-time"
-            style={{ fontSize: '13px', fontWeight: 500, color: '#4A5A4C' }}
+            style={{ fontSize: '13px', fontWeight: 500, color: 'var(--text-muted, #4A5A4C)' }}
           >
             Или указать время
           </label>
@@ -341,13 +341,13 @@ export const SleepActionModal: React.FC<SleepActionModalProps> = ({
             style={{
               height: '64px',
               borderRadius: '16px',
-              border: '2px solid #23372A',
-              backgroundColor: '#F6F7F2',
+              border: '2px solid var(--color-border, #23372A)',
+              backgroundColor: 'var(--color-neutral-bg, #F6F7F2)',
               padding: '0 16px',
               fontFamily: 'inherit',
               fontSize: '30px',
               fontWeight: 600,
-              color: '#1E2A20',
+              color: 'var(--text-primary, #1E2A20)',
               boxSizing: 'border-box',
               width: '100%',
               outline: 'none',
@@ -380,11 +380,11 @@ export const SleepActionModal: React.FC<SleepActionModalProps> = ({
                     height: '44px',
                     borderRadius: '12px',
                     border: 'none',
-                    backgroundColor: isActive ? '#23372A' : '#ECEEE6',
+                    backgroundColor: isActive ? 'var(--color-dark, #23372A)' : 'var(--color-neutral-bg, #ECEEE6)',
                     fontFamily: 'inherit',
                     fontSize: '14px',
                     fontWeight: isActive ? 600 : 500,
-                    color: isActive ? '#D4F27A' : '#1E2A20',
+                    color: isActive ? 'var(--color-lime, #D4F27A)' : 'var(--text-primary, #1E2A20)',
                     cursor: 'pointer',
                     userSelect: 'none',
                     transition:
@@ -430,7 +430,7 @@ export const SleepActionModal: React.FC<SleepActionModalProps> = ({
           data-testid="modal-footer-text"
           style={{
             fontSize: '13px',
-            color: '#4A5A4C',
+            color: 'var(--text-muted, #4A5A4C)',
             textAlign: 'center',
             paddingTop: '2px',
           }}

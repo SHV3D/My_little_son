@@ -71,8 +71,10 @@ export const DayTimelineBar: React.FC<DayTimelineBarProps> = ({
           position: 'relative',
           height: typeof barHeight === 'number' ? `${barHeight}px` : barHeight,
           borderRadius: '8px',
-          backgroundColor: 'var(--color-dark-secondary, #34493B)',
+          backgroundColor: 'var(--color-neutral-bg, #F4F5EF)',
+          border: '1px solid var(--color-border, #E3E7DA)',
           overflow: 'hidden',
+          boxSizing: 'border-box',
         }}
       >
         {intervals.map((interval, index) => {
@@ -98,7 +100,7 @@ export const DayTimelineBar: React.FC<DayTimelineBarProps> = ({
             blockBg = interval.color || 'rgba(212, 242, 122, 0.28)';
             blockBorder = '1.5px dashed var(--color-lime, #D4F27A)';
           } else if (type === 'night') {
-            blockBg = interval.color || '#F1F4EA';
+            blockBg = interval.color || 'var(--color-night-block, #23372A)';
             // If night sleep reaches the right edge, make rounded edge flush
             if (leftPercent + widthPercent >= 99) {
               borderRadius = '0 8px 8px 0';
@@ -140,7 +142,7 @@ export const DayTimelineBar: React.FC<DayTimelineBarProps> = ({
             display: 'flex',
             justifyContent: 'space-between',
             fontSize: '12px',
-            color: 'var(--text-subtle, #B7C4B4)',
+            color: 'var(--text-muted, #4A5A4C)',
           }}
         >
           {ticks.map((tick) => (

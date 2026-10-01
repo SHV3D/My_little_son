@@ -252,9 +252,6 @@ export const TodayAwakePage: React.FC<TodayAwakePageProps> = ({
           subsequentNapDetails={subsequentNapDetails}
         />
 
-        {/* Flexible spacer */}
-        <div style={{ flexGrow: 1, minHeight: '16px' }} />
-
         {/* Big Action Button "Уснул" */}
         <button
           type="button"
@@ -264,6 +261,8 @@ export const TodayAwakePage: React.FC<TodayAwakePageProps> = ({
           aria-label="Зафиксировать, что ребёнок уснул"
           style={{
             height: '64px',
+            minHeight: '64px',
+            flexShrink: 0,
             borderRadius: '22px',
             backgroundColor: '#23372A',
             color: '#F1F4EA',
