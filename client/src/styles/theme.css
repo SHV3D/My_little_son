@@ -21,6 +21,23 @@
   --color-night-block: #23372A;
   color-scheme: light;
 
+  /* Smart Sleep Warning Banner Colors (Light Mode) */
+  --warning-alert-bg: rgba(234, 163, 146, 0.16);
+  --warning-alert-border: rgba(214, 115, 96, 0.35);
+  --warning-alert-text: #6A2417;
+  --warning-alert-badge-bg: #EAA392;
+  --warning-alert-badge-text: #1E2A20;
+  --warning-warn-bg: rgba(228, 192, 120, 0.18);
+  --warning-warn-border: rgba(208, 158, 60, 0.35);
+  --warning-warn-text: #5C410F;
+  --warning-warn-badge-bg: #E4C078;
+  --warning-warn-badge-text: #1E2A20;
+  --warning-info-bg: rgba(212, 242, 122, 0.18);
+  --warning-info-border: rgba(168, 204, 76, 0.35);
+  --warning-info-text: #23372A;
+  --warning-info-badge-bg: #D4F27A;
+  --warning-info-badge-text: #1E2A20;
+
   /* Typography */
   --font-family: 'Geologica', system-ui, -apple-system, sans-serif;
   --font-mono: ui-monospace, SFMono-Regular, monospace;
@@ -66,6 +83,23 @@
   --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.35);
   --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.45);
   --shadow-mobile: 0 16px 40px rgba(0, 0, 0, 0.6);
+
+  /* Smart Sleep Warning Banner Colors (Dark Mode) */
+  --warning-alert-bg: rgba(234, 163, 146, 0.12);
+  --warning-alert-border: rgba(234, 163, 146, 0.28);
+  --warning-alert-text: #FAD1C7;
+  --warning-alert-badge-bg: #D97E69;
+  --warning-alert-badge-text: #142017;
+  --warning-warn-bg: rgba(228, 192, 120, 0.12);
+  --warning-warn-border: rgba(228, 192, 120, 0.28);
+  --warning-warn-text: #FCE6B8;
+  --warning-warn-badge-bg: #D4A84B;
+  --warning-warn-badge-text: #142017;
+  --warning-info-bg: rgba(212, 242, 122, 0.12);
+  --warning-info-border: rgba(212, 242, 122, 0.25);
+  --warning-info-text: #E5F7B0;
+  --warning-info-badge-bg: #C1E455;
+  --warning-info-badge-text: #142017;
 }
 
 [data-theme="dark"] body {
@@ -118,7 +152,17 @@ body {
     background-color: #0E1711;
   }
 
+  #root {
+    width: 430px;
+    height: 92vh;
+    max-height: 920px;
+    display: flex;
+    flex-direction: column;
+  }
+
   .mobile-viewport-wrapper {
+    width: 100%;
+    max-width: 430px;
     border-radius: 36px;
     box-shadow: var(--shadow-mobile);
     overflow: hidden;
@@ -137,6 +181,43 @@ body {
   box-sizing: border-box;
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
+}
+
+/* Custom Sleek Bento Scrollbars */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(35, 55, 42, 0.2) transparent;
+}
+
+[data-theme="dark"] * {
+  scrollbar-color: rgba(212, 242, 122, 0.25) transparent;
+}
+
+::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(35, 55, 42, 0.18);
+  border-radius: 9999px;
+  transition: background-color 0.2s ease;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(35, 55, 42, 0.35);
+}
+
+[data-theme="dark"] ::-webkit-scrollbar-thumb {
+  background: rgba(212, 242, 122, 0.2);
+}
+
+[data-theme="dark"] ::-webkit-scrollbar-thumb:hover {
+  background: rgba(212, 242, 122, 0.4);
 }
 
 /* Animations */
