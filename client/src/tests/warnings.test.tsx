@@ -15,7 +15,7 @@ describe('WarningBanner Component', () => {
     expect(undefContainer.firstChild).toBeNull();
   });
 
-  it('renders alert card with correct title, message, badge and severity attribute', () => {
+  it('renders alert card with correct title, message, badge, advice text, action button and a11y roles', () => {
     const alertWarning: SleepWarning = {
       code: 'OVERTIRED',
       severity: 'alert',
@@ -30,6 +30,8 @@ describe('WarningBanner Component', () => {
     const banner = screen.getByTestId('warning-banner');
     expect(banner).toBeDefined();
     expect(banner.getAttribute('data-severity')).toBe('alert');
+    expect(banner.getAttribute('role')).toBe('alert');
+    expect(banner.getAttribute('aria-live')).toBe('assertive');
 
     const badge = screen.getByTestId('warning-banner-badge');
     expect(badge.textContent).toBe('Внимание');
@@ -40,14 +42,17 @@ describe('WarningBanner Component', () => {
     const message = screen.getByTestId('warning-banner-message');
     expect(message.textContent).toContain('Малыш бодрствует 3:45');
 
+    const advice = screen.getByTestId('warning-banner-recommendation');
+    expect(advice.textContent).toContain('Уложите спать как можно скорее');
+
     const actionBtn = screen.getByTestId('warning-banner-action');
-    expect(actionBtn.textContent).toContain('Уложите спать как можно скорее');
+    expect(actionBtn.textContent).toContain('Уложить раньше');
 
     const closeBtn = screen.getByTestId('warning-banner-close');
     expect(closeBtn).toBeDefined();
   });
 
-  it('renders warning card with correct badge and severity', () => {
+  it('renders warning card with correct badge, role, and severity', () => {
     const warnWarning: SleepWarning = {
       code: 'LATE_NAP_BEDTIME_SHIFT',
       severity: 'warning',
@@ -61,12 +66,20 @@ describe('WarningBanner Component', () => {
 
     const banner = screen.getByTestId('warning-banner');
     expect(banner.getAttribute('data-severity')).toBe('warning');
+    expect(banner.getAttribute('role')).toBe('status');
+    expect(banner.getAttribute('aria-live')).toBe('polite');
 
     const badge = screen.getByTestId('warning-banner-badge');
     expect(badge.textContent).toBe('Важно');
+
+    const advice = screen.getByTestId('warning-banner-recommendation');
+    expect(advice.textContent).toContain('Сократите вечерний сон');
+
+    const actionBtn = screen.getByTestId('warning-banner-action');
+    expect(actionBtn.textContent).toContain('Короткий мостик');
   });
 
-  it('renders info card with correct badge and severity', () => {
+  it('renders info card with correct badge, role, advice, and severity', () => {
     const infoWarning: SleepWarning = {
       code: 'UNDERTIRED',
       severity: 'info',
@@ -79,9 +92,31 @@ describe('WarningBanner Component', () => {
 
     const banner = screen.getByTestId('warning-banner');
     expect(banner.getAttribute('data-severity')).toBe('info');
+    expect(banner.getAttribute('role')).toBe('status');
+    expect(banner.getAttribute('aria-live')).toBe('polite');
 
     const badge = screen.getByTestId('warning-banner-badge');
     expect(badge.textContent).toBe('Совет');
+
+    const advice = screen.getByTestId('warning-banner-recommendation');
+    expect(advice.textContent).toContain('Продлите активные игры');
+    expect(screen.queryByTestId('warning-banner-action')).toBeNull();
+  });
+
+  it('applies --warning-warn-* token styles and proper fallbacks for warning severity', () => {
+    const warnWarning: SleepWarning = {
+      code: 'LATE_NAP_BEDTIME_SHIFT',
+      severity: 'warning',
+      title: 'Сдвиг отбоя',
+      message: 'Последний сон начался позже обычного.',
+    };
+
+    render(<WarningBanner warnings={[warnWarning]} />);
+    const banner = screen.getByTestId('warning-banner');
+
+    expect(banner.style.background).toContain('--warning-warn-bg');
+    expect(banner.style.borderColor || banner.style.border).toContain('--warning-warn-border');
+    expect(banner.style.color).toContain('--warning-warn-text');
   });
 
   it('calls onAction with the active warning when action button is clicked', () => {
@@ -216,6 +251,36 @@ describe('WarningBanner Component', () => {
     render(<WarningBanner warnings={[noActionWarning]} />);
 
     expect(screen.queryByTestId('warning-banner-action')).toBeNull();
+    expect(screen.queryByTestId('warning-banner-recommendation')).toBeNull();
+  });
+
+  it('renders concise action button labels for each actionType', () => {
+    const testCases: Array<{ actionType: SleepWarning['actionType']; expectedLabel: string }> = [
+      { actionType: 'WAKE_NOW', expectedLabel: 'Разбудить сейчас' },
+      { actionType: 'SET_WAKE_TIME', expectedLabel: 'Указать время пробуждения' },
+      { actionType: 'SHORT_BRIDGE_NAP', expectedLabel: 'Короткий мостик' },
+      { actionType: 'EARLY_BEDTIME', expectedLabel: 'Уложить раньше' },
+      { actionType: 'CHECK_TIME', expectedLabel: 'Проверить время' },
+    ];
+
+    for (const { actionType, expectedLabel } of testCases) {
+      const { unmount } = render(
+        <WarningBanner
+          warnings={[
+            {
+              code: 'OVERTIRED',
+              severity: 'warning',
+              title: 'Тест',
+              message: 'Тест',
+              actionType,
+            },
+          ]}
+        />
+      );
+      const actionBtn = screen.getByTestId('warning-banner-action');
+      expect(actionBtn.textContent).toContain(expectedLabel);
+      unmount();
+    }
   });
 
   it('renders default fallback action button text for different actionTypes if actionRecommendation is absent', () => {
@@ -248,7 +313,7 @@ describe('WarningBanner Component', () => {
         ]}
       />
     );
-    expect(screen.getByTestId('warning-banner-action').textContent).toContain('Указать время');
+    expect(screen.getByTestId('warning-banner-action').textContent).toContain('Указать время пробуждения');
   });
 
   it('merges custom className and style props into container', () => {

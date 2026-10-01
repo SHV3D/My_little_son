@@ -21,6 +21,102 @@ const BADGE_TEXT_MAP: Record<WarningSeverity, string> = {
   info: 'Совет',
 };
 
+const ACTION_LABEL_MAP: Record<string, string> = {
+  WAKE_NOW: 'Разбудить сейчас',
+  SET_WAKE_TIME: 'Указать время пробуждения',
+  SHORT_BRIDGE_NAP: 'Короткий мостик',
+  EARLY_BEDTIME: 'Уложить раньше',
+  CHECK_TIME: 'Проверить время',
+};
+
+const SEVERITY_FALLBACKS: Record<
+  WarningSeverity,
+  { bg: string; border: string; text: string; badgeBg: string; badgeText: string }
+> = {
+  alert: {
+    bg: 'rgba(234, 163, 146, 0.16)',
+    border: '#EAA392',
+    text: '#6A2417',
+    badgeBg: '#EAA392',
+    badgeText: '#1E2A20',
+  },
+  warning: {
+    bg: 'rgba(228, 192, 120, 0.18)',
+    border: '#E4C078',
+    text: '#5C410F',
+    badgeBg: '#E4C078',
+    badgeText: '#1E2A20',
+  },
+  info: {
+    bg: 'rgba(212, 242, 122, 0.18)',
+    border: '#C4DCA0',
+    text: '#23372A',
+    badgeBg: '#D4F27A',
+    badgeText: '#1E2A20',
+  },
+};
+
+const renderBadgeIcon = (severity: WarningSeverity) => {
+  switch (severity) {
+    case 'alert':
+      return (
+        <svg
+          width="12"
+          height="12"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2.5"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          aria-hidden="true"
+          style={{ marginRight: '4px', flexShrink: 0 }}
+        >
+          <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
+          <path d="M13.73 21a2 2 0 0 1-3.46 0" />
+        </svg>
+      );
+    case 'warning':
+      return (
+        <svg
+          width="12"
+          height="12"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2.5"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          aria-hidden="true"
+          style={{ marginRight: '4px', flexShrink: 0 }}
+        >
+          <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z" />
+          <line x1="12" y1="9" x2="12" y2="13" />
+          <line x1="12" y1="17" x2="12.01" y2="17" />
+        </svg>
+      );
+    case 'info':
+      return (
+        <svg
+          width="12"
+          height="12"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2.5"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          aria-hidden="true"
+          style={{ marginRight: '4px', flexShrink: 0 }}
+        >
+          <path d="M15 14c.2-1 .7-1.7 1.5-2.5 1-.9 1.5-2.2 1.5-3.5A6 6 0 0 0 6 8c0 1 .2 2.2 1.5 3.5.7.7 1.3 1.5 1.5 2.5" />
+          <path d="M9 18h6" />
+          <path d="M10 22h4" />
+        </svg>
+      );
+  }
+};
+
 export const WarningBanner: React.FC<WarningBannerProps> = ({
   warnings,
   onAction,
@@ -73,26 +169,20 @@ export const WarningBanner: React.FC<WarningBannerProps> = ({
     onAction?.(currentWarning);
   };
 
-  const actionText =
-    currentWarning.actionRecommendation ||
-    (currentWarning.actionType === 'WAKE_NOW'
-      ? 'Разбудить сейчас'
-      : currentWarning.actionType === 'SET_WAKE_TIME'
-      ? 'Указать время'
-      : currentWarning.actionType === 'EARLY_BEDTIME'
-      ? 'Ранний отбой'
-      : currentWarning.actionType === 'SHORT_BRIDGE_NAP'
-      ? 'Мостиковый сон'
-      : currentWarning.actionType === 'CHECK_TIME'
-      ? 'Проверить время'
-      : null);
+  const tokenPrefix = severity === 'warning' ? 'warn' : severity;
+  const fallbacks = SEVERITY_FALLBACKS[severity] ?? SEVERITY_FALLBACKS.info;
+
+  const actionLabel = currentWarning.actionType
+    ? ACTION_LABEL_MAP[currentWarning.actionType] || 'Действие'
+    : null;
 
   const bannerStyle: React.CSSProperties = {
     borderRadius: '20px',
     padding: '14px 16px',
-    background: `var(--warning-${severity}-bg, rgba(234, 163, 146, 0.16))`,
-    border: `1px solid var(--warning-${severity}-border, rgba(214, 115, 96, 0.35))`,
-    color: `var(--warning-${severity}-text, #6A2417)`,
+    background: `var(--warning-${tokenPrefix}-bg, ${fallbacks.bg})`,
+    border: `1px solid var(--warning-${tokenPrefix}-border, ${fallbacks.border})`,
+    borderColor: `var(--warning-${tokenPrefix}-border, ${fallbacks.border})`,
+    color: `var(--warning-${tokenPrefix}-text, ${fallbacks.text})`,
     backdropFilter: 'blur(8px)',
     WebkitBackdropFilter: 'blur(8px)',
     display: 'flex',
@@ -108,8 +198,8 @@ export const WarningBanner: React.FC<WarningBannerProps> = ({
     fontWeight: 600,
     borderRadius: '10px',
     padding: '3px 8px',
-    background: `var(--warning-${severity}-badge-bg, #EAA392)`,
-    color: `var(--warning-${severity}-badge-text, #1E2A20)`,
+    background: `var(--warning-${tokenPrefix}-badge-bg, ${fallbacks.badgeBg})`,
+    color: `var(--warning-${tokenPrefix}-badge-text, ${fallbacks.badgeText})`,
     display: 'inline-flex',
     alignItems: 'center',
     justifyContent: 'center',
@@ -124,20 +214,21 @@ export const WarningBanner: React.FC<WarningBannerProps> = ({
     color: 'inherit',
     cursor: 'pointer',
     borderRadius: '9999px',
-    width: '24px',
-    height: '24px',
+    minWidth: '36px',
+    minHeight: '36px',
     display: 'inline-flex',
     alignItems: 'center',
     justifyContent: 'center',
     fontSize: '13px',
-    padding: 0,
+    padding: '8px',
+    boxSizing: 'border-box',
     outline: 'none',
     transition: 'background 0.15s ease',
   };
 
   const actionBtnStyle: React.CSSProperties = {
-    background: `var(--warning-${severity}-badge-bg, #EAA392)`,
-    color: `var(--warning-${severity}-badge-text, #1E2A20)`,
+    background: `var(--warning-${tokenPrefix}-badge-bg, ${fallbacks.badgeBg})`,
+    color: `var(--warning-${tokenPrefix}-badge-text, ${fallbacks.badgeText})`,
     border: 'none',
     borderRadius: '12px',
     padding: '6px 12px',
@@ -155,6 +246,8 @@ export const WarningBanner: React.FC<WarningBannerProps> = ({
     <div
       className={`warning-banner warning-banner--${severity} ${className}`.trim()}
       style={bannerStyle}
+      role={severity === 'alert' ? 'alert' : 'status'}
+      aria-live={severity === 'alert' ? 'assertive' : 'polite'}
       data-testid="warning-banner"
       data-severity={severity}
     >
@@ -162,7 +255,7 @@ export const WarningBanner: React.FC<WarningBannerProps> = ({
       <div
         style={{
           display: 'flex',
-          alignItems: 'center',
+          alignItems: 'flex-start',
           justifyContent: 'space-between',
           gap: '8px',
           marginBottom: '6px',
@@ -172,13 +265,15 @@ export const WarningBanner: React.FC<WarningBannerProps> = ({
           style={{
             display: 'flex',
             alignItems: 'center',
+            flexWrap: 'wrap',
             gap: '8px',
             flex: 1,
             minWidth: 0,
           }}
         >
           <span data-testid="warning-banner-badge" style={badgeStyle}>
-            {BADGE_TEXT_MAP[severity] || 'Совет'}
+            {renderBadgeIcon(severity)}
+            <span>{BADGE_TEXT_MAP[severity] || 'Совет'}</span>
           </span>
           <h4
             data-testid="warning-banner-title"
@@ -188,9 +283,7 @@ export const WarningBanner: React.FC<WarningBannerProps> = ({
               fontWeight: 600,
               lineHeight: 1.25,
               color: 'inherit',
-              overflow: 'hidden',
-              textOverflow: 'ellipsis',
-              whiteSpace: 'nowrap',
+              wordBreak: 'break-word',
             }}
           >
             {currentWarning.title}
@@ -211,10 +304,10 @@ export const WarningBanner: React.FC<WarningBannerProps> = ({
               style={{
                 display: 'inline-flex',
                 alignItems: 'center',
-                gap: '4px',
+                gap: '2px',
                 background: 'rgba(0, 0, 0, 0.04)',
                 borderRadius: '9999px',
-                padding: '2px 4px',
+                padding: '2px',
               }}
             >
               <button
@@ -224,8 +317,9 @@ export const WarningBanner: React.FC<WarningBannerProps> = ({
                 onClick={handlePrev}
                 style={{
                   ...iconBtnStyle,
-                  width: '20px',
-                  height: '20px',
+                  minWidth: '36px',
+                  minHeight: '36px',
+                  padding: '8px',
                   fontSize: '11px',
                   background: 'transparent',
                 }}
@@ -238,7 +332,7 @@ export const WarningBanner: React.FC<WarningBannerProps> = ({
                   fontSize: '11px',
                   fontWeight: 600,
                   opacity: 0.8,
-                  padding: '0 2px',
+                  padding: '0 4px',
                 }}
               >
                 {safeIndex + 1} / {sortedWarnings.length}
@@ -250,8 +344,9 @@ export const WarningBanner: React.FC<WarningBannerProps> = ({
                 onClick={handleNext}
                 style={{
                   ...iconBtnStyle,
-                  width: '20px',
-                  height: '20px',
+                  minWidth: '36px',
+                  minHeight: '36px',
+                  padding: '8px',
                   fontSize: '11px',
                   background: 'transparent',
                 }}
@@ -288,8 +383,30 @@ export const WarningBanner: React.FC<WarningBannerProps> = ({
         {currentWarning.message}
       </p>
 
-      {/* Action / Recommendation */}
-      {actionText && (
+      {/* Advice / Recommendation */}
+      {currentWarning.actionRecommendation && (
+        <div
+          data-testid="warning-banner-recommendation"
+          style={{
+            marginTop: '8px',
+            fontSize: '12px',
+            lineHeight: 1.35,
+            opacity: 0.9,
+            display: 'flex',
+            alignItems: 'flex-start',
+            gap: '6px',
+            fontWeight: 500,
+          }}
+        >
+          <span aria-hidden="true" style={{ fontSize: '13px', lineHeight: 1.2, flexShrink: 0 }}>
+            💡
+          </span>
+          <span>{currentWarning.actionRecommendation}</span>
+        </div>
+      )}
+
+      {/* Action Button */}
+      {actionLabel && (
         <div style={{ marginTop: '10px', display: 'flex', alignItems: 'center' }}>
           <button
             type="button"
@@ -297,8 +414,10 @@ export const WarningBanner: React.FC<WarningBannerProps> = ({
             onClick={handleAction}
             style={actionBtnStyle}
           >
-            <span>{actionText}</span>
-            <span style={{ fontSize: '12px', lineHeight: 1 }}>→</span>
+            <span>{actionLabel}</span>
+            <span style={{ fontSize: '12px', lineHeight: 1 }} aria-hidden="true">
+              →
+            </span>
           </button>
         </div>
       )}

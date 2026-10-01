@@ -32,6 +32,11 @@
   --warning-warn-text: #5C410F;
   --warning-warn-badge-bg: #E4C078;
   --warning-warn-badge-text: #1E2A20;
+  --warning-warning-bg: var(--warning-warn-bg);
+  --warning-warning-border: var(--warning-warn-border);
+  --warning-warning-text: var(--warning-warn-text);
+  --warning-warning-badge-bg: var(--warning-warn-badge-bg);
+  --warning-warning-badge-text: var(--warning-warn-badge-text);
   --warning-info-bg: rgba(212, 242, 122, 0.18);
   --warning-info-border: rgba(168, 204, 76, 0.35);
   --warning-info-text: #23372A;
@@ -95,6 +100,11 @@
   --warning-warn-text: #FCE6B8;
   --warning-warn-badge-bg: #D4A84B;
   --warning-warn-badge-text: #142017;
+  --warning-warning-bg: var(--warning-warn-bg);
+  --warning-warning-border: var(--warning-warn-border);
+  --warning-warning-text: var(--warning-warn-text);
+  --warning-warning-badge-bg: var(--warning-warn-badge-bg);
+  --warning-warning-badge-text: var(--warning-warn-badge-text);
   --warning-info-bg: rgba(212, 242, 122, 0.12);
   --warning-info-border: rgba(212, 242, 122, 0.25);
   --warning-info-text: #E5F7B0;
