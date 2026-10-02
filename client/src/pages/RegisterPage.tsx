@@ -91,56 +91,86 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({
         ...style,
       }}
     >
-      {/* Header with back button */}
+      {/* Top Brand Strip */}
+      <div
+        data-testid="brand-top-strip"
+        style={{
+          backgroundColor: 'var(--color-dark, #23372A)',
+          color: 'var(--color-lime, #D4F27A)',
+          borderRadius: '18px',
+          padding: '10px 16px',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          fontWeight: 700,
+          fontSize: '15px',
+          letterSpacing: '1px',
+          textTransform: 'uppercase',
+          marginBottom: '10px',
+        }}
+      >
+        My little sun
+      </div>
+
+      {/* Header with back button and brand logo */}
       <div
         style={{
           display: 'flex',
           alignItems: 'center',
+          justifyContent: 'space-between',
           gap: '12px',
           padding: '0 4px 6px 0',
         }}
       >
-        <button
-          type="button"
-          data-testid="btn-back-to-login"
-          aria-label="Назад ко входу"
-          onClick={onNavigateToLogin}
-          style={{
-            width: '44px',
-            height: '44px',
-            borderRadius: '14px',
-            backgroundColor: '#FFFFFF',
-            color: '#1E2A20',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            border: 0,
-            cursor: 'pointer',
-          }}
-        >
-          <svg
-            width="20"
-            height="20"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+          <button
+            type="button"
+            data-testid="btn-back-to-login"
+            aria-label="Назад ко входу"
+            onClick={onNavigateToLogin}
+            style={{
+              width: '44px',
+              height: '44px',
+              borderRadius: '14px',
+              backgroundColor: '#FFFFFF',
+              color: '#1E2A20',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              border: 0,
+              cursor: 'pointer',
+            }}
           >
-            <path d="M15 6l-6 6 6 6" />
-          </svg>
-        </button>
-        <h1
-          style={{
-            margin: 0,
-            fontSize: '26px',
-            fontWeight: 700,
-            letterSpacing: '-0.8px',
-          }}
-        >
-          Регистрация
-        </h1>
+            <svg
+              width="20"
+              height="20"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <path d="M15 6l-6 6 6 6" />
+            </svg>
+          </button>
+          <h1
+            style={{
+              margin: 0,
+              fontSize: '26px',
+              fontWeight: 700,
+              letterSpacing: '-0.8px',
+            }}
+          >
+            Регистрация
+          </h1>
+        </div>
+        <img
+          src="/logo.svg"
+          alt="My little son"
+          data-testid="auth-logo-img"
+          style={{ width: '40px', height: '40px', borderRadius: '12px', objectFit: 'contain' }}
+        />
       </div>
 
       <form

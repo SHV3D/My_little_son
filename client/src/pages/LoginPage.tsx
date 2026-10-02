@@ -70,6 +70,27 @@ export const LoginPage: React.FC<LoginPageProps> = ({
         ...style,
       }}
     >
+      {/* Top Brand Strip */}
+      <div
+        data-testid="brand-top-strip"
+        style={{
+          backgroundColor: 'var(--color-dark, #23372A)',
+          color: 'var(--color-lime, #D4F27A)',
+          borderRadius: '18px',
+          padding: '10px 16px',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          fontWeight: 700,
+          fontSize: '15px',
+          letterSpacing: '1px',
+          textTransform: 'uppercase',
+          marginBottom: '10px',
+        }}
+      >
+        My little sun
+      </div>
+
       {/* Top Bento Header */}
       <div
         style={{
@@ -92,18 +113,21 @@ export const LoginPage: React.FC<LoginPageProps> = ({
             minHeight: '150px',
           }}
         >
-          <div
-            style={{
-              fontSize: '26px',
-              fontWeight: 700,
-              letterSpacing: '-1px',
-              lineHeight: 1.05,
-            }}
-          >
-            My little son
-          </div>
-          <div style={{ fontSize: '14px', color: '#B7C4B4' }}>
-            режим сна малыша для всей семьи
+          <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+            <img
+              src="/logo.svg"
+              alt="My little son"
+              data-testid="auth-logo-img"
+              style={{ width: '64px', height: '64px', borderRadius: '16px', objectFit: 'contain', flexShrink: 0 }}
+            />
+            <div>
+              <div style={{ fontSize: '22px', fontWeight: 700, letterSpacing: '-0.5px', lineHeight: 1.1, color: '#F1F4EA' }}>
+                My little son
+              </div>
+              <div style={{ fontSize: '13px', color: '#B7C4B4', marginTop: '4px' }}>
+                режим сна малыша для всей семьи
+              </div>
+            </div>
           </div>
         </section>
 

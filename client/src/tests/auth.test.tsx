@@ -45,6 +45,19 @@ describe('LoginPage Component', () => {
     expect(screen.getByTestId('btn-to-register')).toBeDefined();
   });
 
+  it('renders brand top strip and logo image', () => {
+    render(<LoginPage />);
+
+    const topStrip = screen.getByTestId('brand-top-strip');
+    expect(topStrip).toBeDefined();
+    expect(topStrip.textContent).toContain('My little sun');
+
+    const logoImg = screen.getByTestId('auth-logo-img') as HTMLImageElement;
+    expect(logoImg).toBeDefined();
+    expect(logoImg.getAttribute('src')).toBe('/logo.svg');
+    expect(logoImg.getAttribute('alt')).toBe('My little son');
+  });
+
   it('handles quick demo buttons for Mom and Dad', () => {
     render(<LoginPage />);
 
@@ -127,6 +140,18 @@ describe('RegisterPage Component', () => {
     // Default family mode: INVITE
     expect(screen.getByTestId('invite-code-container')).toBeDefined();
     expect(screen.getByTestId('register-invite-code-input')).toBeDefined();
+  });
+
+  it('renders brand top strip and logo image', () => {
+    render(<RegisterPage />);
+
+    const topStrip = screen.getByTestId('brand-top-strip');
+    expect(topStrip).toBeDefined();
+    expect(topStrip.textContent).toContain('My little sun');
+
+    const logoImg = screen.getByTestId('auth-logo-img') as HTMLImageElement;
+    expect(logoImg).toBeDefined();
+    expect(logoImg.getAttribute('src')).toBe('/logo.svg');
   });
 
   it('switches role when clicking role buttons', async () => {
