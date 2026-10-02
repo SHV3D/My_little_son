@@ -18,6 +18,11 @@ import {
   registerBiometrics,
   disableBiometrics,
 } from '../utils/biometrics';
+import {
+  isPushNotificationsEnabled,
+  setPushNotificationsEnabled,
+  requestNotificationPermission,
+} from '../services/pushNotificationService';
 import { getStoredUser, getAuthToken } from '../api/authApi';
 
 export interface SettingsPageProps {
@@ -102,6 +107,25 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({
 
       await registerBiometrics(user, token);
       setBiometricsActive(isBiometricsEnabled());
+    }
+  };
+
+  const [pushEnabled, setPushEnabled] = useState<boolean>(() => isPushNotificationsEnabled());
+  const [notificationsHint, setNotificationsHint] = useState<string | null>(null);
+
+  const handleTogglePushNotifications = async () => {
+    setNotificationsHint(null);
+    if (pushEnabled) {
+      setPushNotificationsEnabled(false);
+      setPushEnabled(false);
+    } else {
+      const permission = await requestNotificationPermission();
+      if (permission === 'granted') {
+        setPushNotificationsEnabled(true);
+        setPushEnabled(true);
+      } else {
+        setNotificationsHint('Разрешите уведомления в настройках браузера');
+      }
     }
   };
 
@@ -1061,6 +1085,118 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({
               {biometricsActive ? 'Включено' : 'Включить'}
             </button>
           </div>
+        </section>
+
+        {/* Section: Notifications */}
+        <h2
+          style={{
+            margin: '10px 0 0 4px',
+            fontSize: '18px',
+            fontWeight: 700,
+            letterSpacing: '-0.4px',
+          }}
+        >
+          Уведомления
+        </h2>
+
+        <section
+          data-testid="notifications-settings-card"
+          style={{
+            backgroundColor: 'var(--color-white, #FFFFFF)',
+            borderRadius: '24px',
+            padding: '20px',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '12px',
+          }}
+        >
+          <div
+            style={{
+              fontSize: '13px',
+              fontWeight: 500,
+              color: 'var(--text-muted, #4A5A4C)',
+            }}
+          >
+            Уведомления
+          </div>
+
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              gap: '12px',
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flex: 1 }}>
+              <div
+                style={{
+                  width: '40px',
+                  height: '40px',
+                  borderRadius: '12px',
+                  backgroundColor: pushEnabled ? 'var(--color-lime, #D4F27A)' : 'var(--color-neutral-bg, #ECEEE6)',
+                  color: '#1E2A20',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  flexShrink: 0,
+                  transition: 'background-color 0.2s ease',
+                  fontSize: '18px',
+                }}
+              >
+                🔔
+              </div>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                <span style={{ fontSize: '16px', fontWeight: 500, color: 'var(--text-primary, #1E2A20)' }}>
+                  Push-уведомления
+                </span>
+                <span style={{ fontSize: '13px', color: 'var(--text-muted, #4A5A4C)' }}>
+                  Напоминания о сне, времени пробуждения и предупреждениях
+                </span>
+              </div>
+            </div>
+
+            <button
+              type="button"
+              data-testid="push-notifications-toggle-btn"
+              role="switch"
+              aria-checked={pushEnabled}
+              onClick={handleTogglePushNotifications}
+              style={{
+                height: '38px',
+                padding: '0 16px',
+                borderRadius: '12px',
+                border: 0,
+                backgroundColor: pushEnabled ? 'var(--color-lime, #D4F27A)' : 'var(--color-neutral-bg, #ECEEE6)',
+                color: '#1E2A20',
+                fontSize: '14px',
+                fontWeight: 600,
+                fontFamily: 'inherit',
+                cursor: 'pointer',
+                flexShrink: 0,
+                transition: 'all 0.15s ease',
+              }}
+            >
+              {pushEnabled ? 'Включено' : 'Включить'}
+            </button>
+          </div>
+
+          {notificationsHint && (
+            <div
+              data-testid="notifications-hint"
+              style={{
+                fontSize: '13px',
+                color: '#D97706',
+                backgroundColor: '#FEF3C7',
+                padding: '8px 12px',
+                borderRadius: '8px',
+                marginTop: '4px',
+              }}
+            >
+              {notificationsHint}
+            </div>
+          )}
         </section>
 
         {/* Section 3: Family */}

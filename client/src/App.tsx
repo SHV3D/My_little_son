@@ -26,6 +26,7 @@ import {
 import { EditSleepModal } from './components/modals/EditSleepModal';
 import { useFamilySync } from './hooks/useFamilySync';
 import { useTheme } from './hooks/useTheme';
+import { checkAndDispatchScheduleNotifications } from './services/pushNotificationService';
 
 export default function App() {
   const { theme, resolvedTheme, setTheme, toggleTheme } = useTheme();
@@ -68,6 +69,17 @@ export default function App() {
   useEffect(() => {
     loadStatus();
   }, [loadStatus]);
+
+  useEffect(() => {
+    if (!status) return;
+    checkAndDispatchScheduleNotifications(status);
+
+    const intervalId = setInterval(() => {
+      checkAndDispatchScheduleNotifications(status);
+    }, 60000);
+
+    return () => clearInterval(intervalId);
+  }, [status]);
 
   const handleFellAsleepConfirm = async (payload: SleepActionConfirmPayload) => {
     setActiveModal(null);

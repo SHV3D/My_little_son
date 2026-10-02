@@ -336,4 +336,76 @@ describe('SettingsPage Component', () => {
     expect(toggleBtn.getAttribute('aria-checked')).toBe('false');
     expect(localStorage.getItem('mls_biometrics_enabled')).toBeNull();
   });
+
+  it('renders notifications card and toggles push notifications', async () => {
+    localStorage.clear();
+
+    class MockNotification {
+      static permission: NotificationPermission = 'granted';
+      static requestPermission = vi.fn(async () => 'granted' as NotificationPermission);
+    }
+    (window as any).Notification = MockNotification;
+
+    render(<SettingsPage childId="demo-child-1" />);
+
+    await waitFor(() => {
+      expect(screen.getByTestId('notifications-settings-card')).toBeDefined();
+    });
+
+    const toggleBtn = screen.getByTestId('push-notifications-toggle-btn');
+    expect(toggleBtn).toBeDefined();
+    expect(toggleBtn.getAttribute('role')).toBe('switch');
+    expect(toggleBtn.getAttribute('aria-checked')).toBe('false');
+    expect(toggleBtn.textContent).toBe('Включить');
+
+    // Toggle on
+    await act(async () => {
+      fireEvent.click(toggleBtn);
+    });
+
+    expect(MockNotification.requestPermission).toHaveBeenCalled();
+    expect(toggleBtn.textContent).toBe('Включено');
+    expect(toggleBtn.getAttribute('aria-checked')).toBe('true');
+    expect(localStorage.getItem('mls_push_notifications_enabled')).toBe('true');
+
+    // Toggle off
+    await act(async () => {
+      fireEvent.click(toggleBtn);
+    });
+
+    expect(toggleBtn.textContent).toBe('Включить');
+    expect(toggleBtn.getAttribute('aria-checked')).toBe('false');
+    expect(localStorage.getItem('mls_push_notifications_enabled')).toBe('false');
+  });
+
+  it('shows hint when push notification permission is denied', async () => {
+    localStorage.clear();
+
+    class MockNotification {
+      static permission: NotificationPermission = 'denied';
+      static requestPermission = vi.fn(async () => 'denied' as NotificationPermission);
+    }
+    (window as any).Notification = MockNotification;
+
+    render(<SettingsPage childId="demo-child-1" />);
+
+    await waitFor(() => {
+      expect(screen.getByTestId('notifications-settings-card')).toBeDefined();
+    });
+
+    const toggleBtn = screen.getByTestId('push-notifications-toggle-btn');
+
+    // Try to toggle on with denied permission
+    await act(async () => {
+      fireEvent.click(toggleBtn);
+    });
+
+    expect(MockNotification.requestPermission).toHaveBeenCalled();
+    expect(toggleBtn.textContent).toBe('Включить');
+    expect(toggleBtn.getAttribute('aria-checked')).toBe('false');
+    expect(screen.getByTestId('notifications-hint')).toBeDefined();
+    expect(screen.getByTestId('notifications-hint').textContent).toContain(
+      'Разрешите уведомления в настройках браузера'
+    );
+  });
 });
