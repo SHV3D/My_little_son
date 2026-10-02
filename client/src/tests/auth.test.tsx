@@ -194,6 +194,60 @@ describe('LoginPage Component', () => {
     fireEvent.click(screen.getByTestId('reset-password-close-btn'));
     expect(screen.queryByTestId('reset-password-modal')).toBeNull();
   });
+
+  it('renders biometric login button next to submit button', () => {
+    render(<LoginPage />);
+    const bioBtn = screen.getByTestId('biometric-login-btn');
+    expect(bioBtn).toBeDefined();
+    expect(bioBtn.getAttribute('aria-label')).toBe('Войти по биометрии');
+  });
+
+  it('clicking biometric button with saved credentials authenticates and triggers onSuccess', async () => {
+    const handleSuccess = vi.fn();
+    localStorage.setItem('mls_biometrics_enabled', 'true');
+    localStorage.setItem(
+      'mls_biometric_user',
+      JSON.stringify({
+        id: 'user-mom-1',
+        name: 'Мама',
+        email: 'mama@mail.ru',
+        role: 'Мама',
+        familyId: 'demo-family-1',
+        token: 'mock-bio-token-123',
+      })
+    );
+
+    render(<LoginPage onSuccess={handleSuccess} />);
+
+    await act(async () => {
+      fireEvent.click(screen.getByTestId('biometric-login-btn'));
+    });
+
+    expect(handleSuccess).toHaveBeenCalledWith(
+      expect.objectContaining({
+        token: 'mock-bio-token-123',
+        user: expect.objectContaining({
+          id: 'user-mom-1',
+          email: 'mama@mail.ru',
+        }),
+      })
+    );
+  });
+
+  it('clicking biometric button without saved credentials displays error prompting to enable in Settings', async () => {
+    localStorage.clear();
+
+    render(<LoginPage />);
+
+    await act(async () => {
+      fireEvent.click(screen.getByTestId('biometric-login-btn'));
+    });
+
+    await waitFor(() => {
+      const errorBanner = screen.getByTestId('login-error-banner');
+      expect(errorBanner.textContent).toContain('Сначала включите вход по биометрии в Настройках');
+    });
+  });
 });
 
 describe('RegisterPage Component', () => {

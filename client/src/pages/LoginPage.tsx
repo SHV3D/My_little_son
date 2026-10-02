@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { loginApi, AuthResponse } from '../api/authApi';
+import { loginApi, AuthResponse, setAuthToken, setStoredUser } from '../api/authApi';
 import { PasswordResetModal } from '../components/modals/PasswordResetModal';
+import { authenticateWithBiometrics } from '../utils/biometrics';
 
 export interface LoginPageProps {
   onSuccess?: (auth: AuthResponse) => void;
@@ -51,6 +52,33 @@ export const LoginPage: React.FC<LoginPageProps> = ({
     } else {
       setEmail('papa@mail.ru');
       setPassword('password123');
+    }
+  };
+
+  const handleBiometricLogin = async () => {
+    setError(null);
+    try {
+      const result = await authenticateWithBiometrics();
+      if (!result) {
+        setError('Сначала включите вход по биометрии в Настройках');
+        return;
+      }
+      setAuthToken(result.token);
+      setStoredUser(result.user as any);
+      if (onSuccess) {
+        onSuccess({
+          user: result.user as any,
+          token: result.token,
+          family: {
+            id: result.user.familyId || 'demo-family-1',
+            name: 'Семья',
+            inviteCode: '',
+          },
+          child: null,
+        });
+      }
+    } catch (err: any) {
+      setError(err?.message || 'Ошибка биометрической аутентификации');
     }
   };
 
@@ -390,28 +418,72 @@ export const LoginPage: React.FC<LoginPageProps> = ({
           </a>
         </div>
 
-        <button
-          type="submit"
-          data-testid="login-submit-btn"
-          disabled={loading}
-          style={{
-            height: '60px',
-            borderRadius: '20px',
-            backgroundColor: '#23372A',
-            color: '#F1F4EA',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            fontSize: '17px',
-            fontWeight: 600,
-            border: 0,
-            cursor: loading ? 'default' : 'pointer',
-            opacity: loading ? 0.7 : 1,
-            transition: 'opacity 0.2s',
-          }}
-        >
-          {loading ? 'Вход...' : 'Войти'}
-        </button>
+        <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+          <button
+            type="submit"
+            data-testid="login-submit-btn"
+            disabled={loading}
+            style={{
+              flex: 1,
+              height: '60px',
+              borderRadius: '20px',
+              backgroundColor: '#23372A',
+              color: '#F1F4EA',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              fontSize: '17px',
+              fontWeight: 600,
+              border: 0,
+              cursor: loading ? 'default' : 'pointer',
+              opacity: loading ? 0.7 : 1,
+              transition: 'opacity 0.2s',
+            }}
+          >
+            {loading ? 'Вход...' : 'Войти'}
+          </button>
+
+          <button
+            type="button"
+            data-testid="biometric-login-btn"
+            onClick={handleBiometricLogin}
+            aria-label="Войти по биометрии"
+            style={{
+              width: '56px',
+              height: '56px',
+              borderRadius: '20px',
+              backgroundColor: 'var(--color-white, #FFFFFF)',
+              border: '1px solid var(--color-border, #E3E7DA)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              cursor: 'pointer',
+              flexShrink: 0,
+              padding: 0,
+            }}
+          >
+            <svg
+              width="28"
+              height="28"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.8"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              style={{ color: '#23372A' }}
+            >
+              <path d="M3 7V5a2 2 0 0 1 2-2h2" />
+              <path d="M17 3h2a2 2 0 0 1 2 2v2" />
+              <path d="M21 17v2a2 2 0 0 1-2 2h-2" />
+              <path d="M7 21H5a2 2 0 0 1-2-2v-2" />
+              <circle cx="9" cy="9" r="1" fill="currentColor" />
+              <circle cx="15" cy="9" r="1" fill="currentColor" />
+              <path d="M10 13c.5.5 1.5.5 2 0" />
+              <path d="M9 16c1.5 1 4.5 1 6 0" />
+            </svg>
+          </button>
+        </div>
       </form>
 
       <div style={{ flexGrow: 1 }} />

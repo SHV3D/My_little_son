@@ -13,6 +13,12 @@ import {
   ValidationResult,
 } from '@shared/sleepEngine';
 import { ThemeMode } from '../hooks/useTheme';
+import {
+  isBiometricsEnabled,
+  registerBiometrics,
+  disableBiometrics,
+} from '../utils/biometrics';
+import { getStoredUser, getAuthToken } from '../api/authApi';
 
 export interface SettingsPageProps {
   childId?: string;
@@ -70,6 +76,34 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({
   const [editingMaxInterval, setEditingMaxInterval] = useState(false);
   const [editingDaySleep, setEditingDaySleep] = useState(false);
   const [editingWakeTime, setEditingWakeTime] = useState(false);
+  const [biometricsActive, setBiometricsActive] = useState<boolean>(() => isBiometricsEnabled());
+
+  const handleToggleBiometrics = async () => {
+    if (biometricsActive) {
+      disableBiometrics();
+      setBiometricsActive(false);
+    } else {
+      let user = getStoredUser();
+      let token = getAuthToken();
+
+      if (!user) {
+        const firstMember = data?.family?.members?.[0];
+        user = {
+          id: firstMember?.id || 'user-mom-1',
+          name: firstMember?.name || 'Мама',
+          email: firstMember?.email || 'mama@mail.ru',
+          role: (firstMember?.role as any) || 'Мама',
+          familyId: data?.family?.id || 'demo-family-1',
+        };
+      }
+      if (!token) {
+        token = 'mls-auth-token-session';
+      }
+
+      await registerBiometrics(user, token);
+      setBiometricsActive(isBiometricsEnabled());
+    }
+  };
 
   // Load initial settings from server
   const loadData = useCallback(async () => {
@@ -912,6 +946,117 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({
               }}
             >
               Системная
+            </button>
+          </div>
+        </section>
+
+        {/* Section: Security */}
+        <h2
+          style={{
+            margin: '10px 0 0 4px',
+            fontSize: '18px',
+            fontWeight: 700,
+            letterSpacing: '-0.4px',
+          }}
+        >
+          Безопасность
+        </h2>
+
+        <section
+          data-testid="biometrics-settings-card"
+          style={{
+            backgroundColor: 'var(--color-white, #FFFFFF)',
+            borderRadius: '24px',
+            padding: '20px',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '12px',
+          }}
+        >
+          <div
+            style={{
+              fontSize: '13px',
+              fontWeight: 500,
+              color: 'var(--text-muted, #4A5A4C)',
+            }}
+          >
+            Безопасность
+          </div>
+
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              gap: '12px',
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flex: 1 }}>
+              <div
+                style={{
+                  width: '40px',
+                  height: '40px',
+                  borderRadius: '12px',
+                  backgroundColor: biometricsActive ? 'var(--color-lime, #D4F27A)' : 'var(--color-neutral-bg, #ECEEE6)',
+                  color: '#1E2A20',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  flexShrink: 0,
+                  transition: 'background-color 0.2s ease',
+                }}
+              >
+                <svg
+                  width="22"
+                  height="22"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="1.8"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <path d="M3 7V5a2 2 0 0 1 2-2h2" />
+                  <path d="M17 3h2a2 2 0 0 1 2 2v2" />
+                  <path d="M21 17v2a2 2 0 0 1-2 2h-2" />
+                  <path d="M7 21H5a2 2 0 0 1-2-2v-2" />
+                  <circle cx="9" cy="9" r="1" fill="currentColor" />
+                  <circle cx="15" cy="9" r="1" fill="currentColor" />
+                  <path d="M10 13c.5.5 1.5.5 2 0" />
+                  <path d="M9 16c1.5 1 4.5 1 6 0" />
+                </svg>
+              </div>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                <span style={{ fontSize: '16px', fontWeight: 500, color: 'var(--text-primary, #1E2A20)' }}>
+                  Вход по Face ID / отпечатку
+                </span>
+                <span style={{ fontSize: '13px', color: 'var(--text-muted, #4A5A4C)' }}>
+                  Быстрый вход без повторного ввода пароля
+                </span>
+              </div>
+            </div>
+
+            <button
+              type="button"
+              data-testid="biometrics-toggle-btn"
+              onClick={handleToggleBiometrics}
+              style={{
+                height: '38px',
+                padding: '0 16px',
+                borderRadius: '12px',
+                border: 0,
+                backgroundColor: biometricsActive ? 'var(--color-lime, #D4F27A)' : 'var(--color-neutral-bg, #ECEEE6)',
+                color: '#1E2A20',
+                fontSize: '14px',
+                fontWeight: 600,
+                fontFamily: 'inherit',
+                cursor: 'pointer',
+                flexShrink: 0,
+                transition: 'all 0.15s ease',
+              }}
+            >
+              {biometricsActive ? 'Включено' : 'Включить'}
             </button>
           </div>
         </section>

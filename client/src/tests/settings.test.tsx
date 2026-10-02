@@ -302,4 +302,34 @@ describe('SettingsPage Component', () => {
       expect(screen.getByTestId('invite-copy-feedback').textContent).toBe('Код 7K4-Q9M скопирован!');
     });
   });
+
+  it('renders biometrics security card and toggles biometric authentication', async () => {
+    localStorage.clear();
+
+    render(<SettingsPage childId="demo-child-1" />);
+
+    await waitFor(() => {
+      expect(screen.getByTestId('biometrics-settings-card')).toBeDefined();
+    });
+
+    const toggleBtn = screen.getByTestId('biometrics-toggle-btn');
+    expect(toggleBtn).toBeDefined();
+    expect(toggleBtn.textContent).toBe('Включить');
+
+    // Toggle on
+    await act(async () => {
+      fireEvent.click(toggleBtn);
+    });
+
+    expect(toggleBtn.textContent).toBe('Включено');
+    expect(localStorage.getItem('mls_biometrics_enabled')).toBe('true');
+
+    // Toggle off
+    await act(async () => {
+      fireEvent.click(toggleBtn);
+    });
+
+    expect(toggleBtn.textContent).toBe('Включить');
+    expect(localStorage.getItem('mls_biometrics_enabled')).toBeNull();
+  });
 });
