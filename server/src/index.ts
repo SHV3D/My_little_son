@@ -13,6 +13,17 @@ import { setupWebSocketServer } from './ws/wsServer';
 const app = express();
 const PORT = process.env.PORT || 3001;
 
+app.enable('trust proxy');
+
+// Redirect HTTP to HTTPS in production behind reverse proxies (Nginx/Passenger)
+app.use((req: Request, res: Response, next) => {
+  const proto = req.headers['x-forwarded-proto'];
+  if (process.env.NODE_ENV === 'production' && proto === 'http') {
+    return res.redirect(301, `https://${req.headers.host}${req.url}`);
+  }
+  next();
+});
+
 app.use(cors());
 app.use(express.json());
 
@@ -44,6 +55,10 @@ if (fs.existsSync(clientDistPath)) {
   app.get('*', (req: Request, res: Response, next) => {
     if (req.path.startsWith('/api') || req.path.startsWith('/ws')) {
       return next();
+    }
+    // Return 404 for missing static assets (e.g. .js, .css, .png) instead of serving index.html
+    if (path.extname(req.path)) {
+      return res.status(404).send('Asset not found');
     }
     res.sendFile(path.join(clientDistPath, 'index.html'));
   });

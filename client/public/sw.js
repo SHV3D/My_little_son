@@ -1,4 +1,4 @@
-const CACHE_NAME = 'my-little-son-v1';
+const CACHE_NAME = 'my-little-son-v2';
 
 const STATIC_PRECACHE = [
   '/',
@@ -6,6 +6,15 @@ const STATIC_PRECACHE = [
   '/manifest.json',
   '/favicon.svg',
   '/icon.svg',
+  '/logo.svg',
+  '/apple-touch-icon.png',
+  '/apple-touch-icon-180x180.png',
+  '/apple-touch-icon-152x152.png',
+  '/apple-touch-icon-167x167.png',
+  '/icon-192.png',
+  '/icon-512.png',
+  '/icon-maskable-192.png',
+  '/icon-maskable-512.png',
 ];
 
 self.addEventListener('install', (event) => {
@@ -35,29 +44,68 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // Network-first strategy for API requests
+  // 1. Network-first strategy for API requests
   if (url.pathname.startsWith('/api/')) {
     event.respondWith(
-      fetch(request)
-        .catch(() => caches.match(request))
+      fetch(request).catch(() => caches.match(request))
     );
     return;
   }
 
-  // Stale-while-revalidate for static shell and assets
+  // 2. Network-first strategy for HTML navigations
+  // Prevents serving stale HTML with outdated Vite bundle script hashes
+  const isNavigation = request.mode === 'navigate' || request.destination === 'document';
+  if (isNavigation) {
+    event.respondWith(
+      fetch(request)
+        .then((networkResponse) => {
+          if (networkResponse && networkResponse.status === 200) {
+            const responseToCache = networkResponse.clone();
+            caches.open(CACHE_NAME).then((cache) => {
+              cache.put(request, responseToCache);
+              cache.put('/index.html', responseToCache.clone());
+            });
+          }
+          return networkResponse;
+        })
+        .catch(() => {
+          return caches.match(request).then((cached) => {
+            return cached || caches.match('/index.html');
+          });
+        })
+    );
+    return;
+  }
+
+  // 3. Cache-first strategy for static assets
   event.respondWith(
     caches.match(request).then((cachedResponse) => {
-      const fetchPromise = fetch(request).then((networkResponse) => {
-        if (networkResponse && networkResponse.status === 200) {
-          const responseToCache = networkResponse.clone();
-          caches.open(CACHE_NAME).then((cache) => {
-            cache.put(request, responseToCache);
+      if (cachedResponse) {
+        return cachedResponse;
+      }
+
+      return fetch(request).then((networkResponse) => {
+        if (!networkResponse || networkResponse.status !== 200) {
+          return networkResponse;
+        }
+
+        const contentType = networkResponse.headers.get('content-type') || '';
+        // Guard against HTML returned for missing scripts/stylesheets
+        if (url.pathname.endsWith('.js') && contentType.includes('text/html')) {
+          return new Response('/* missing script */', {
+            status: 404,
+            statusText: 'Not Found',
+            headers: { 'Content-Type': 'application/javascript' },
           });
         }
-        return networkResponse;
-      }).catch(() => cachedResponse);
 
-      return cachedResponse || fetchPromise;
+        const responseToCache = networkResponse.clone();
+        caches.open(CACHE_NAME).then((cache) => {
+          cache.put(request, responseToCache);
+        });
+
+        return networkResponse;
+      });
     })
   );
 });
