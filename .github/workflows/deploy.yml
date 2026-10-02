@@ -34,8 +34,9 @@ jobs:
         run: |
           mkdir -p ~/.ssh
           printf '%s\n' "$SSH_KEY" | tr -d '\r' > ~/.ssh/id_rsa
-          chmod 600 ~/.ssh/id_rsa
-          echo "SSH key loaded. First line: $(head -n 1 ~/.ssh/id_rsa)"
+          cp ~/.ssh/id_rsa ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_rsa ~/.ssh/id_ed25519
+          echo "SSH key header: $(head -n 1 ~/.ssh/id_rsa)"
           ssh-keyscan -p 22 "${{ secrets.BEGET_HOST }}" >> ~/.ssh/known_hosts 2>/dev/null
 
       - name: Deploy files via rsync
