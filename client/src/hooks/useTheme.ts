@@ -42,6 +42,40 @@ function applyThemeAttribute(resolved: 'light' | 'dark') {
   }
 }
 
+export function triggerThemeTransition(
+  nextResolved: 'light' | 'dark',
+  apply: () => void
+): void {
+  if (
+    typeof document !== 'undefined' &&
+    'startViewTransition' in document &&
+    typeof (document as any).startViewTransition === 'function'
+  ) {
+    try {
+      (document as any).startViewTransition(() => {
+        apply();
+      });
+    } catch {
+      apply();
+    }
+  } else {
+    apply();
+  }
+
+  if (typeof document !== 'undefined' && document.body) {
+    const beam = document.createElement('div');
+    beam.className = 'theme-wave-beam';
+    beam.setAttribute('data-target-theme', nextResolved);
+    document.body.appendChild(beam);
+
+    setTimeout(() => {
+      if (beam.parentNode) {
+        beam.parentNode.removeChild(beam);
+      }
+    }, 700);
+  }
+}
+
 export function useTheme(): UseThemeReturn {
   const [theme, setThemeState] = useState<ThemeMode>(getStoredTheme);
   const [systemDark, setSystemDark] = useState<boolean>(() => getSystemPreference() === 'dark');
@@ -80,20 +114,22 @@ export function useTheme(): UseThemeReturn {
 
   const setTheme = useCallback(
     (mode: ThemeMode) => {
-      setThemeState(mode);
-      if (typeof window !== 'undefined' && window.localStorage) {
-        try {
-          localStorage.setItem(STORAGE_KEY, mode);
-        } catch {
-          // Ignore storage quota errors
-        }
-      }
-
       const nextResolved =
         mode === 'system'
           ? (getSystemPreference() === 'dark' ? 'dark' : 'light')
           : mode;
-      applyThemeAttribute(nextResolved);
+
+      triggerThemeTransition(nextResolved, () => {
+        setThemeState(mode);
+        if (typeof window !== 'undefined' && window.localStorage) {
+          try {
+            localStorage.setItem(STORAGE_KEY, mode);
+          } catch {
+            // Ignore storage quota errors
+          }
+        }
+        applyThemeAttribute(nextResolved);
+      });
     },
     []
   );

@@ -2,7 +2,7 @@
  * @vitest-environment happy-dom
  */
 import { describe, it, expect, vi } from 'vitest';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent, act } from '@testing-library/react';
 import fs from 'fs';
 import path from 'path';
 import { AwakeBatteryBar } from '../components/bento/AwakeBatteryBar';
@@ -10,6 +10,7 @@ import { DayTimelineBar, parseTimeToMinutes } from '../components/bento/DayTimel
 import { BentoCard } from '../components/bento/BentoCard';
 import { Header } from '../components/common/Header';
 import { BottomNav } from '../components/common/BottomNav';
+import { useTheme, triggerThemeTransition } from '../hooks/useTheme';
 
 describe('AwakeBatteryBar Component', () => {
   it('renders exactly 7 bars with correct active/inactive classes for levels 1 to 7', () => {
@@ -291,6 +292,73 @@ describe('Mobile Viewport Container Scrolling', () => {
     const content = container.querySelector('.screen-content') as HTMLElement;
     expect(content).toBeDefined();
     expect(content.style.overflowY).toBe('auto');
+  });
+});
+
+describe('Theme Wave Transition Styles and Behavior', () => {
+  it('verifies that theme.css contains theme-wave-down keyframes and .theme-wave-beam', () => {
+    const themeCssPath = path.resolve(__dirname, '../styles/theme.css');
+    const themeCss = fs.readFileSync(themeCssPath, 'utf-8');
+
+    expect(themeCss).toContain('theme-wave-down');
+    expect(themeCss).toContain('.theme-wave-beam');
+    expect(themeCss).toContain('::view-transition-old(root)');
+    expect(themeCss).toContain('::view-transition-new(root)');
+    expect(themeCss).toContain('clip-path: inset(0 0 100% 0)');
+    expect(themeCss).toContain('clip-path: inset(0 0 0 0)');
+  });
+
+  it('spawns a .theme-wave-beam element on document.body on toggleTheme and removes it after animation', () => {
+    vi.useFakeTimers();
+
+    function TestThemeToggle() {
+      const { toggleTheme, theme, resolvedTheme } = useTheme();
+      return (
+        <button data-testid="test-toggle-btn" onClick={toggleTheme}>
+          {theme}:{resolvedTheme}
+        </button>
+      );
+    }
+
+    render(<TestThemeToggle />);
+    const button = screen.getByTestId('test-toggle-btn');
+
+    // Before click, no wave beam
+    expect(document.body.querySelector('.theme-wave-beam')).toBeNull();
+
+    fireEvent.click(button);
+
+    // After click, wave beam element is added to document.body
+    const beam = document.body.querySelector('.theme-wave-beam');
+    expect(beam).not.toBeNull();
+    expect(beam?.getAttribute('data-target-theme')).toBeDefined();
+
+    // Fast-forward time past 700ms
+    act(() => {
+      vi.advanceTimersByTime(750);
+    });
+
+    // Beam is removed
+    expect(document.body.querySelector('.theme-wave-beam')).toBeNull();
+
+    vi.useRealTimers();
+  });
+
+  it('calls startViewTransition if available when triggering theme transition', () => {
+    const applyFn = vi.fn();
+    const originalStartViewTransition = (document as any).startViewTransition;
+    const startViewTransitionMock = vi.fn((cb: () => void) => {
+      cb();
+    });
+    (document as any).startViewTransition = startViewTransitionMock;
+
+    try {
+      triggerThemeTransition('dark', applyFn);
+      expect(startViewTransitionMock).toHaveBeenCalled();
+      expect(applyFn).toHaveBeenCalled();
+    } finally {
+      (document as any).startViewTransition = originalStartViewTransition;
+    }
   });
 });
 
