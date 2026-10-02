@@ -266,7 +266,8 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({
       className={`mobile-viewport-wrapper settings-screen ${className}`.trim()}
       style={{
         maxWidth: '430px',
-        minHeight: '100vh',
+        height: '100%',
+        overflow: 'hidden',
         margin: '0 auto',
         boxSizing: 'border-box',
         backgroundColor: 'var(--bg-primary, #ECEEE6)',

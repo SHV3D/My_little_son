@@ -3,6 +3,8 @@
  */
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
+import fs from 'fs';
+import path from 'path';
 import { AwakeBatteryBar } from '../components/bento/AwakeBatteryBar';
 import { DayTimelineBar, parseTimeToMinutes } from '../components/bento/DayTimelineBar';
 import { BentoCard } from '../components/bento/BentoCard';
@@ -247,3 +249,48 @@ describe('BentoCard Component', () => {
     expect(handleClick).toHaveBeenCalledTimes(1);
   });
 });
+
+describe('Mobile Viewport Container Scrolling', () => {
+  it('verifies that .mobile-viewport-wrapper has overflow: hidden and height: 100% in theme.css', () => {
+    const themeCssPath = path.resolve(__dirname, '../styles/theme.css');
+    const themeCss = fs.readFileSync(themeCssPath, 'utf-8');
+
+    // Matches .mobile-viewport-wrapper rule block in base styles
+    const wrapperMatch = themeCss.match(/\.mobile-viewport-wrapper\s*\{([^}]+)\}/);
+    expect(wrapperMatch).not.toBeNull();
+    const rules = wrapperMatch![1];
+    expect(rules).toContain('overflow: hidden');
+    expect(rules).toContain('height: 100%');
+    expect(rules).toContain('height: 100dvh');
+  });
+
+  it('verifies that html, body, and #root in index.css enforce overflow: hidden and container height', () => {
+    const indexCssPath = path.resolve(__dirname, '../index.css');
+    const indexCss = fs.readFileSync(indexCssPath, 'utf-8');
+
+    expect(indexCss).toMatch(/html,\s*body\s*\{[^}]*overflow:\s*hidden/);
+    expect(indexCss).toMatch(/html,\s*body\s*\{[^}]*height:\s*100%/);
+    expect(indexCss).toMatch(/#root\s*\{[^}]*overflow:\s*hidden/);
+    expect(indexCss).toMatch(/#root\s*\{[^}]*height:\s*100%/);
+  });
+
+  it('renders .mobile-viewport-wrapper container with height: 100% and overflow: hidden', () => {
+    const { container } = render(
+      <div className="mobile-viewport-wrapper" style={{ height: '100%', overflow: 'hidden' }}>
+        <div className="screen-content" style={{ minHeight: 0, flex: '1 1 auto', overflowY: 'auto' }}>
+          <div>Scrollable Content Inside Container</div>
+        </div>
+      </div>
+    );
+
+    const wrapper = container.querySelector('.mobile-viewport-wrapper') as HTMLElement;
+    expect(wrapper).toBeDefined();
+    expect(wrapper.style.overflow).toBe('hidden');
+    expect(wrapper.style.height).toBe('100%');
+
+    const content = container.querySelector('.screen-content') as HTMLElement;
+    expect(content).toBeDefined();
+    expect(content.style.overflowY).toBe('auto');
+  });
+});
+

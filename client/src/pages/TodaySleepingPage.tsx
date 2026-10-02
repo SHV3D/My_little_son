@@ -253,7 +253,8 @@ export const TodaySleepingPage: React.FC<TodaySleepingPageProps> = ({
       style={{
         width: '100%',
         maxWidth: '430px',
-        minHeight: '100vh',
+        height: '100%',
+        overflow: 'hidden',
         margin: '0 auto',
         backgroundColor: 'var(--bg-primary, #ECEEE6)',
         display: 'flex',

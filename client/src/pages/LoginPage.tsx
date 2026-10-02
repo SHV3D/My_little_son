@@ -98,19 +98,30 @@ export const LoginPage: React.FC<LoginPageProps> = ({
       className={`mobile-viewport-wrapper login-screen ${className}`.trim()}
       style={{
         maxWidth: '430px',
-        minHeight: '100vh',
+        height: '100%',
+        overflow: 'hidden',
+        display: 'flex',
+        flexDirection: 'column',
         margin: '0 auto',
         boxSizing: 'border-box',
         backgroundColor: '#ECEEE6',
-        display: 'flex',
-        flexDirection: 'column',
-        gap: '10px',
-        padding: '56px 16px 32px',
         fontFamily: "'Geologica', system-ui, sans-serif",
         color: '#1E2A20',
         ...style,
       }}
     >
+      <div
+        className="screen-content"
+        data-testid="login-content"
+        style={{
+          flex: '1 1 auto',
+          overflowY: 'auto',
+          padding: '16px 16px 32px',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '10px',
+        }}
+      >
       {/* Top Brand Strip */}
       <div
         data-testid="brand-top-strip"
@@ -525,6 +536,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({
           setResetSuccessMessage('Пароль успешно изменён! Войдите с новым паролем.');
         }}
       />
+      </div>
     </div>
   );
 };
