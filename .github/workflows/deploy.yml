@@ -33,11 +33,15 @@ jobs:
           SSH_KEY: ${{ secrets.BEGET_SSH_KEY }}
         run: |
           mkdir -p ~/.ssh
-          printf '%s\n' "$SSH_KEY" | tr -d '\r' > ~/.ssh/id_rsa
-          cp ~/.ssh/id_rsa ~/.ssh/id_ed25519
-          chmod 600 ~/.ssh/id_rsa ~/.ssh/id_ed25519
-          echo "SSH key header: $(head -n 1 ~/.ssh/id_rsa)"
+          printf '%s\n' "$SSH_KEY" | tr -d '\r' > ~/.ssh/id_ed25519
+          cp ~/.ssh/id_ed25519 ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_ed25519 ~/.ssh/id_rsa
+          echo "SSH key header: $(head -n 1 ~/.ssh/id_ed25519)"
           ssh-keyscan -p 22 "${{ secrets.BEGET_HOST }}" >> ~/.ssh/known_hosts 2>/dev/null
+
+      - name: Test SSH Connection
+        run: |
+          ssh -v -p 22 -i ~/.ssh/id_ed25519 -o BatchMode=yes -o StrictHostKeyChecking=no "${{ secrets.BEGET_USERNAME }}@${{ secrets.BEGET_HOST }}" "echo 'SSH connection successful as:' && whoami"
 
       - name: Deploy files via rsync
         run: |
@@ -52,12 +56,12 @@ jobs:
             --exclude='*.db-shm' \
             --exclude='.htaccess' \
             --exclude='tmp' \
-            -e "ssh -p 22 -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no" \
+            -e "ssh -p 22 -i ~/.ssh/id_ed25519 -o StrictHostKeyChecking=no" \
             ./ \
             "${{ secrets.BEGET_USERNAME }}@${{ secrets.BEGET_HOST }}:${{ secrets.BEGET_DEPLOY_PATH }}/"
 
       - name: Restart Passenger
         run: |
-          ssh -p 22 -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no \
+          ssh -p 22 -i ~/.ssh/id_ed25519 -o StrictHostKeyChecking=no \
             "${{ secrets.BEGET_USERNAME }}@${{ secrets.BEGET_HOST }}" \
             "mkdir -p ${{ secrets.BEGET_DEPLOY_PATH }}/tmp && touch ${{ secrets.BEGET_DEPLOY_PATH }}/tmp/restart.txt"
