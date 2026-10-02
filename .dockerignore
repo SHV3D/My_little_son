@@ -1,9 +1,16 @@
-# Dependencies
+# Logs and debug info
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# Dependencies (built inside Docker container)
 node_modules/
 client/node_modules/
 server/node_modules/
 
-# Production build artifacts
+# Build artifacts
 dist/
 client/dist/
 server/dist/
@@ -26,17 +33,13 @@ server/data/
 .env.production
 !.env.example
 
-# Logs and debug info
-*.log
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-.pnpm-debug.log*
+# Git & CI/CD
+.git
+.github
+.gitignore
+.dockerignore
 
-# Test coverage
-coverage/
-
-# OS and Editor files
+# IDE and OS files
 .DS_Store
 Thumbs.db
 .idea/
@@ -44,12 +47,18 @@ Thumbs.db
 *.swp
 *.swo
 
-# AI / agent working state
+# Tests & coverage
+coverage/
+__tests__/
+*.test.ts
+*.test.tsx
+*.spec.ts
+*.spec.tsx
+
+# Scratch, temporary and design extraction files
 .superpowers/
 .claude/
 .gemini/
-
-# Temporary design unpacking & scratch scripts
 design_raw/
 design_screens/
 design_components/
