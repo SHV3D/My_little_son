@@ -4,6 +4,7 @@ import { MonthGrid } from '../components/calendar/MonthGrid';
 import { DayDetailCard } from '../components/calendar/DayDetailCard';
 import { BottomNav } from '../components/common/BottomNav';
 import { fetchMonthSummary, MonthSummaryResponse } from '../api/sleepApi';
+import { getStoredUser } from '../api/authApi';
 
 export interface CalendarPageProps {
   initialYear?: number;
@@ -137,7 +138,7 @@ export const CalendarPage: React.FC<CalendarPageProps> = ({
       <Header
         title="Календарь"
         titleTestId="calendar-title"
-        roles={['Мама', 'Папа']}
+        roles={getStoredUser()?.role || 'Мама'}
         isOnline={true}
         theme={theme}
         onToggleTheme={onToggleTheme}

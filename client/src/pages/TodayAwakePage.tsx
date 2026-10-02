@@ -13,6 +13,7 @@ import {
 } from '../components/modals';
 import { DayLogsList } from '../components/today/DayLogsList';
 import { useFamilySync } from '../hooks/useFamilySync';
+import { getStoredUser } from '../api/authApi';
 import {
   fetchScheduleStatus,
   DayStatusResponse,
@@ -192,7 +193,7 @@ export const TodayAwakePage: React.FC<TodayAwakePageProps> = ({
   };
 
   // Real-time synchronization
-  const { isConnected, onlineRoles } = useFamilySync({
+  const { isConnected } = useFamilySync({
     familyId,
     onSleepStatusChanged: () => {
       loadStatus();
@@ -260,7 +261,7 @@ export const TodayAwakePage: React.FC<TodayAwakePageProps> = ({
       {/* Header */}
       <Header
         title={headerDate}
-        roles={onlineRoles.length > 0 ? onlineRoles : ['Мама', 'Папа']}
+        roles={getStoredUser()?.role || 'Мама'}
         isOnline={isConnected}
         theme={theme}
         onToggleTheme={onToggleTheme}

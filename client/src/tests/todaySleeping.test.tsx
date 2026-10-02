@@ -271,7 +271,7 @@ describe('TodaySleepingPage Component', () => {
     // Header
     expect(screen.getByTestId('app-header')).toBeDefined();
     expect(screen.getByTestId('header-title').textContent).toBe('Среда, 30.09');
-    expect(screen.getByTestId('header-roles').textContent).toContain('Мама · Папа');
+    expect(screen.getByTestId('header-roles').textContent).toContain('Мама');
 
     // Sleeping Hero Card
     expect(screen.getByTestId('sleeping-hero-card')).toBeDefined();

@@ -330,7 +330,7 @@ describe('TodayAwakePage Component', () => {
     // Header
     expect(screen.getByTestId('app-header')).toBeDefined();
     expect(screen.getByTestId('header-title').textContent).toBe('Среда, 30.09');
-    expect(screen.getByTestId('header-roles').textContent).toContain('Мама · Папа');
+    expect(screen.getByTestId('header-roles').textContent).toContain('Мама');
 
     // Awake Hero Card
     expect(screen.getByTestId('awake-hero-card')).toBeDefined();
@@ -514,5 +514,23 @@ describe('TodayAwakePage Component', () => {
     fireEvent.click(actionBtn);
 
     expect(handleFellAsleep).toHaveBeenCalledTimes(1);
+  });
+
+  it('displays logged-in user role (e.g. Папа) in header when available in storage', () => {
+    localStorage.setItem(
+      'auth_user',
+      JSON.stringify({
+        id: 'user-2',
+        email: 'papa@example.com',
+        name: 'Папа',
+        role: 'Папа',
+        familyId: 'fam-1',
+      })
+    );
+
+    render(<TodayAwakePage initialData={mockInitialData} />);
+
+    expect(screen.getByTestId('header-roles').textContent).toContain('Папа');
+    localStorage.removeItem('auth_user');
   });
 });

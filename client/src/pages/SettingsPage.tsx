@@ -281,7 +281,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({
       <Header
         title="Настройки"
         titleTestId="settings-title"
-        roles={familyMembers.map((m) => m.name || m.role)}
+        roles={getStoredUser()?.role || 'Мама'}
         isOnline={true}
         theme={theme === 'dark' ? 'dark' : 'light'}
         onToggleTheme={onToggleTheme || (() => onThemeChange?.(theme === 'dark' ? 'light' : 'dark'))}
