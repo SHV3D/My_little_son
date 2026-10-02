@@ -1,4 +1,11 @@
-import { ScheduleOutput } from '@shared/sleepEngine';
+import {
+  ScheduleOutput,
+  SleepWarning,
+  SleepWarningCode,
+  WarningSeverity,
+} from '@shared/sleepEngine';
+
+export type { SleepWarning, SleepWarningCode, WarningSeverity, ScheduleOutput };
 
 export interface FormattedSleepEvent {
   id: string;
@@ -36,6 +43,7 @@ export interface DayStatusResponse {
     name: string;
     role: string;
   }>;
+  warnings?: SleepWarning[];
 }
 
 export interface RetroactiveSleepPayload {

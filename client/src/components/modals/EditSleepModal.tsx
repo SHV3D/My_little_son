@@ -716,6 +716,8 @@ export const EditSleepModal: React.FC<EditSleepModalProps> = ({
         {/* Collision Warning Banner */}
         {collision.hasCollision && (
           <div
+            role="alert"
+            aria-live="polite"
             data-testid="edit-collision-warning"
             style={{
               backgroundColor: 'var(--warning-alert-bg, rgba(234, 163, 146, 0.16))',

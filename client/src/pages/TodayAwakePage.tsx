@@ -1,12 +1,26 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Header } from '../components/common/Header';
 import { BottomNav } from '../components/common/BottomNav';
+import { WarningBanner } from '../components/common/WarningBanner';
 import { AwakeHeroCard } from '../components/today/AwakeHeroCard';
 import { BentoMetricsGrid } from '../components/today/BentoMetricsGrid';
-import { SleepActionModal, SleepActionConfirmPayload, getCurrentTimeHHMM } from '../components/modals/SleepActionModal';
+import {
+  SleepActionModal,
+  SleepActionConfirmPayload,
+  RetroactiveSleepModal,
+  RetroactiveSavePayload,
+  getCurrentTimeHHMM,
+} from '../components/modals';
 import { DayLogsList } from '../components/today/DayLogsList';
 import { useFamilySync } from '../hooks/useFamilySync';
-import { fetchScheduleStatus, DayStatusResponse, recordFellAsleepApi } from '../api/sleepApi';
+import {
+  fetchScheduleStatus,
+  DayStatusResponse,
+  recordFellAsleepApi,
+  recordRetroactiveApi,
+  SleepWarning,
+  SleepWarningCode,
+} from '../api/sleepApi';
 import { formatMinutesToHoursAndMinutes } from '@shared/sleepEngine';
 
 export interface TodayAwakePageProps {
@@ -90,6 +104,8 @@ export const TodayAwakePage: React.FC<TodayAwakePageProps> = ({
 }) => {
   const [statusData, setStatusData] = useState<DayStatusResponse | undefined>(initialData);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isRetroactiveModalOpen, setIsRetroactiveModalOpen] = useState(false);
+  const [dismissedWarnings, setDismissedWarnings] = useState<Set<SleepWarningCode>>(new Set());
 
   const loadStatus = useCallback(async () => {
     try {
@@ -100,11 +116,29 @@ export const TodayAwakePage: React.FC<TodayAwakePageProps> = ({
     }
   }, [childId]);
 
-  const handleFellAsleepBtnClick = () => {
+  const handleOpenFellAsleep = () => {
     if (onFellAsleepClick) {
       onFellAsleepClick();
     } else {
       setIsModalOpen(true);
+    }
+  };
+
+  const handleOpenRetroactive = () => {
+    if (onAddRetroactiveClick) {
+      onAddRetroactiveClick();
+    } else {
+      setIsRetroactiveModalOpen(true);
+    }
+  };
+
+  const handleAction = (warning: SleepWarning) => {
+    if (warning.actionType === 'WAKE_NOW' || warning.actionType === 'SHORT_BRIDGE_NAP') {
+      handleOpenFellAsleep();
+    } else if (warning.actionType === 'SET_WAKE_TIME') {
+      handleOpenRetroactive();
+    } else {
+      handleOpenFellAsleep();
     }
   };
 
@@ -136,6 +170,23 @@ export const TodayAwakePage: React.FC<TodayAwakePageProps> = ({
     }
   };
 
+  const handleSaveRetroactive = async (payload: RetroactiveSavePayload) => {
+    setIsRetroactiveModalOpen(false);
+    try {
+      await recordRetroactiveApi({
+        childId,
+        date: payload.date || statusData?.date,
+        eventType: payload.eventType,
+        startTime: payload.startTime,
+        endTime: payload.endTime,
+        napNumber: payload.napNumber,
+      });
+      await loadStatus();
+    } catch {
+      await loadStatus();
+    }
+  };
+
   // Real-time synchronization
   const { isConnected, onlineRoles } = useFamilySync({
     familyId,
@@ -159,6 +210,9 @@ export const TodayAwakePage: React.FC<TodayAwakePageProps> = ({
   }, [initialData]);
 
   const schedule = statusData?.schedule;
+  const activeWarnings = (schedule?.warnings || statusData?.warnings || []).filter(
+    (w) => !dismissedWarnings.has(w.code)
+  );
 
   // Header Title
   const headerDate = formatRussianHeaderDate(statusData?.date);
@@ -225,6 +279,16 @@ export const TodayAwakePage: React.FC<TodayAwakePageProps> = ({
           lastWakeTime={schedule?.lastWakeTime}
           intervalString="2:30–3:00"
           batteryLevel={schedule?.batteryStep}
+          isOvertired={schedule?.warnings?.some((w) => w.code === 'OVERTIRED')}
+          countdownMinutes={schedule?.nextNap?.countdownMinutes}
+        />
+
+        {/* Warning Banner */}
+        <WarningBanner
+          warnings={activeWarnings}
+          onDismiss={(code) => setDismissedWarnings((prev) => new Set([...prev, code]))}
+          onAction={handleAction}
+          style={{ marginBottom: 12 }}
         />
 
         {/* Bento Metrics 5-card Grid */}
@@ -256,7 +320,7 @@ export const TodayAwakePage: React.FC<TodayAwakePageProps> = ({
         <button
           type="button"
           data-testid="fell-asleep-btn"
-          onClick={handleFellAsleepBtnClick}
+          onClick={handleOpenFellAsleep}
           className="bento-interactive"
           aria-label="Зафиксировать, что ребёнок уснул"
           style={{
@@ -299,7 +363,7 @@ export const TodayAwakePage: React.FC<TodayAwakePageProps> = ({
         {/* Day Logs List */}
         <DayLogsList
           events={statusData?.events}
-          onAddRetroactiveClick={onAddRetroactiveClick}
+          onAddRetroactiveClick={handleOpenRetroactive}
           onRecordClick={onEditRecord || onRecordClick}
         />
       </div>
@@ -314,6 +378,15 @@ export const TodayAwakePage: React.FC<TodayAwakePageProps> = ({
         currentTime={statusData?.currentTime}
         onClose={() => setIsModalOpen(false)}
         onConfirm={handleConfirmFellAsleep}
+      />
+
+      {/* Retroactive Sleep Modal */}
+      <RetroactiveSleepModal
+        isOpen={isRetroactiveModalOpen}
+        currentDate={statusData?.date}
+        existingEvents={statusData?.events}
+        onClose={() => setIsRetroactiveModalOpen(false)}
+        onSave={handleSaveRetroactive}
       />
     </div>
   );

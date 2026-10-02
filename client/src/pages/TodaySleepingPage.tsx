@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Header } from '../components/common/Header';
 import { BottomNav } from '../components/common/BottomNav';
+import { WarningBanner } from '../components/common/WarningBanner';
 import { SleepingHeroCard } from '../components/today/SleepingHeroCard';
 import { DayLogsList, DayLogRecord } from '../components/today/DayLogsList';
 import {
@@ -16,6 +17,8 @@ import {
   DayStatusResponse,
   recordWokeUpApi,
   recordRetroactiveApi,
+  SleepWarning,
+  SleepWarningCode,
 } from '../api/sleepApi';
 import { formatDurationRussian } from '@shared/sleepEngine';
 
@@ -100,6 +103,7 @@ export const TodaySleepingPage: React.FC<TodaySleepingPageProps> = ({
   const [statusData, setStatusData] = useState<DayStatusResponse | undefined>(initialData);
   const [isActionModalOpen, setIsActionModalOpen] = useState(false);
   const [isRetroactiveModalOpen, setIsRetroactiveModalOpen] = useState(false);
+  const [dismissedWarnings, setDismissedWarnings] = useState<Set<SleepWarningCode>>(new Set());
 
   const loadStatus = useCallback(async () => {
     try {
@@ -110,11 +114,17 @@ export const TodaySleepingPage: React.FC<TodaySleepingPageProps> = ({
     }
   }, [childId]);
 
-  const handleWokeUpBtnClick = () => {
+  const handleOpenWokeUp = () => {
     if (onWokeUpClick) {
       onWokeUpClick();
     } else {
       setIsActionModalOpen(true);
+    }
+  };
+
+  const handleAction = (warning: SleepWarning) => {
+    if (warning.actionType === 'WAKE_NOW' || warning.actionType === 'SET_WAKE_TIME') {
+      handleOpenWokeUp();
     }
   };
 
@@ -232,6 +242,10 @@ export const TodaySleepingPage: React.FC<TodaySleepingPageProps> = ({
     )
   );
 
+  const activeWarnings = (schedule?.warnings || statusData?.warnings || []).filter(
+    (w) => !dismissedWarnings.has(w.code)
+  );
+
   return (
     <div
       className={`today-sleeping-page mobile-viewport-wrapper ${className}`.trim()}
@@ -301,6 +315,7 @@ export const TodaySleepingPage: React.FC<TodaySleepingPageProps> = ({
             />
             {isWakeNow && (
               <div
+                role="status"
                 data-testid="sleeping-wake-now-badge"
                 style={{
                   position: 'absolute',
@@ -324,6 +339,14 @@ export const TodaySleepingPage: React.FC<TodaySleepingPageProps> = ({
               </div>
             )}
           </div>
+
+          {/* Warning Banner */}
+          <WarningBanner
+            warnings={activeWarnings}
+            onDismiss={(code) => setDismissedWarnings((prev) => new Set([...prev, code]))}
+            onAction={handleAction}
+            style={{ gridColumn: 'span 2', marginTop: 12, marginBottom: 12 }}
+          />
 
           {/* Card 1: Wake Deadline Card (Lime) */}
           <section
@@ -438,7 +461,7 @@ export const TodaySleepingPage: React.FC<TodaySleepingPageProps> = ({
         <button
           type="button"
           data-testid="woke-up-btn"
-          onClick={handleWokeUpBtnClick}
+          onClick={handleOpenWokeUp}
           className="bento-interactive"
           aria-label="Зафиксировать, что ребёнок проснулся"
           style={{

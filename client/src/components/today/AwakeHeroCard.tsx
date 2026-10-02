@@ -112,8 +112,6 @@ export const AwakeHeroCard: React.FC<AwakeHeroCardProps> = ({
     (overtiredMinutes !== undefined && overtiredMinutes > 0)
   );
 
-  const displayOvertiredMinutes =
-    overtiredMinutes || (countdownMinutes !== undefined ? Math.abs(countdownMinutes) : 0);
   // Determine initial elapsed seconds
   const computeInitialSeconds = (): number => {
     if (lastWakeTimestamp) {
@@ -160,6 +158,20 @@ export const AwakeHeroCard: React.FC<AwakeHeroCardProps> = ({
   const displayTimer = awakeDuration && !liveTick
     ? awakeDuration
     : formatSecondsToHoursAndMinutes(elapsedSeconds);
+
+  // Compute overtired minutes with fallback to elapsed awake time beyond max interval
+  const computedOvertired = Math.max(0, Math.floor(elapsedSeconds / 60) - maxWakeIntervalMinutes);
+  const displayOvertiredMinutes =
+    overtiredMinutes || (countdownMinutes !== undefined ? Math.abs(countdownMinutes) : computedOvertired);
+
+  // Severe overtired (> 40 min) uses terracotta alert badge
+  const isSevereOvertired = displayOvertiredMinutes > 40;
+  const badgeBg = isSevereOvertired
+    ? 'var(--warning-alert-badge-bg, #EAA392)'
+    : 'var(--warning-warn-badge-bg, #E4C078)';
+  const badgeText = isSevereOvertired
+    ? 'var(--warning-alert-badge-text, #1E2A20)'
+    : 'var(--warning-warn-badge-text, #1E2A20)';
 
   // Format wake time text
   const cleanWakeTime = lastWakeTime ? lastWakeTime.replace(/^с\s*/, '').trim() : '10:55';
@@ -249,11 +261,12 @@ export const AwakeHeroCard: React.FC<AwakeHeroCardProps> = ({
           </div>
           {overtired && (
             <div
+              role="status"
               data-testid="awake-overtired-badge"
               style={{
                 alignSelf: 'flex-start',
-                backgroundColor: 'var(--warning-warn-badge-bg, #E4C078)',
-                color: 'var(--warning-warn-badge-text, #1E2A20)',
+                backgroundColor: badgeBg,
+                color: badgeText,
                 fontSize: '13px',
                 fontWeight: 600,
                 borderRadius: '12px',

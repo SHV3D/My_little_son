@@ -97,6 +97,7 @@ describe('AwakeHeroCard Component', () => {
     const badge = screen.getByTestId('awake-overtired-badge');
     expect(badge).toBeDefined();
     expect(badge.textContent).toBe('Перегул +25 мин');
+    expect(badge.getAttribute('role')).toBe('status');
 
     // Test with countdownMinutes <= -15
     rerender(
@@ -112,6 +113,40 @@ describe('AwakeHeroCard Component', () => {
 
     const badge2 = screen.getByTestId('awake-overtired-badge');
     expect(badge2.textContent).toBe('Перегул +20 мин');
+    expect(badge2.getAttribute('role')).toBe('status');
+
+    // Test computed overtired fallback when only isOvertired is true
+    rerender(
+      <AwakeHeroCard
+        awakeDuration="3:30"
+        lastWakeTime="10:00"
+        intervalString="2:30–3:00"
+        maxWakeIntervalMinutes={180}
+        batteryLevel={7}
+        liveTick={false}
+        isOvertired={true}
+      />
+    );
+
+    const badgeComputed = screen.getByTestId('awake-overtired-badge');
+    expect(badgeComputed.textContent).toBe('Перегул +30 мин');
+
+    // Test severe overtired (> 40 min) terracotta styling
+    rerender(
+      <AwakeHeroCard
+        awakeDuration="3:45"
+        lastWakeTime="10:00"
+        intervalString="2:30–3:00"
+        batteryLevel={7}
+        liveTick={false}
+        isOvertired={true}
+        overtiredMinutes={45}
+      />
+    );
+
+    const badgeSevere = screen.getByTestId('awake-overtired-badge');
+    expect(badgeSevere.textContent).toBe('Перегул +45 мин');
+    expect(badgeSevere.style.backgroundColor).toContain('var(--warning-alert-badge-bg');
   });
 
   it('does not render overtired badge when child is not overtired', () => {
@@ -398,5 +433,86 @@ describe('TodayAwakePage Component', () => {
         id: 'ev-wake-1',
       })
     );
+  });
+
+  it('renders WarningBanner when schedule has warnings and handles dismiss', async () => {
+    const dataWithWarnings: DayStatusResponse = {
+      ...mockInitialData,
+      schedule: {
+        ...mockInitialData.schedule!,
+        warnings: [
+          {
+            code: 'OVERTIRED',
+            severity: 'warning',
+            title: 'Ребёнок перегулял',
+            message: 'Время бодрствования превышено на 20 мин.',
+            actionRecommendation: 'Уложите ребёнка на короткий сон.',
+            actionType: 'SHORT_BRIDGE_NAP',
+          },
+        ],
+      },
+    };
+
+    global.fetch = vi.fn().mockImplementation(() =>
+      Promise.resolve({
+        ok: true,
+        json: () => Promise.resolve(dataWithWarnings),
+      })
+    );
+
+    await act(async () => {
+      render(<TodayAwakePage initialData={dataWithWarnings} />);
+    });
+
+    const banner = screen.getByTestId('warning-banner');
+    expect(banner).toBeDefined();
+    expect(banner.textContent).toContain('Ребёнок перегулял');
+
+    // Dismiss banner
+    const dismissBtn = screen.getByTestId('warning-banner-close');
+    fireEvent.click(dismissBtn);
+
+    expect(screen.queryByTestId('warning-banner')).toBeNull();
+  });
+
+  it('triggers action when clicking action button on WarningBanner in TodayAwakePage', async () => {
+    const handleFellAsleep = vi.fn();
+    const dataWithWarnings: DayStatusResponse = {
+      ...mockInitialData,
+      schedule: {
+        ...mockInitialData.schedule!,
+        warnings: [
+          {
+            code: 'OVERTIRED',
+            severity: 'warning',
+            title: 'Ребёнок перегулял',
+            message: 'Время бодрствования превышено на 20 мин.',
+            actionRecommendation: 'Уложите ребёнка на короткий сон.',
+            actionType: 'SHORT_BRIDGE_NAP',
+          },
+        ],
+      },
+    };
+
+    global.fetch = vi.fn().mockImplementation(() =>
+      Promise.resolve({
+        ok: true,
+        json: () => Promise.resolve(dataWithWarnings),
+      })
+    );
+
+    await act(async () => {
+      render(
+        <TodayAwakePage
+          initialData={dataWithWarnings}
+          onFellAsleepClick={handleFellAsleep}
+        />
+      );
+    });
+
+    const actionBtn = screen.getByTestId('warning-banner-action');
+    fireEvent.click(actionBtn);
+
+    expect(handleFellAsleep).toHaveBeenCalledTimes(1);
   });
 });

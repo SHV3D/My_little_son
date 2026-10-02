@@ -424,6 +424,8 @@ describe('RetroactiveSleepModal Component', () => {
     const warning = screen.getByTestId('retroactive-collision-warning');
     expect(warning).toBeDefined();
     expect(warning.textContent).toContain('пересекается');
+    expect(warning.getAttribute('role')).toBe('alert');
+    expect(warning.getAttribute('aria-live')).toBe('polite');
 
     const saveBtn = screen.getByTestId('retroactive-save-btn') as HTMLButtonElement;
     expect(saveBtn.disabled).toBe(true);
@@ -769,6 +771,8 @@ describe('EditSleepModal Component', () => {
     const warning = screen.getByTestId('edit-collision-warning');
     expect(warning).toBeDefined();
     expect(warning.textContent).toContain('пересекается');
+    expect(warning.getAttribute('role')).toBe('alert');
+    expect(warning.getAttribute('aria-live')).toBe('polite');
     expect((screen.getByTestId('edit-sleep-save-btn') as HTMLButtonElement).disabled).toBe(true);
 
     fireEvent.click(screen.getByTestId('edit-sleep-save-btn'));

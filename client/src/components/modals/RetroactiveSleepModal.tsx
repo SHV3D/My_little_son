@@ -459,6 +459,8 @@ export const RetroactiveSleepModal: React.FC<RetroactiveSleepModalProps> = ({
         {/* Collision Warning Banner */}
         {collision.hasCollision && (
           <div
+            role="alert"
+            aria-live="polite"
             data-testid="retroactive-collision-warning"
             style={{
               backgroundColor: 'var(--warning-alert-bg, rgba(234, 163, 146, 0.16))',

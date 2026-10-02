@@ -115,13 +115,11 @@ export const CalendarPage: React.FC<CalendarPageProps> = ({
     <div
       data-testid="calendar-page"
       data-loading={isLoading ? 'true' : 'false'}
-      className={`mobile-viewport-wrapper ${className}`.trim()}
+      className={`calendar-page mobile-viewport-wrapper ${className}`.trim()}
       style={{
         width: '100%',
         maxWidth: '430px',
         minHeight: '100vh',
-        height: '100vh',
-        position: 'relative',
         margin: '0 auto',
         boxSizing: 'border-box',
         backgroundColor: 'var(--bg-primary, #ECEEE6)',

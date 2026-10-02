@@ -274,6 +274,7 @@ export default function App() {
       <RetroactiveSleepModal
         isOpen={activeModal?.type === 'RETROACTIVE'}
         currentDate={status?.date}
+        existingEvents={status?.events || []}
         onClose={() => setActiveModal(null)}
         onSave={handleRetroactiveSave}
       />
@@ -282,6 +283,7 @@ export default function App() {
       <EditSleepModal
         isOpen={isEditModalOpen}
         event={editingEvent}
+        existingEvents={status?.events || []}
         childId={status?.child?.id || 'demo-child-1'}
         onClose={() => {
           setIsEditModalOpen(false);

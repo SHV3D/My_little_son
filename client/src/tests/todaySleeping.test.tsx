@@ -396,6 +396,7 @@ describe('TodaySleepingPage Component', () => {
     const badge = screen.getByTestId('sleeping-wake-now-badge');
     expect(badge).toBeDefined();
     expect(badge.textContent).toContain('Пора будить');
+    expect(badge.getAttribute('role')).toBe('status');
   });
 
   it('does not render "Пора будить" badge when wake deadline is not exceeded', async () => {
@@ -404,5 +405,86 @@ describe('TodaySleepingPage Component', () => {
     });
 
     expect(screen.queryByTestId('sleeping-wake-now-badge')).toBeNull();
+  });
+
+  it('renders WarningBanner when schedule has warnings and handles dismiss on TodaySleepingPage', async () => {
+    const dataWithWarnings: DayStatusResponse = {
+      ...mockSleepingData,
+      schedule: {
+        ...mockSleepingData.schedule!,
+        warnings: [
+          {
+            code: 'ABNORMALLY_LONG_NAP',
+            severity: 'alert',
+            title: 'Слишком длинный сон',
+            message: 'Дневной сон длится уже 2 ч 10 мин.',
+            actionRecommendation: 'Пора будить ребёнка.',
+            actionType: 'WAKE_NOW',
+          },
+        ],
+      },
+    };
+
+    global.fetch = vi.fn().mockImplementation(() =>
+      Promise.resolve({
+        ok: true,
+        json: () => Promise.resolve(dataWithWarnings),
+      })
+    );
+
+    await act(async () => {
+      render(<TodaySleepingPage initialData={dataWithWarnings} />);
+    });
+
+    const banner = screen.getByTestId('warning-banner');
+    expect(banner).toBeDefined();
+    expect(banner.textContent).toContain('Слишком длинный сон');
+
+    // Dismiss banner
+    const dismissBtn = screen.getByTestId('warning-banner-close');
+    fireEvent.click(dismissBtn);
+
+    expect(screen.queryByTestId('warning-banner')).toBeNull();
+  });
+
+  it('triggers action when clicking action button on WarningBanner in TodaySleepingPage', async () => {
+    const handleWokeUp = vi.fn();
+    const dataWithWarnings: DayStatusResponse = {
+      ...mockSleepingData,
+      schedule: {
+        ...mockSleepingData.schedule!,
+        warnings: [
+          {
+            code: 'ABNORMALLY_LONG_NAP',
+            severity: 'alert',
+            title: 'Слишком длинный сон',
+            message: 'Дневной сон длится уже 2 ч 10 мин.',
+            actionRecommendation: 'Пора будить ребёнка.',
+            actionType: 'WAKE_NOW',
+          },
+        ],
+      },
+    };
+
+    global.fetch = vi.fn().mockImplementation(() =>
+      Promise.resolve({
+        ok: true,
+        json: () => Promise.resolve(dataWithWarnings),
+      })
+    );
+
+    await act(async () => {
+      render(
+        <TodaySleepingPage
+          initialData={dataWithWarnings}
+          onWokeUpClick={handleWokeUp}
+        />
+      );
+    });
+
+    const actionBtn = screen.getByTestId('warning-banner-action');
+    fireEvent.click(actionBtn);
+
+    expect(handleWokeUp).toHaveBeenCalledTimes(1);
   });
 });
