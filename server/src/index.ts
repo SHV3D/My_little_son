@@ -31,7 +31,14 @@ app.use('/api/sleep', sleepRoutes);
 app.use('/api/calendar', calendarRoutes);
 
 // Static files from built client for production
-const clientDistPath = path.resolve(__dirname, '../../client/dist');
+const candidateDistPaths = [
+  path.resolve(__dirname, '../../../../client/dist'),
+  path.resolve(__dirname, '../../client/dist'),
+  path.resolve(process.cwd(), 'client/dist'),
+  path.resolve(process.cwd(), 'dist'),
+];
+const clientDistPath = candidateDistPaths.find((p) => fs.existsSync(p)) || candidateDistPaths[0];
+
 if (fs.existsSync(clientDistPath)) {
   app.use(express.static(clientDistPath));
   app.get('*', (req: Request, res: Response, next) => {
@@ -45,7 +52,7 @@ if (fs.existsSync(clientDistPath)) {
 const server = http.createServer(app);
 const wss = setupWebSocketServer(server);
 
-if (process.env.NODE_ENV !== 'test' && (!process.env.PORT || require.main === module)) {
+if (process.env.NODE_ENV !== 'test') {
   server.listen(PORT, () => {
     console.log(`Server listening on port ${PORT}`);
   });

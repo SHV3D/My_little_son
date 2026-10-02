@@ -8,7 +8,7 @@ import {
   formatMinutesToHoursAndMinutes,
   SleepEvent as EngineSleepEvent,
   ScheduleOutput,
-} from '@shared/sleepEngine';
+} from '../../../shared/sleepEngine';
 
 export interface FormattedSleepEvent {
   id: string;

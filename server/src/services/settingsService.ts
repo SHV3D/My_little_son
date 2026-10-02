@@ -1,5 +1,5 @@
 import { getDb, DbChildSettings, DbChild, DbFamily } from '../db/database';
-import { validateSettings, ValidationResult, SettingsInput } from '@shared/sleepEngine';
+import { validateSettings, ValidationResult, SettingsInput } from '../../../shared/sleepEngine';
 
 export interface ChildSettingsDto {
   id: string;

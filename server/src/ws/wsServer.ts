@@ -8,7 +8,7 @@ import {
   WsServerEvent,
   SleepStatusChangedPayload,
   SettingsUpdatedPayload,
-} from '@shared/wsTypes';
+} from '../../../shared/wsTypes';
 
 export interface ExtendedWebSocket extends WebSocket {
   isAlive?: boolean;

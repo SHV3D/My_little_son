@@ -2,6 +2,7 @@ import Database from 'better-sqlite3';
 import path from 'path';
 import fs from 'fs';
 import bcrypt from 'bcryptjs';
+import { SCHEMA_SQL } from './schemaSql';
 
 export interface DbFamily {
   id: string;
@@ -89,9 +90,7 @@ export function initDatabase(customPath?: string): Database.Database {
   }
 
   // Load and execute schema
-  const schemaPath = path.resolve(__dirname, 'schema.sql');
-  const schemaSql = fs.readFileSync(schemaPath, 'utf8');
-  db.exec(schemaSql);
+  db.exec(SCHEMA_SQL);
 
   // Migration: ensure recovery_code column exists on families table
   const familyColumns = db.prepare("PRAGMA table_info(families)").all() as { name: string }[];
