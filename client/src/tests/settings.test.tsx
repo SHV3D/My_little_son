@@ -176,6 +176,19 @@ describe('SettingsPage Component', () => {
     }));
   });
 
+  it('renders Header with title "Настройки" and settings-title test id', async () => {
+    render(<SettingsPage childId="demo-child-1" />);
+
+    await waitFor(() => {
+      const headerTitle = screen.getByTestId('settings-title');
+      expect(headerTitle).toBeDefined();
+      expect(headerTitle.textContent).toBe('Настройки');
+    });
+
+    const appHeader = screen.getByTestId('app-header');
+    expect(appHeader).toBeDefined();
+  });
+
   it('renders all sections and initial data correctly', async () => {
     render(<SettingsPage childId="demo-child-1" />);
 

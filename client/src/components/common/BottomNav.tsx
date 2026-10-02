@@ -88,7 +88,10 @@ export const BottomNav: React.FC<BottomNavProps> = ({
       data-testid="bottom-nav"
       role="tablist"
       style={{
+        flexShrink: 0,
+        minHeight: '88px',
         height: '88px',
+        width: '100%',
         boxSizing: 'border-box',
         padding: '6px 16px max(24px, env(safe-area-inset-bottom, 24px))',
         display: 'grid',
@@ -114,6 +117,9 @@ export const BottomNav: React.FC<BottomNavProps> = ({
             onClick={() => handleTabClick(tab)}
             className={`bottom-nav-tab ${isActive ? 'active' : 'inactive'}`}
             style={{
+              flexShrink: 0,
+              minHeight: '52px',
+              height: '52px',
               border: 0,
               borderRadius: '16px',
               backgroundColor: isActive ? 'var(--color-white, #FFFFFF)' : 'transparent',

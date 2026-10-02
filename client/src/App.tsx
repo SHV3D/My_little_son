@@ -238,6 +238,7 @@ export default function App() {
           childId={status?.child?.id || 'demo-child-1'}
           theme={theme}
           onThemeChange={setTheme}
+          onToggleTheme={toggleTheme}
           onSelectTab={(tab) => setActiveTab(tab)}
           onLogout={() => {
             clearAuthSession();

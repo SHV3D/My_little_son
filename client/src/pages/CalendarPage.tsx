@@ -132,28 +132,29 @@ export const CalendarPage: React.FC<CalendarPageProps> = ({
         ...style,
       }}
     >
+      {/* App Header with Title, Roles, and Theme Toggle */}
+      <Header
+        title="Календарь"
+        titleTestId="calendar-title"
+        roles={['Мама', 'Папа']}
+        isOnline={true}
+        theme={theme}
+        onToggleTheme={onToggleTheme}
+        style={{ flexShrink: 0, padding: 'max(20px, env(safe-area-inset-top, 20px)) 16px 8px' }}
+      />
+
       <div
         className="screen-content"
         style={{
-          flexGrow: 1,
+          flex: '1 1 auto',
+          overflowY: 'auto',
+          padding: '8px 16px 16px',
           display: 'flex',
           flexDirection: 'column',
           gap: '12px',
-          padding: 'max(20px, env(safe-area-inset-top, 20px)) 16px 16px',
           boxSizing: 'border-box',
-          overflowY: 'auto',
         }}
       >
-        {/* App Header with Title, Roles, and Theme Toggle */}
-        <Header
-          title="Календарь"
-          titleTestId="calendar-title"
-          roles={['Мама', 'Папа']}
-          isOnline={true}
-          theme={theme}
-          onToggleTheme={onToggleTheme}
-        />
-
         {/* Month Navigation Row */}
         <div
           data-testid="calendar-header"
@@ -267,7 +268,7 @@ export const CalendarPage: React.FC<CalendarPageProps> = ({
       </div>
 
       {/* Bottom Navigation Bar */}
-      <BottomNav activeTab="calendar" onSelectTab={onSelectTab} />
+      <BottomNav activeTab="calendar" onSelectTab={onSelectTab} style={{ flexShrink: 0 }} />
     </div>
   );
 };

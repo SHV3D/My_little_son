@@ -264,27 +264,28 @@ export const TodaySleepingPage: React.FC<TodaySleepingPageProps> = ({
         ...style,
       }}
     >
+      {/* Header */}
+      <Header
+        title={headerDate}
+        roles={onlineRoles.length > 0 ? onlineRoles : ['Мама', 'Папа']}
+        isOnline={isConnected}
+        theme={theme}
+        onToggleTheme={onToggleTheme}
+        style={{ flexShrink: 0, padding: 'max(20px, env(safe-area-inset-top, 20px)) 16px 8px' }}
+      />
+
       <div
         className="screen-content"
         style={{
-          flexGrow: 1,
+          flex: '1 1 auto',
+          overflowY: 'auto',
+          padding: '8px 16px 16px',
           display: 'flex',
           flexDirection: 'column',
           gap: '14px',
-          padding: 'max(20px, env(safe-area-inset-top, 20px)) 16px 16px',
           boxSizing: 'border-box',
-          overflowY: 'auto',
         }}
       >
-        {/* Header */}
-        <Header
-          title={headerDate}
-          roles={onlineRoles.length > 0 ? onlineRoles : ['Мама', 'Папа']}
-          isOnline={isConnected}
-          theme={theme}
-          onToggleTheme={onToggleTheme}
-        />
-
         {/* Bento Grid */}
         <div
           data-testid="sleeping-metrics-grid"
@@ -512,7 +513,7 @@ export const TodaySleepingPage: React.FC<TodaySleepingPageProps> = ({
       </div>
 
       {/* Bottom Navigation */}
-      <BottomNav activeTab="today" onSelectTab={onSelectTab} />
+      <BottomNav activeTab="today" onSelectTab={onSelectTab} style={{ flexShrink: 0 }} />
 
       {/* Sleep Action Modal (Woke Up) */}
       <SleepActionModal

@@ -154,6 +154,18 @@ describe('BottomNav Component', () => {
     const calendarTab = screen.getByTestId('tab-calendar');
     expect(calendarTab.getAttribute('data-active')).toBe('true');
   });
+
+  it('has unsquished layout styles with flexShrink 0, height 88px and button minHeight 52px', () => {
+    render(<BottomNav activeTab="today" />);
+    const nav = screen.getByTestId('bottom-nav');
+    expect(nav.style.flexShrink).toBe('0');
+    expect(nav.style.height).toBe('88px');
+
+    const todayTab = screen.getByTestId('tab-today');
+    expect(todayTab.style.minHeight).toBe('52px');
+    expect(todayTab.style.height).toBe('52px');
+    expect(todayTab.style.flexShrink).toBe('0');
+  });
 });
 
 describe('Header Component', () => {

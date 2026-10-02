@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import { Header } from '../components/common/Header';
 import { BottomNav } from '../components/common/BottomNav';
 import { SanityBanner } from '../components/settings/SanityBanner';
 import { AgePresetsModal, AgePreset } from '../components/settings/AgePresetsModal';
@@ -29,6 +30,7 @@ export interface SettingsPageProps {
   childId?: string;
   theme?: ThemeMode;
   onThemeChange?: (theme: ThemeMode) => void;
+  onToggleTheme?: () => void;
   onSelectTab?: (tab: string) => void;
   onLogout?: () => void;
   className?: string;
@@ -51,6 +53,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({
   childId = 'demo-child-1',
   theme,
   onThemeChange,
+  onToggleTheme,
   onSelectTab,
   onLogout,
   className = '',
@@ -274,28 +277,28 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({
         ...style,
       }}
     >
+      <Header
+        title="Настройки"
+        titleTestId="settings-title"
+        roles={familyMembers.map((m) => m.name || m.role)}
+        isOnline={true}
+        theme={theme === 'dark' ? 'dark' : 'light'}
+        onToggleTheme={onToggleTheme || (() => onThemeChange?.(theme === 'dark' ? 'light' : 'dark'))}
+        style={{ flexShrink: 0, padding: 'max(20px, env(safe-area-inset-top, 20px)) 16px 8px' }}
+      />
+
       <div
         className="screen-content"
         style={{
-          flexGrow: 1,
+          flex: '1 1 auto',
           overflowY: 'auto',
           display: 'flex',
           flexDirection: 'column',
           gap: '10px',
-          padding: '56px 16px 24px',
+          padding: '8px 16px 24px',
+          boxSizing: 'border-box',
         }}
       >
-        <h1
-          style={{
-            margin: '0 0 4px 4px',
-            fontSize: '26px',
-            fontWeight: 700,
-            letterSpacing: '-0.8px',
-          }}
-        >
-          Настройки
-        </h1>
-
         {/* Section 1: Child */}
         <section
           data-testid="section-child"
@@ -1340,7 +1343,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({
       />
 
       {/* Bottom Navigation */}
-      <BottomNav activeTab="settings" onSelectTab={onSelectTab} />
+      <BottomNav activeTab="settings" onSelectTab={onSelectTab} style={{ flexShrink: 0 }} />
     </div>
   );
 };
