@@ -318,6 +318,32 @@ describe('LoginPage Component', () => {
 
     expect(bioBtn.disabled).toBe(false);
   });
+
+  it('renders auth-theme-toggle-btn with moon icon and aria-label in light theme', () => {
+    render(<LoginPage theme="light" />);
+    const toggleBtn = screen.getByTestId('auth-theme-toggle-btn');
+    expect(toggleBtn).toBeDefined();
+    expect(toggleBtn.getAttribute('aria-label')).toBe('Включить тёмную тему');
+    expect(toggleBtn.querySelector('path[d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z"]')).not.toBeNull();
+    expect(toggleBtn.querySelector('circle')).toBeNull();
+  });
+
+  it('calls onToggleTheme when clicking auth-theme-toggle-btn', () => {
+    const handleToggle = vi.fn();
+    render(<LoginPage theme="light" onToggleTheme={handleToggle} />);
+    const toggleBtn = screen.getByTestId('auth-theme-toggle-btn');
+    fireEvent.click(toggleBtn);
+    expect(handleToggle).toHaveBeenCalledTimes(1);
+  });
+
+  it('renders sun icon and aria-label in dark theme', () => {
+    render(<LoginPage theme="dark" />);
+    const toggleBtn = screen.getByTestId('auth-theme-toggle-btn');
+    expect(toggleBtn).toBeDefined();
+    expect(toggleBtn.getAttribute('aria-label')).toBe('Включить светлую тему');
+    expect(toggleBtn.querySelector('circle')).not.toBeNull();
+    expect(toggleBtn.querySelector('path[d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z"]')).toBeNull();
+  });
 });
 
 describe('RegisterPage Component', () => {

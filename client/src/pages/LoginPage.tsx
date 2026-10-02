@@ -2,12 +2,15 @@ import React, { useState } from 'react';
 import { loginApi, AuthResponse, setAuthToken, setStoredUser } from '../api/authApi';
 import { PasswordResetModal } from '../components/modals/PasswordResetModal';
 import { authenticateWithBiometrics, hasSavedBiometrics } from '../utils/biometrics';
+import { useTheme } from '../hooks/useTheme';
 
 export interface LoginPageProps {
   onSuccess?: (auth: AuthResponse) => void;
   onNavigateToRegister?: () => void;
   className?: string;
   style?: React.CSSProperties;
+  theme?: 'light' | 'dark';
+  onToggleTheme?: () => void;
 }
 
 export const LoginPage: React.FC<LoginPageProps> = ({
@@ -15,7 +18,12 @@ export const LoginPage: React.FC<LoginPageProps> = ({
   onNavigateToRegister,
   className = '',
   style,
+  theme: propTheme,
+  onToggleTheme,
 }) => {
+  const themeHook = useTheme();
+  const currentTheme = propTheme || themeHook.resolvedTheme;
+  const handleToggleTheme = onToggleTheme || themeHook.toggleTheme;
   const [email, setEmail] = useState('mama@mail.ru');
   const [password, setPassword] = useState('password123');
   const [loading, setLoading] = useState(false);
@@ -164,30 +172,56 @@ export const LoginPage: React.FC<LoginPageProps> = ({
         </section>
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-          <div
+          <button
+            type="button"
+            data-testid="auth-theme-toggle-btn"
+            aria-label={currentTheme === 'dark' ? 'Включить светлую тему' : 'Включить тёмную тему'}
+            onClick={handleToggleTheme}
+            className="bento-interactive"
             style={{
               flexGrow: 1,
               borderRadius: '24px',
-              backgroundColor: '#D4F27A',
+              backgroundColor: currentTheme === 'dark' ? '#2E4233' : '#D4F27A',
+              color: currentTheme === 'dark' ? '#D4F27A' : '#1E2A20',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              color: '#1E2A20',
+              border: 0,
+              cursor: 'pointer',
+              padding: 0,
+              boxShadow: 'var(--shadow-sm, 0 2px 8px rgba(35, 55, 42, 0.04))',
+              transition: 'background-color 0.25s, color 0.25s, transform 0.15s',
             }}
           >
-            <svg
-              width="34"
-              height="34"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            >
-              <path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z" />
-            </svg>
-          </div>
+            {currentTheme === 'dark' ? (
+              <svg
+                width="34"
+                height="34"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <circle cx="12" cy="12" r="5" />
+                <path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42" />
+              </svg>
+            ) : (
+              <svg
+                width="34"
+                height="34"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z" />
+              </svg>
+            )}
+          </button>
 
           <div
             style={{

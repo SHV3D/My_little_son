@@ -200,6 +200,8 @@ export default function App() {
   if (authView === 'login') {
     return (
       <LoginPage
+        theme={resolvedTheme}
+        onToggleTheme={toggleTheme}
         onSuccess={() => {
           setAuthView('app');
           loadStatus();
