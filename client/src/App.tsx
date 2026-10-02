@@ -5,7 +5,7 @@ import { CalendarPage } from './pages/CalendarPage';
 import { SettingsPage } from './pages/SettingsPage';
 import { LoginPage } from './pages/LoginPage';
 import { RegisterPage } from './pages/RegisterPage';
-import { clearAuthSession, getStoredUser } from './api/authApi';
+import { clearAuthSession, getStoredUser, getAuthToken } from './api/authApi';
 import {
   fetchScheduleStatus,
   DayStatusResponse,
@@ -28,9 +28,15 @@ import { useFamilySync } from './hooks/useFamilySync';
 import { useTheme } from './hooks/useTheme';
 import { checkAndDispatchScheduleNotifications } from './services/pushNotificationService';
 
-export default function App() {
+export interface AppProps {
+  initialAuthView?: 'app' | 'login' | 'register';
+}
+
+export default function App({ initialAuthView }: AppProps = {}) {
   const { theme, resolvedTheme, setTheme, toggleTheme } = useTheme();
-  const [authView, setAuthView] = useState<'app' | 'login' | 'register'>('app');
+  const [authView, setAuthView] = useState<'app' | 'login' | 'register'>(
+    () => initialAuthView || (getAuthToken() ? 'app' : 'login')
+  );
   const [activeTab, setActiveTab] = useState<string>('today');
   const [status, setStatus] = useState<DayStatusResponse | null>(null);
 
@@ -214,6 +220,8 @@ export default function App() {
   if (authView === 'register') {
     return (
       <RegisterPage
+        theme={resolvedTheme}
+        onToggleTheme={toggleTheme}
         onSuccess={() => {
           setAuthView('app');
           loadStatus();

@@ -1,11 +1,14 @@
 import React, { useState } from 'react';
 import { registerApi, AuthResponse, RegisterInput } from '../api/authApi';
+import { useTheme } from '../hooks/useTheme';
 
 export interface RegisterPageProps {
   onSuccess?: (auth: AuthResponse) => void;
   onNavigateToLogin?: () => void;
   className?: string;
   style?: React.CSSProperties;
+  theme?: 'light' | 'dark';
+  onToggleTheme?: () => void;
 }
 
 export const RegisterPage: React.FC<RegisterPageProps> = ({
@@ -13,14 +16,19 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({
   onNavigateToLogin,
   className = '',
   style,
+  theme: propTheme,
+  onToggleTheme,
 }) => {
+  const themeHook = useTheme();
+  const currentTheme = propTheme || themeHook.resolvedTheme;
+  const handleToggleTheme = onToggleTheme || themeHook.toggleTheme;
   const [name, setName] = useState('');
   const [role, setRole] = useState<'Мама' | 'Папа' | 'Другое'>('Мама');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [familyMode, setFamilyMode] = useState<'NEW' | 'INVITE'>('INVITE');
-  const [inviteCode, setInviteCode] = useState('7K4-Q9M');
-  const [childName, setChildName] = useState('Сын');
+  const [inviteCode, setInviteCode] = useState('');
+  const [childName, setChildName] = useState('');
   const [recoveryCode, setRecoveryCode] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -88,9 +96,9 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({
         flexDirection: 'column',
         margin: '0 auto',
         boxSizing: 'border-box',
-        backgroundColor: '#ECEEE6',
+        backgroundColor: 'var(--bg-primary, #ECEEE6)',
         fontFamily: "'Geologica', system-ui, sans-serif",
-        color: '#1E2A20',
+        color: 'var(--text-primary, #1E2A20)',
         ...style,
       }}
     >
@@ -128,7 +136,7 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({
         My little sun
       </div>
 
-      {/* Header with back button and brand logo */}
+      {/* Header with back button, title, and theme toggle + logo */}
       <div
         style={{
           display: 'flex',
@@ -148,13 +156,14 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({
               width: '44px',
               height: '44px',
               borderRadius: '14px',
-              backgroundColor: '#FFFFFF',
-              color: '#1E2A20',
+              backgroundColor: 'var(--color-white, #FFFFFF)',
+              color: 'var(--text-primary, #1E2A20)',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              border: 0,
+              border: currentTheme === 'dark' ? '1px solid var(--color-border, #2C3F30)' : '1px solid var(--color-border, #E3E7DA)',
               cursor: 'pointer',
+              transition: 'background-color 0.25s, color 0.25s, border-color 0.25s',
             }}
           >
             <svg
@@ -176,17 +185,74 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({
               fontSize: '26px',
               fontWeight: 700,
               letterSpacing: '-0.8px',
+              color: 'var(--text-primary, #1E2A20)',
             }}
           >
             Регистрация
           </h1>
         </div>
-        <img
-          src="/logo.svg"
-          alt="My little son"
-          data-testid="auth-logo-img"
-          style={{ width: '40px', height: '40px', borderRadius: '12px', objectFit: 'contain' }}
-        />
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <button
+            type="button"
+            data-testid="register-theme-toggle-btn"
+            aria-label={currentTheme === 'dark' ? 'Включить светлую тему' : 'Включить тёмную тему'}
+            onClick={(e: React.MouseEvent) => {
+              (window as any).__themeTransitionX = e.clientX;
+              (window as any).__themeTransitionY = e.clientY;
+              handleToggleTheme();
+            }}
+            className="bento-interactive"
+            style={{
+              width: '40px',
+              height: '40px',
+              borderRadius: '12px',
+              backgroundColor: currentTheme === 'dark' ? '#2E4233' : 'var(--color-white, #FFFFFF)',
+              color: currentTheme === 'dark' ? '#D4F27A' : '#1E2A20',
+              border: currentTheme === 'dark' ? '1px solid #3E5444' : '1px solid var(--color-border, #E3E7DA)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              cursor: 'pointer',
+              padding: 0,
+              transition: 'background-color 0.25s, color 0.25s, border-color 0.25s',
+            }}
+          >
+            {currentTheme === 'dark' ? (
+              <svg
+                width="20"
+                height="20"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <circle cx="12" cy="12" r="5" />
+                <path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42" />
+              </svg>
+            ) : (
+              <svg
+                width="20"
+                height="20"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z" />
+              </svg>
+            )}
+          </button>
+          <img
+            src="/logo.svg"
+            alt="My little son"
+            data-testid="auth-logo-img"
+            style={{ width: '40px', height: '40px', borderRadius: '12px', objectFit: 'contain' }}
+          />
+        </div>
       </div>
 
       <form
@@ -213,18 +279,20 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({
         {/* Section 1: User name & Role */}
         <section
           style={{
-            backgroundColor: '#FFFFFF',
+            backgroundColor: 'var(--color-white, #FFFFFF)',
             borderRadius: '24px',
             padding: '16px',
             display: 'flex',
             flexDirection: 'column',
             gap: '14px',
+            border: currentTheme === 'dark' ? '1px solid var(--color-border, #2C3F30)' : 'none',
+            transition: 'background-color 0.25s, border-color 0.25s',
           }}
         >
           <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
             <label
               htmlFor="reg-name"
-              style={{ fontSize: '13px', color: '#4A5A4C' }}
+              style={{ fontSize: '13px', color: 'var(--text-muted, #4A5A4C)' }}
             >
               Ваше имя
             </label>
@@ -239,14 +307,15 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({
               style={{
                 height: '56px',
                 borderRadius: '16px',
-                border: 0,
-                backgroundColor: '#F1F3EC',
+                border: currentTheme === 'dark' ? '1px solid var(--color-border, #2C3F30)' : '1px solid var(--color-border, #E3E7DA)',
+                backgroundColor: 'var(--color-light-sage, #F1F3EC)',
                 padding: '0 16px',
                 fontFamily: 'inherit',
                 fontSize: '17px',
-                color: '#1E2A20',
+                color: 'var(--text-primary, #1E2A20)',
                 boxSizing: 'border-box',
                 outline: 'none',
+                transition: 'background-color 0.25s, color 0.25s, border-color 0.25s',
               }}
             />
           </div>
@@ -266,7 +335,7 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({
                 padding: 0,
                 marginBottom: '6px',
                 fontSize: '13px',
-                color: '#4A5A4C',
+                color: 'var(--text-muted, #4A5A4C)',
               }}
             >
               Кто вы для ребёнка
@@ -290,9 +359,11 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({
                     style={{
                       height: '48px',
                       borderRadius: '14px',
-                      border: 0,
-                      backgroundColor: active ? '#23372A' : '#F1F3EC',
-                      color: active ? '#D4F27A' : '#1E2A20',
+                      border: currentTheme === 'dark' && active ? '1px solid #3E5444' : 0,
+                      backgroundColor: active
+                        ? (currentTheme === 'dark' ? '#2E4233' : '#23372A')
+                        : 'var(--color-light-sage, #F1F3EC)',
+                      color: active ? '#D4F27A' : 'var(--text-primary, #1E2A20)',
                       fontFamily: 'inherit',
                       fontSize: '15px',
                       fontWeight: active ? 600 : 500,
@@ -311,18 +382,20 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({
         {/* Section 2: Email & Password */}
         <section
           style={{
-            backgroundColor: '#FFFFFF',
+            backgroundColor: 'var(--color-white, #FFFFFF)',
             borderRadius: '24px',
             padding: '16px',
             display: 'flex',
             flexDirection: 'column',
             gap: '14px',
+            border: currentTheme === 'dark' ? '1px solid var(--color-border, #2C3F30)' : 'none',
+            transition: 'background-color 0.25s, border-color 0.25s',
           }}
         >
           <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
             <label
               htmlFor="reg-email"
-              style={{ fontSize: '13px', color: '#4A5A4C' }}
+              style={{ fontSize: '13px', color: 'var(--text-muted, #4A5A4C)' }}
             >
               Эл. почта
             </label>
@@ -337,14 +410,15 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({
               style={{
                 height: '56px',
                 borderRadius: '16px',
-                border: 0,
-                backgroundColor: '#F1F3EC',
+                border: currentTheme === 'dark' ? '1px solid var(--color-border, #2C3F30)' : '1px solid var(--color-border, #E3E7DA)',
+                backgroundColor: 'var(--color-light-sage, #F1F3EC)',
                 padding: '0 16px',
                 fontFamily: 'inherit',
                 fontSize: '17px',
-                color: '#1E2A20',
+                color: 'var(--text-primary, #1E2A20)',
                 boxSizing: 'border-box',
                 outline: 'none',
+                transition: 'background-color 0.25s, color 0.25s, border-color 0.25s',
               }}
             />
           </div>
@@ -352,7 +426,7 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({
           <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
             <label
               htmlFor="reg-pass"
-              style={{ fontSize: '13px', color: '#4A5A4C' }}
+              style={{ fontSize: '13px', color: 'var(--text-muted, #4A5A4C)' }}
             >
               Пароль
             </label>
@@ -367,14 +441,15 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({
               style={{
                 height: '56px',
                 borderRadius: '16px',
-                border: 0,
-                backgroundColor: '#F1F3EC',
+                border: currentTheme === 'dark' ? '1px solid var(--color-border, #2C3F30)' : '1px solid var(--color-border, #E3E7DA)',
+                backgroundColor: 'var(--color-light-sage, #F1F3EC)',
                 padding: '0 16px',
                 fontFamily: 'inherit',
                 fontSize: '17px',
-                color: '#1E2A20',
+                color: 'var(--text-primary, #1E2A20)',
                 boxSizing: 'border-box',
                 outline: 'none',
+                transition: 'background-color 0.25s, color 0.25s, border-color 0.25s',
               }}
             />
           </div>
@@ -397,6 +472,7 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({
               fontSize: '18px',
               fontWeight: 700,
               letterSpacing: '-0.4px',
+              color: 'var(--text-primary, #1E2A20)',
             }}
           >
             Семья
@@ -405,8 +481,10 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({
           <label
             data-testid="family-mode-new-label"
             style={{
-              backgroundColor: familyMode === 'NEW' ? '#23372A' : '#FFFFFF',
-              color: familyMode === 'NEW' ? '#F1F4EA' : '#1E2A20',
+              backgroundColor: familyMode === 'NEW'
+                ? (currentTheme === 'dark' ? '#2E4233' : '#23372A')
+                : 'var(--color-white, #FFFFFF)',
+              color: familyMode === 'NEW' ? '#F1F4EA' : 'var(--text-primary, #1E2A20)',
               borderRadius: '24px',
               padding: '16px',
               display: 'flex',
@@ -415,6 +493,9 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({
               fontSize: '15px',
               fontWeight: 500,
               cursor: 'pointer',
+              border: familyMode === 'NEW'
+                ? (currentTheme === 'dark' ? '1px solid #3E5444' : '1px solid transparent')
+                : (currentTheme === 'dark' ? '1px solid var(--color-border, #2C3F30)' : '1px solid var(--color-border, #E3E7DA)'),
               transition: 'all 0.2s ease',
             }}
           >
@@ -437,8 +518,10 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({
           <label
             data-testid="family-mode-invite-label"
             style={{
-              backgroundColor: familyMode === 'INVITE' ? '#23372A' : '#FFFFFF',
-              color: familyMode === 'INVITE' ? '#F1F4EA' : '#1E2A20',
+              backgroundColor: familyMode === 'INVITE'
+                ? (currentTheme === 'dark' ? '#2E4233' : '#23372A')
+                : 'var(--color-white, #FFFFFF)',
+              color: familyMode === 'INVITE' ? '#F1F4EA' : 'var(--text-primary, #1E2A20)',
               borderRadius: '24px',
               padding: '16px',
               display: 'flex',
@@ -447,6 +530,9 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({
               fontSize: '15px',
               fontWeight: 500,
               cursor: 'pointer',
+              border: familyMode === 'INVITE'
+                ? (currentTheme === 'dark' ? '1px solid #3E5444' : '1px solid transparent')
+                : (currentTheme === 'dark' ? '1px solid var(--color-border, #2C3F30)' : '1px solid var(--color-border, #E3E7DA)'),
               transition: 'all 0.2s ease',
             }}
           >
@@ -471,17 +557,19 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({
               data-testid="invite-code-container"
               style={{
                 gridColumn: 'span 2',
-                backgroundColor: '#FFFFFF',
+                backgroundColor: 'var(--color-white, #FFFFFF)',
                 borderRadius: '24px',
                 padding: '16px',
                 display: 'flex',
                 flexDirection: 'column',
                 gap: '6px',
+                border: currentTheme === 'dark' ? '1px solid var(--color-border, #2C3F30)' : 'none',
+                transition: 'background-color 0.25s, border-color 0.25s',
               }}
             >
               <label
                 htmlFor="reg-code"
-                style={{ fontSize: '13px', color: '#4A5A4C' }}
+                style={{ fontSize: '13px', color: 'var(--text-muted, #4A5A4C)' }}
               >
                 Код приглашения
               </label>
@@ -494,16 +582,17 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({
                 style={{
                   height: '56px',
                   borderRadius: '16px',
-                  border: '2px solid #23372A',
-                  backgroundColor: '#F1F3EC',
+                  border: currentTheme === 'dark' ? '2px solid #3E5444' : '2px solid #23372A',
+                  backgroundColor: 'var(--color-light-sage, #F1F3EC)',
                   padding: '0 16px',
                   fontFamily: 'inherit',
                   fontSize: '20px',
                   fontWeight: 600,
                   letterSpacing: '3px',
-                  color: '#1E2A20',
+                  color: 'var(--text-primary, #1E2A20)',
                   boxSizing: 'border-box',
                   outline: 'none',
+                  transition: 'background-color 0.25s, color 0.25s, border-color 0.25s',
                 }}
               />
             </div>
@@ -513,17 +602,19 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({
                 data-testid="child-name-container"
                 style={{
                   gridColumn: 'span 2',
-                  backgroundColor: '#FFFFFF',
+                  backgroundColor: 'var(--color-white, #FFFFFF)',
                   borderRadius: '24px',
                   padding: '16px',
                   display: 'flex',
                   flexDirection: 'column',
                   gap: '6px',
+                  border: currentTheme === 'dark' ? '1px solid var(--color-border, #2C3F30)' : 'none',
+                  transition: 'background-color 0.25s, border-color 0.25s',
                 }}
               >
                 <label
                   htmlFor="reg-child"
-                  style={{ fontSize: '13px', color: '#4A5A4C' }}
+                  style={{ fontSize: '13px', color: 'var(--text-muted, #4A5A4C)' }}
                 >
                   Имя ребёнка
                 </label>
@@ -537,15 +628,16 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({
                   style={{
                     height: '56px',
                     borderRadius: '16px',
-                    border: '2px solid #23372A',
-                    backgroundColor: '#F1F3EC',
+                    border: currentTheme === 'dark' ? '2px solid #3E5444' : '2px solid #23372A',
+                    backgroundColor: 'var(--color-light-sage, #F1F3EC)',
                     padding: '0 16px',
                     fontFamily: 'inherit',
                     fontSize: '17px',
                     fontWeight: 500,
-                    color: '#1E2A20',
+                    color: 'var(--text-primary, #1E2A20)',
                     boxSizing: 'border-box',
                     outline: 'none',
+                    transition: 'background-color 0.25s, color 0.25s, border-color 0.25s',
                   }}
                 />
               </div>
@@ -554,17 +646,19 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({
                 data-testid="recovery-code-container"
                 style={{
                   gridColumn: 'span 2',
-                  backgroundColor: '#FFFFFF',
+                  backgroundColor: 'var(--color-white, #FFFFFF)',
                   borderRadius: '24px',
                   padding: '16px',
                   display: 'flex',
                   flexDirection: 'column',
                   gap: '6px',
+                  border: currentTheme === 'dark' ? '1px solid var(--color-border, #2C3F30)' : 'none',
+                  transition: 'background-color 0.25s, border-color 0.25s',
                 }}
               >
                 <label
                   htmlFor="reg-recovery-code"
-                  style={{ fontSize: '13px', color: '#4A5A4C' }}
+                  style={{ fontSize: '13px', color: 'var(--text-muted, #4A5A4C)' }}
                 >
                   Кодовое слово семьи
                 </label>
@@ -578,15 +672,16 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({
                   style={{
                     height: '56px',
                     borderRadius: '16px',
-                    border: '2px solid #23372A',
-                    backgroundColor: '#F1F3EC',
+                    border: currentTheme === 'dark' ? '2px solid #3E5444' : '2px solid #23372A',
+                    backgroundColor: 'var(--color-light-sage, #F1F3EC)',
                     padding: '0 16px',
                     fontFamily: 'inherit',
                     fontSize: '17px',
                     fontWeight: 500,
-                    color: '#1E2A20',
+                    color: 'var(--text-primary, #1E2A20)',
                     boxSizing: 'border-box',
                     outline: 'none',
+                    transition: 'background-color 0.25s, color 0.25s, border-color 0.25s',
                   }}
                 />
                 <div style={{ fontSize: '12px', color: 'var(--text-muted, #70846F)', marginTop: '4px' }}>
@@ -630,7 +725,7 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({
             alignItems: 'center',
             gap: '6px',
             fontSize: '15px',
-            color: '#4A5A4C',
+            color: 'var(--text-muted, #4A5A4C)',
             marginTop: '4px',
           }}
         >
@@ -647,10 +742,11 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({
               display: 'flex',
               alignItems: 'center',
               fontWeight: 600,
-              color: '#2F5A3A',
+              color: currentTheme === 'dark' ? 'var(--color-lime, #D4F27A)' : 'var(--color-link, #2F5A3A)',
               fontFamily: 'inherit',
               fontSize: '15px',
               cursor: 'pointer',
+              transition: 'color 0.25s',
             }}
           >
             Войти

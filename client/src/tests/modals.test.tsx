@@ -1,7 +1,7 @@
 /**
  * @vitest-environment happy-dom
  */
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, act } from '@testing-library/react';
 import { SleepActionModal } from '../components/modals/SleepActionModal';
 import { RetroactiveSleepModal } from '../components/modals/RetroactiveSleepModal';
@@ -825,6 +825,10 @@ describe('Modal Integration in Pages and App', () => {
       currentNapNumber: 2,
     },
   };
+
+  beforeEach(() => {
+    localStorage.setItem('auth_token', 'mock-token');
+  });
 
   it('TodayAwakePage opens SleepActionModal("FELL_ASLEEP") when clicking "Уснул" without external handler', () => {
     render(<TodayAwakePage initialData={mockAwakeStatus} />);

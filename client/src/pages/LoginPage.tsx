@@ -24,8 +24,8 @@ export const LoginPage: React.FC<LoginPageProps> = ({
   const themeHook = useTheme();
   const currentTheme = propTheme || themeHook.resolvedTheme;
   const handleToggleTheme = onToggleTheme || themeHook.toggleTheme;
-  const [email, setEmail] = useState('mama@mail.ru');
-  const [password, setPassword] = useState('password123');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isResetModalOpen, setIsResetModalOpen] = useState(false);
@@ -102,9 +102,9 @@ export const LoginPage: React.FC<LoginPageProps> = ({
         flexDirection: 'column',
         margin: '0 auto',
         boxSizing: 'border-box',
-        backgroundColor: '#ECEEE6',
+        backgroundColor: 'var(--bg-primary, #ECEEE6)',
         fontFamily: "'Geologica', system-ui, sans-serif",
-        color: '#1E2A20',
+        color: 'var(--text-primary, #1E2A20)',
         ...style,
       }}
     >
@@ -231,11 +231,12 @@ export const LoginPage: React.FC<LoginPageProps> = ({
             style={{
               flexGrow: 1,
               borderRadius: '24px',
-              backgroundColor: '#FFFFFF',
+              backgroundColor: 'var(--color-white, #FFFFFF)',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
               gap: '4px',
+              transition: 'background-color 0.25s',
             }}
           >
             <div
@@ -243,7 +244,8 @@ export const LoginPage: React.FC<LoginPageProps> = ({
                 width: '8px',
                 height: '14px',
                 borderRadius: '4px',
-                backgroundColor: '#23372A',
+                backgroundColor: currentTheme === 'dark' ? 'rgba(212, 242, 122, 0.45)' : '#23372A',
+                transition: 'background-color 0.25s',
               }}
             />
             <div
@@ -251,7 +253,8 @@ export const LoginPage: React.FC<LoginPageProps> = ({
                 width: '8px',
                 height: '24px',
                 borderRadius: '4px',
-                backgroundColor: '#23372A',
+                backgroundColor: currentTheme === 'dark' ? 'rgba(212, 242, 122, 0.65)' : '#23372A',
+                transition: 'background-color 0.25s',
               }}
             />
             <div
@@ -267,7 +270,8 @@ export const LoginPage: React.FC<LoginPageProps> = ({
                 width: '8px',
                 height: '30px',
                 borderRadius: '4px',
-                backgroundColor: '#23372A',
+                backgroundColor: currentTheme === 'dark' ? 'rgba(212, 242, 122, 0.85)' : '#23372A',
+                transition: 'background-color 0.25s',
               }}
             />
           </div>
@@ -279,12 +283,14 @@ export const LoginPage: React.FC<LoginPageProps> = ({
         data-testid="login-form"
         onSubmit={handleSubmit}
         style={{
-          backgroundColor: '#FFFFFF',
+          backgroundColor: 'var(--color-white, #FFFFFF)',
           borderRadius: '28px',
           padding: '20px 16px',
           display: 'flex',
           flexDirection: 'column',
           gap: '14px',
+          border: currentTheme === 'dark' ? '1px solid var(--color-border, #2C3F30)' : 'none',
+          transition: 'background-color 0.25s, border-color 0.25s',
         }}
       >
         <h1
@@ -293,6 +299,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({
             fontSize: '22px',
             fontWeight: 700,
             letterSpacing: '-0.5px',
+            color: 'var(--text-primary, #1E2A20)',
           }}
         >
           Вход
@@ -334,7 +341,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({
         <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
           <label
             htmlFor="login-email"
-            style={{ fontSize: '13px', color: '#4A5A4C' }}
+            style={{ fontSize: '13px', color: 'var(--text-muted, #4A5A4C)' }}
           >
             Эл. почта
           </label>
@@ -349,14 +356,15 @@ export const LoginPage: React.FC<LoginPageProps> = ({
             style={{
               height: '56px',
               borderRadius: '16px',
-              border: 0,
-              backgroundColor: '#F1F3EC',
+              border: currentTheme === 'dark' ? '1px solid var(--color-border, #2C3F30)' : '1px solid var(--color-border, #E3E7DA)',
+              backgroundColor: 'var(--color-light-sage, #F1F3EC)',
               padding: '0 16px',
               fontFamily: 'inherit',
               fontSize: '17px',
-              color: '#1E2A20',
+              color: 'var(--text-primary, #1E2A20)',
               boxSizing: 'border-box',
               outline: 'none',
+              transition: 'background-color 0.25s, color 0.25s, border-color 0.25s',
             }}
           />
         </div>
@@ -364,7 +372,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({
         <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
           <label
             htmlFor="login-pass"
-            style={{ fontSize: '13px', color: '#4A5A4C' }}
+            style={{ fontSize: '13px', color: 'var(--text-muted, #4A5A4C)' }}
           >
             Пароль
           </label>
@@ -379,14 +387,15 @@ export const LoginPage: React.FC<LoginPageProps> = ({
             style={{
               height: '56px',
               borderRadius: '16px',
-              border: 0,
-              backgroundColor: '#F1F3EC',
+              border: currentTheme === 'dark' ? '1px solid var(--color-border, #2C3F30)' : '1px solid var(--color-border, #E3E7DA)',
+              backgroundColor: 'var(--color-light-sage, #F1F3EC)',
               padding: '0 16px',
               fontFamily: 'inherit',
               fontSize: '17px',
-              color: '#1E2A20',
+              color: 'var(--text-primary, #1E2A20)',
               boxSizing: 'border-box',
               outline: 'none',
+              transition: 'background-color 0.25s, color 0.25s, border-color 0.25s',
             }}
           />
         </div>
@@ -411,9 +420,10 @@ export const LoginPage: React.FC<LoginPageProps> = ({
               alignItems: 'center',
               fontSize: '14px',
               fontWeight: 500,
-              color: '#2F5A3A',
+              color: currentTheme === 'dark' ? 'var(--color-lime, #D4F27A)' : 'var(--color-link, #2F5A3A)',
               textDecoration: 'none',
               cursor: 'pointer',
+              transition: 'color 0.25s',
             }}
           >
             Забыли пароль?
@@ -429,17 +439,17 @@ export const LoginPage: React.FC<LoginPageProps> = ({
               flex: 1,
               height: '60px',
               borderRadius: '20px',
-              backgroundColor: '#23372A',
-              color: '#F1F4EA',
+              backgroundColor: currentTheme === 'dark' ? '#2E4233' : '#23372A',
+              color: currentTheme === 'dark' ? '#D4F27A' : '#F1F4EA',
+              border: currentTheme === 'dark' ? '1px solid #3E5444' : 'none',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
               fontSize: '17px',
               fontWeight: 600,
-              border: 0,
               cursor: loading ? 'default' : 'pointer',
               opacity: loading ? 0.7 : 1,
-              transition: 'opacity 0.2s',
+              transition: 'opacity 0.2s, background-color 0.25s, color 0.25s',
             }}
           >
             {loading ? 'Вход...' : 'Войти'}

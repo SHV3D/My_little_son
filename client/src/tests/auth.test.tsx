@@ -6,6 +6,7 @@ import { render, screen, fireEvent, waitFor, act } from '@testing-library/react'
 import { LoginPage } from '../pages/LoginPage';
 import { RegisterPage } from '../pages/RegisterPage';
 import { PasswordResetModal } from '../components/modals/PasswordResetModal';
+import App from '../App';
 import * as authApi from '../api/authApi';
 
 const mockAuthSuccess: authApi.AuthResponse = {
@@ -83,6 +84,14 @@ describe('LoginPage Component', () => {
     expect(screen.queryByTestId('quick-login-papa')).toBeNull();
   });
 
+  it('defaults login email and password input fields to empty strings', () => {
+    render(<LoginPage />);
+    const emailInput = screen.getByTestId('login-email-input') as HTMLInputElement;
+    const passwordInput = screen.getByTestId('login-password-input') as HTMLInputElement;
+    expect(emailInput.value).toBe('');
+    expect(passwordInput.value).toBe('');
+  });
+
   it('submits login form and invokes onSuccess callback', async () => {
     const loginSpy = vi.spyOn(authApi, 'loginApi').mockResolvedValue(mockAuthSuccess);
     const handleSuccess = vi.fn();
@@ -90,6 +99,8 @@ describe('LoginPage Component', () => {
     render(<LoginPage onSuccess={handleSuccess} />);
 
     await act(async () => {
+      fireEvent.change(screen.getByTestId('login-email-input'), { target: { value: 'mama@mail.ru' } });
+      fireEvent.change(screen.getByTestId('login-password-input'), { target: { value: 'password123' } });
       fireEvent.click(screen.getByTestId('login-submit-btn'));
     });
 
@@ -106,6 +117,8 @@ describe('LoginPage Component', () => {
     render(<LoginPage />);
 
     await act(async () => {
+      fireEvent.change(screen.getByTestId('login-email-input'), { target: { value: 'mama@mail.ru' } });
+      fireEvent.change(screen.getByTestId('login-password-input'), { target: { value: 'password123' } });
       fireEvent.click(screen.getByTestId('login-submit-btn'));
     });
 
@@ -180,6 +193,7 @@ describe('LoginPage Component', () => {
     fireEvent.click(screen.getByTestId('forgot-password-btn'));
 
     await act(async () => {
+      fireEvent.change(screen.getByTestId('reset-password-email'), { target: { value: 'mama@mail.ru' } });
       fireEvent.change(screen.getByTestId('reset-password-code'), { target: { value: 'wrong-word' } });
       fireEvent.change(screen.getByTestId('reset-password-new-password'), { target: { value: 'newpassword123' } });
       fireEvent.click(screen.getByTestId('reset-password-submit-btn'));
@@ -322,6 +336,8 @@ describe('LoginPage Component', () => {
     expect(bioBtn.disabled).toBe(false);
 
     await act(async () => {
+      fireEvent.change(screen.getByTestId('login-email-input'), { target: { value: 'mama@mail.ru' } });
+      fireEvent.change(screen.getByTestId('login-password-input'), { target: { value: 'password123' } });
       fireEvent.click(submitBtn);
     });
 
@@ -552,6 +568,38 @@ describe('RegisterPage Component', () => {
     fireEvent.click(screen.getByTestId('link-to-login'));
     expect(handleLoginNav).toHaveBeenCalledTimes(2);
   });
+
+  it('defaults registration inviteCode and childName fields to empty strings', async () => {
+    render(<RegisterPage />);
+    const inviteInput = screen.getByTestId('register-invite-code-input') as HTMLInputElement;
+    expect(inviteInput.value).toBe('');
+
+    // Switch to new family mode
+    await act(async () => {
+      fireEvent.click(screen.getByTestId('family-mode-new'));
+    });
+    const childInput = screen.getByTestId('register-child-name-input') as HTMLInputElement;
+    expect(childInput.value).toBe('');
+  });
+
+  it('renders theme toggle button and calls onToggleTheme', () => {
+    const handleToggle = vi.fn();
+    render(<RegisterPage theme="light" onToggleTheme={handleToggle} />);
+    const toggleBtn = screen.getByTestId('register-theme-toggle-btn');
+    expect(toggleBtn).toBeDefined();
+    expect(toggleBtn.getAttribute('aria-label')).toBe('Включить тёмную тему');
+
+    fireEvent.click(toggleBtn);
+    expect(handleToggle).toHaveBeenCalledTimes(1);
+  });
+
+  it('renders sun icon and aria-label in dark theme', () => {
+    render(<RegisterPage theme="dark" />);
+    const toggleBtn = screen.getByTestId('register-theme-toggle-btn');
+    expect(toggleBtn).toBeDefined();
+    expect(toggleBtn.getAttribute('aria-label')).toBe('Включить светлую тему');
+    expect(toggleBtn.querySelector('circle')).not.toBeNull();
+  });
 });
 
 describe('PasswordResetModal Component', () => {
@@ -616,3 +664,59 @@ describe('PasswordResetModal Component', () => {
     expect(resetSpy).not.toHaveBeenCalled();
   });
 });
+
+describe('App Authentication Flow', () => {
+  beforeEach(() => {
+    localStorage.clear();
+    vi.clearAllMocks();
+  });
+
+  it('renders LoginPage on initial visit when no auth token is saved', () => {
+    render(<App />);
+    expect(screen.getByTestId('login-page')).toBeDefined();
+    expect(screen.queryByTestId('fell-asleep-btn')).toBeNull();
+  });
+
+  it('renders TodayAwakePage when auth token is already present in localStorage', async () => {
+    localStorage.setItem('auth_token', 'valid-jwt-token');
+    global.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: () =>
+        Promise.resolve({
+          date: '2026-09-30',
+          currentTime: '12:00',
+          state: 'AWAKE',
+          schedule: {
+            state: 'AWAKE',
+            awakeDurationMinutes: 120,
+            formattedAwakeDuration: '2:00',
+            lastWakeTime: '10:00',
+            batteryStep: 5,
+            targetBedtime: '20:30',
+            projectedBedtime: '20:30',
+            isBedtimeShifted: false,
+            bedtimeStatusMessage: 'цель отбоя',
+            completedNapsCount: 1,
+            targetNapsCount: 3,
+            remainingNapsCount: 2,
+            completedDaySleepMinutes: 60,
+            targetDaySleepMinutes: 180,
+            remainingDaySleepMinutes: 120,
+            formattedDaySleepProgress: '1:00 / 3:00',
+            formattedRemainingNaps: 'ещё 2 из 3',
+            isScheduleCrunched: false,
+            nextNap: null,
+            subsequentNaps: [],
+          },
+          events: [],
+          child: { id: 'demo-child-1', name: 'Малыш', birthDate: null },
+          familyMembers: [],
+        }),
+    });
+
+    render(<App />);
+    expect(await screen.findByTestId('fell-asleep-btn')).toBeDefined();
+    expect(screen.queryByTestId('login-page')).toBeNull();
+  });
+});
+

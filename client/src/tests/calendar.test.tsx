@@ -617,6 +617,7 @@ describe('CalendarPage Component', () => {
 
 describe('App Tab Navigation to Calendar and Edit Modal Integration', () => {
   beforeEach(() => {
+    localStorage.setItem('auth_token', 'mock-token');
     global.fetch = vi.fn().mockImplementation((url: string) => {
       if (typeof url === 'string' && url.includes('/api/sleep/status')) {
         return Promise.resolve({
