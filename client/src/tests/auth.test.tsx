@@ -33,12 +33,21 @@ describe('LoginPage Component', () => {
     vi.clearAllMocks();
   });
 
-  it('renders top Bento branding and login form matching 06_login.html', () => {
+  it('renders top Bento branding and login form without text subtitles in logo card', () => {
     render(<LoginPage />);
 
     expect(screen.getByTestId('login-page')).toBeDefined();
-    expect(screen.getByText('My little son')).toBeDefined();
-    expect(screen.getByText('режим сна малыша для всей семьи')).toBeDefined();
+    expect(screen.queryByText('режим сна малыша для всей семьи')).toBeNull();
+    expect(screen.queryByText('My little son')).toBeNull();
+
+    const logoImg = screen.getByTestId('auth-logo-img') as HTMLImageElement;
+    expect(logoImg).toBeDefined();
+    expect(logoImg.getAttribute('src')).toBe('/logo.svg');
+
+    // Logo card should not contain text captions
+    const logoCard = logoImg.closest('section');
+    expect(logoCard).toBeDefined();
+    expect(logoCard?.textContent?.trim()).toBe('');
 
     expect(screen.getByTestId('login-email-input')).toBeDefined();
     expect(screen.getByTestId('login-password-input')).toBeDefined();
@@ -56,7 +65,6 @@ describe('LoginPage Component', () => {
     const logoImg = screen.getByTestId('auth-logo-img') as HTMLImageElement;
     expect(logoImg).toBeDefined();
     expect(logoImg.getAttribute('src')).toBe('/logo.svg');
-    expect(logoImg.getAttribute('alt')).toBe('My little son');
   });
 
   it('handles quick demo buttons for Mom and Dad', () => {
@@ -318,6 +326,19 @@ describe('LoginPage Component', () => {
 describe('RegisterPage Component', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+  });
+
+  it('renders registration form inside scrollable content container', () => {
+    render(<RegisterPage />);
+
+    const registerPage = screen.getByTestId('register-page');
+    expect(registerPage.style.height).toBe('100%');
+    expect(registerPage.style.overflow).toBe('hidden');
+
+    const contentContainer = screen.getByTestId('register-content');
+    expect(contentContainer).toBeDefined();
+    expect(contentContainer.className).toContain('screen-content');
+    expect(contentContainer.style.overflowY).toBe('auto');
   });
 
   it('renders registration form matching 07_register.html', () => {

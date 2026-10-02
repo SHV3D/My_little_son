@@ -148,28 +148,17 @@ export const LoginPage: React.FC<LoginPageProps> = ({
             borderRadius: '28px',
             padding: '20px',
             display: 'flex',
-            flexDirection: 'column',
-            justifyContent: 'flex-end',
-            gap: '6px',
+            alignItems: 'center',
+            justifyContent: 'center',
             minHeight: '150px',
           }}
         >
-          <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
-            <img
-              src="/logo.svg"
-              alt="My little son"
-              data-testid="auth-logo-img"
-              style={{ width: '64px', height: '64px', borderRadius: '16px', objectFit: 'contain', flexShrink: 0 }}
-            />
-            <div>
-              <div style={{ fontSize: '22px', fontWeight: 700, letterSpacing: '-0.5px', lineHeight: 1.1, color: '#F1F4EA' }}>
-                My little son
-              </div>
-              <div style={{ fontSize: '13px', color: '#B7C4B4', marginTop: '4px' }}>
-                режим сна малыша для всей семьи
-              </div>
-            </div>
-          </div>
+          <img
+            src="/logo.svg"
+            alt="Logo"
+            data-testid="auth-logo-img"
+            style={{ width: '84px', height: '84px', borderRadius: '20px', objectFit: 'contain' }}
+          />
         </section>
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>

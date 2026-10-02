@@ -82,37 +82,48 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({
       className={`mobile-viewport-wrapper register-screen ${className}`.trim()}
       style={{
         maxWidth: '430px',
-        minHeight: '100vh',
+        height: '100%',
+        overflow: 'hidden',
+        display: 'flex',
+        flexDirection: 'column',
         margin: '0 auto',
         boxSizing: 'border-box',
         backgroundColor: '#ECEEE6',
-        display: 'flex',
-        flexDirection: 'column',
-        gap: '10px',
-        padding: '48px 16px 32px',
         fontFamily: "'Geologica', system-ui, sans-serif",
         color: '#1E2A20',
         ...style,
       }}
     >
-      {/* Top Brand Strip */}
       <div
-        data-testid="brand-top-strip"
+        className="screen-content"
+        data-testid="register-content"
         style={{
-          backgroundColor: 'var(--color-dark, #23372A)',
-          color: 'var(--color-lime, #D4F27A)',
-          borderRadius: '18px',
-          padding: '10px 16px',
+          flex: '1 1 auto',
+          overflowY: 'auto',
+          padding: '16px 16px 32px',
           display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          fontWeight: 700,
-          fontSize: '15px',
-          letterSpacing: '1px',
-          textTransform: 'uppercase',
-          marginBottom: '10px',
+          flexDirection: 'column',
+          gap: '10px',
         }}
       >
+        {/* Top Brand Strip */}
+        <div
+          data-testid="brand-top-strip"
+          style={{
+            backgroundColor: 'var(--color-dark, #23372A)',
+            color: 'var(--color-lime, #D4F27A)',
+            borderRadius: '18px',
+            padding: '10px 16px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            fontWeight: 700,
+            fontSize: '15px',
+            letterSpacing: '1px',
+            textTransform: 'uppercase',
+            marginBottom: '10px',
+          }}
+        >
         My little sun
       </div>
 
@@ -645,6 +656,7 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({
           </button>
         </div>
       </form>
+      </div>
     </div>
   );
 };
