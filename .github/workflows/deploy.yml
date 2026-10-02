@@ -1,0 +1,59 @@
+name: Build & Deploy to Beget
+
+on:
+  push:
+    branches: [master, main]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build Server and Client
+        run: npm run build
+
+      - name: Remove dev dependencies
+        run: npm prune --omit=dev
+
+      - name: Setup SSH key
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.BEGET_SSH_KEY }}" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          ssh-keyscan -p 22 "${{ secrets.BEGET_HOST }}" >> ~/.ssh/known_hosts 2>/dev/null
+
+      - name: Deploy files via rsync
+        run: |
+          rsync -avz --delete \
+            --exclude='.git' \
+            --exclude='.github' \
+            --exclude='.claude' \
+            --exclude='data' \
+            --exclude='*.db' \
+            --exclude='*.db-journal' \
+            --exclude='*.db-wal' \
+            --exclude='*.db-shm' \
+            --exclude='.htaccess' \
+            --exclude='tmp' \
+            -e "ssh -p 22 -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no" \
+            ./ \
+            "${{ secrets.BEGET_USERNAME }}@${{ secrets.BEGET_HOST }}:${{ secrets.BEGET_DEPLOY_PATH }}/"
+
+      - name: Restart Passenger
+        run: |
+          ssh -p 22 -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no \
+            "${{ secrets.BEGET_USERNAME }}@${{ secrets.BEGET_HOST }}" \
+            "mkdir -p ${{ secrets.BEGET_DEPLOY_PATH }}/tmp && touch ${{ secrets.BEGET_DEPLOY_PATH }}/tmp/restart.txt"
