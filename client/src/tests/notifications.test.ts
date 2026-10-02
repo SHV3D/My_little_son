@@ -304,5 +304,76 @@ describe('pushNotificationService', () => {
       checkAndDispatchScheduleNotifications(infoWarningStatus);
       expect(createdNotifications.length).toBe(0);
     });
+
+    it('shares WAKE_NOW throttle key for ABNORMALLY_LONG_NAP and suppresses warning if WAKE_NOW was already sent', () => {
+      const wakeStatus: DayStatusResponse = {
+        ...baseStatus,
+        state: 'SLEEPING',
+        schedule: {
+          ...baseStatus.schedule,
+          state: 'SLEEPING',
+          formattedSleepDuration: '2:15',
+          isWakeDeadlineExceeded: true,
+          nextNap: null,
+        },
+      };
+
+      // 1) First dispatch sends WAKE_NOW notification
+      checkAndDispatchScheduleNotifications(wakeStatus);
+      expect(createdNotifications.length).toBe(1);
+      expect(createdNotifications[0].title).toBe('Пора будить малыша ⏰');
+
+      // 2) Now check status with ABNORMALLY_LONG_NAP warning within throttle interval
+      const warningStatus: DayStatusResponse = {
+        ...baseStatus,
+        state: 'SLEEPING',
+        schedule: {
+          ...baseStatus.schedule,
+          state: 'SLEEPING',
+          formattedSleepDuration: '2:15',
+          isWakeDeadlineExceeded: false,
+          nextNap: null,
+          warnings: [
+            {
+              code: 'ABNORMALLY_LONG_NAP',
+              severity: 'warning',
+              title: 'Слишком длинный сон',
+              message: 'Пора будить малыша, сон превышает максимум.',
+            },
+          ],
+        },
+      };
+
+      // Should be suppressed because ABNORMALLY_LONG_NAP shares the WAKE_NOW throttle key
+      checkAndDispatchScheduleNotifications(warningStatus);
+      expect(createdNotifications.length).toBe(1);
+    });
+
+    it('does not send duplicate notifications when both wake deadline and ABNORMALLY_LONG_NAP occur together', () => {
+      const combinedStatus: DayStatusResponse = {
+        ...baseStatus,
+        state: 'SLEEPING',
+        schedule: {
+          ...baseStatus.schedule,
+          state: 'SLEEPING',
+          formattedSleepDuration: '2:30',
+          isWakeDeadlineExceeded: true,
+          nextNap: null,
+          warnings: [
+            {
+              code: 'ABNORMALLY_LONG_NAP',
+              severity: 'warning',
+              title: 'Слишком длинный сон',
+              message: 'Пора будить малыша, сон превышает максимум.',
+            },
+          ],
+        },
+      };
+
+      checkAndDispatchScheduleNotifications(combinedStatus);
+      // Only 1 notification dispatched (WAKE_NOW), ABNORMALLY_LONG_NAP suppressed
+      expect(createdNotifications.length).toBe(1);
+      expect(createdNotifications[0].title).toBe('Пора будить малыша ⏰');
+    });
   });
 });

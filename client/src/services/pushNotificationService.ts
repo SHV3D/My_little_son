@@ -122,7 +122,7 @@ export function checkAndDispatchScheduleNotifications(
   const warnings = schedule.warnings || status.warnings || [];
   for (const warning of warnings) {
     if (warning.severity === 'alert' || warning.severity === 'warning') {
-      const key = `WARNING_${warning.code}`;
+      const key = warning.code === 'ABNORMALLY_LONG_NAP' ? 'WAKE_NOW' : `WARNING_${warning.code}`;
       const lastDispatched = lastNotificationTimestamps.get(key);
       if (lastDispatched === undefined || now - lastDispatched >= NOTIFICATION_THROTTLE_MS) {
         const title = `⚠️ ${warning.title}`;

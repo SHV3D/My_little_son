@@ -73,13 +73,14 @@ export default function App() {
   useEffect(() => {
     if (!status) return;
     checkAndDispatchScheduleNotifications(status);
-
-    const intervalId = setInterval(() => {
-      checkAndDispatchScheduleNotifications(status);
-    }, 60000);
-
-    return () => clearInterval(intervalId);
   }, [status]);
+
+  useEffect(() => {
+    const intervalId = setInterval(() => {
+      loadStatus();
+    }, 60000);
+    return () => clearInterval(intervalId);
+  }, []);
 
   const handleFellAsleepConfirm = async (payload: SleepActionConfirmPayload) => {
     setActiveModal(null);

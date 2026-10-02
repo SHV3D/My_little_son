@@ -1162,6 +1162,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({
               data-testid="push-notifications-toggle-btn"
               role="switch"
               aria-checked={pushEnabled}
+              aria-label="Push-уведомления"
               onClick={handleTogglePushNotifications}
               style={{
                 height: '38px',
@@ -1169,7 +1170,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({
                 borderRadius: '12px',
                 border: 0,
                 backgroundColor: pushEnabled ? 'var(--color-lime, #D4F27A)' : 'var(--color-neutral-bg, #ECEEE6)',
-                color: '#1E2A20',
+                color: pushEnabled ? '#1E2A20' : 'var(--text-primary, #1E2A20)',
                 fontSize: '14px',
                 fontWeight: 600,
                 fontFamily: 'inherit',

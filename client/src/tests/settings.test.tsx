@@ -355,6 +355,7 @@ describe('SettingsPage Component', () => {
     const toggleBtn = screen.getByTestId('push-notifications-toggle-btn');
     expect(toggleBtn).toBeDefined();
     expect(toggleBtn.getAttribute('role')).toBe('switch');
+    expect(toggleBtn.getAttribute('aria-label')).toBe('Push-уведомления');
     expect(toggleBtn.getAttribute('aria-checked')).toBe('false');
     expect(toggleBtn.textContent).toBe('Включить');
 
