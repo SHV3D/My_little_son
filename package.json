@@ -13,6 +13,7 @@
     "build": "npm run build --workspace=server && npm run build --workspace=client",
     "build:server": "npm run build --workspace=server",
     "build:client": "npm run build --workspace=client",
+    "start": "node app.js",
     "test": "vitest run"
   },
   "devDependencies": {
