@@ -7,6 +7,7 @@ export interface DbFamily {
   id: string;
   name: string;
   invite_code: string;
+  recovery_code?: string;
   created_at: string;
 }
 
@@ -92,6 +93,12 @@ export function initDatabase(customPath?: string): Database.Database {
   const schemaSql = fs.readFileSync(schemaPath, 'utf8');
   db.exec(schemaSql);
 
+  // Migration: ensure recovery_code column exists on families table
+  const familyColumns = db.prepare("PRAGMA table_info(families)").all() as { name: string }[];
+  if (!familyColumns.some((col) => col.name === 'recovery_code')) {
+    db.exec('ALTER TABLE families ADD COLUMN recovery_code TEXT;');
+  }
+
   // Seed demo data if database is empty
   seedDatabaseIfEmpty(db);
 
@@ -117,8 +124,8 @@ export function seedDatabaseIfEmpty(db: Database.Database): void {
   }
 
   const insertFamily = db.prepare(`
-    INSERT INTO families (id, name, invite_code)
-    VALUES (?, ?, ?)
+    INSERT INTO families (id, name, invite_code, recovery_code)
+    VALUES (?, ?, ?, ?)
   `);
 
   const insertUser = db.prepare(`
@@ -148,7 +155,7 @@ export function seedDatabaseIfEmpty(db: Database.Database): void {
   const runSeed = db.transaction(() => {
     const familyId = 'demo-family-1';
     const inviteCode = '7K4-Q9M';
-    insertFamily.run(familyId, 'Наша семья', inviteCode);
+    insertFamily.run(familyId, 'Наша семья', inviteCode, 'солнышко');
 
     const mamaId = 'demo-user-mama';
     const papaId = 'demo-user-papa';

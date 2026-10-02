@@ -1,5 +1,5 @@
 import { Router, Request, Response } from 'express';
-import { registerUser, loginUser, getCurrentUserProfile } from '../services/authService';
+import { registerUser, loginUser, getCurrentUserProfile, resetPassword } from '../services/authService';
 import { requireAuth } from '../middleware/authMiddleware';
 
 const router = Router();
@@ -19,6 +19,19 @@ router.post('/login', (req: Request, res: Response) => {
     res.status(200).json(result);
   } catch (err: any) {
     res.status(401).json({ error: err.message || 'Ошибка входа' });
+  }
+});
+
+router.post('/reset-password', async (req: Request, res: Response) => {
+  try {
+    const { email, recoveryCode, newPassword } = req.body;
+    const result = await resetPassword({ email, recoveryCode, newPassword });
+    res.status(200).json(result);
+  } catch (err: any) {
+    if (err.message && err.message.includes('не найден')) {
+      return res.status(404).json({ error: err.message });
+    }
+    res.status(400).json({ error: err.message || 'Ошибка восстановления пароля' });
   }
 });
 

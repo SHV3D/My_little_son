@@ -21,6 +21,7 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({
   const [familyMode, setFamilyMode] = useState<'NEW' | 'INVITE'>('INVITE');
   const [inviteCode, setInviteCode] = useState('7K4-Q9M');
   const [childName, setChildName] = useState('Сын');
+  const [recoveryCode, setRecoveryCode] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -59,6 +60,9 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({
       } else {
         payload.childName = childName.trim() || 'Сын';
         payload.familyName = `Семья ${childName.trim() || 'Сына'}`;
+        if (recoveryCode.trim()) {
+          payload.recoveryCode = recoveryCode.trim();
+        }
       }
 
       const resp = await registerApi(payload);
@@ -492,46 +496,92 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({
               />
             </div>
           ) : (
-            <div
-              data-testid="child-name-container"
-              style={{
-                gridColumn: 'span 2',
-                backgroundColor: '#FFFFFF',
-                borderRadius: '24px',
-                padding: '16px',
-                display: 'flex',
-                flexDirection: 'column',
-                gap: '6px',
-              }}
-            >
-              <label
-                htmlFor="reg-child"
-                style={{ fontSize: '13px', color: '#4A5A4C' }}
-              >
-                Имя ребёнка
-              </label>
-              <input
-                id="reg-child"
-                data-testid="register-child-name-input"
-                type="text"
-                placeholder="Как зовут малыша"
-                value={childName}
-                onChange={(e) => setChildName(e.target.value)}
+            <>
+              <div
+                data-testid="child-name-container"
                 style={{
-                  height: '56px',
-                  borderRadius: '16px',
-                  border: '2px solid #23372A',
-                  backgroundColor: '#F1F3EC',
-                  padding: '0 16px',
-                  fontFamily: 'inherit',
-                  fontSize: '17px',
-                  fontWeight: 500,
-                  color: '#1E2A20',
-                  boxSizing: 'border-box',
-                  outline: 'none',
+                  gridColumn: 'span 2',
+                  backgroundColor: '#FFFFFF',
+                  borderRadius: '24px',
+                  padding: '16px',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '6px',
                 }}
-              />
-            </div>
+              >
+                <label
+                  htmlFor="reg-child"
+                  style={{ fontSize: '13px', color: '#4A5A4C' }}
+                >
+                  Имя ребёнка
+                </label>
+                <input
+                  id="reg-child"
+                  data-testid="register-child-name-input"
+                  type="text"
+                  placeholder="Как зовут малыша"
+                  value={childName}
+                  onChange={(e) => setChildName(e.target.value)}
+                  style={{
+                    height: '56px',
+                    borderRadius: '16px',
+                    border: '2px solid #23372A',
+                    backgroundColor: '#F1F3EC',
+                    padding: '0 16px',
+                    fontFamily: 'inherit',
+                    fontSize: '17px',
+                    fontWeight: 500,
+                    color: '#1E2A20',
+                    boxSizing: 'border-box',
+                    outline: 'none',
+                  }}
+                />
+              </div>
+
+              <div
+                data-testid="recovery-code-container"
+                style={{
+                  gridColumn: 'span 2',
+                  backgroundColor: '#FFFFFF',
+                  borderRadius: '24px',
+                  padding: '16px',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '6px',
+                }}
+              >
+                <label
+                  htmlFor="reg-recovery-code"
+                  style={{ fontSize: '13px', color: '#4A5A4C' }}
+                >
+                  Кодовое слово семьи
+                </label>
+                <input
+                  id="reg-recovery-code"
+                  data-testid="register-recovery-code"
+                  type="text"
+                  placeholder="Например: Барсик"
+                  value={recoveryCode}
+                  onChange={(e) => setRecoveryCode(e.target.value)}
+                  style={{
+                    height: '56px',
+                    borderRadius: '16px',
+                    border: '2px solid #23372A',
+                    backgroundColor: '#F1F3EC',
+                    padding: '0 16px',
+                    fontFamily: 'inherit',
+                    fontSize: '17px',
+                    fontWeight: 500,
+                    color: '#1E2A20',
+                    boxSizing: 'border-box',
+                    outline: 'none',
+                  }}
+                />
+                <div style={{ fontSize: '12px', color: 'var(--text-muted, #70846F)', marginTop: '4px' }}>
+                  Используется для восстановления доступа. Обязательно запомните его — без него восстановить пароль будет невозможно.
+                </div>
+              </div>
+            </>
           )}
         </fieldset>
 

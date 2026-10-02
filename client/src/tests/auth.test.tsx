@@ -5,6 +5,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
 import { LoginPage } from '../pages/LoginPage';
 import { RegisterPage } from '../pages/RegisterPage';
+import { PasswordResetModal } from '../components/modals/PasswordResetModal';
 import * as authApi from '../api/authApi';
 
 const mockAuthSuccess: authApi.AuthResponse = {
@@ -114,6 +115,84 @@ describe('LoginPage Component', () => {
 
     fireEvent.click(screen.getByTestId('btn-to-register'));
     expect(handleNav).toHaveBeenCalledTimes(1);
+  });
+
+  it('opens PasswordResetModal when clicking forgot password link', async () => {
+    render(<LoginPage />);
+
+    expect(screen.queryByTestId('reset-password-modal')).toBeNull();
+
+    fireEvent.click(screen.getByTestId('forgot-password-btn'));
+
+    expect(screen.getByTestId('reset-password-modal')).toBeDefined();
+    expect(screen.getByTestId('reset-password-title').textContent).toBe('Восстановление пароля');
+    expect(screen.getByTestId('reset-password-email')).toBeDefined();
+    expect(screen.getByTestId('reset-password-code')).toBeDefined();
+    expect(screen.getByTestId('reset-password-new-password')).toBeDefined();
+  });
+
+  it('successfully resets password via modal and displays success banner', async () => {
+    const resetSpy = vi.spyOn(authApi, 'resetPasswordApi').mockResolvedValue({
+      success: true,
+      message: 'Пароль успешно изменён',
+    });
+
+    render(<LoginPage />);
+
+    fireEvent.click(screen.getByTestId('forgot-password-btn'));
+
+    await act(async () => {
+      fireEvent.change(screen.getByTestId('reset-password-email'), { target: { value: 'mama@mail.ru' } });
+      fireEvent.change(screen.getByTestId('reset-password-code'), { target: { value: 'солнышко' } });
+      fireEvent.change(screen.getByTestId('reset-password-new-password'), { target: { value: 'newpassword123' } });
+      fireEvent.click(screen.getByTestId('reset-password-submit-btn'));
+    });
+
+    expect(resetSpy).toHaveBeenCalledWith({
+      email: 'mama@mail.ru',
+      recoveryCode: 'солнышко',
+      newPassword: 'newpassword123',
+    });
+
+    expect(screen.getByTestId('reset-password-success')).toBeDefined();
+
+    // Click finish button in modal
+    await act(async () => {
+      fireEvent.click(screen.getByTestId('reset-password-done-btn'));
+    });
+
+    // Modal is closed
+    expect(screen.queryByTestId('reset-password-modal')).toBeNull();
+    // Success banner is visible on LoginPage
+    expect(screen.getByTestId('login-reset-success-banner')).toBeDefined();
+  });
+
+  it('displays error in modal when resetPasswordApi fails', async () => {
+    vi.spyOn(authApi, 'resetPasswordApi').mockRejectedValue(new Error('Неверное кодовое слово семьи'));
+
+    render(<LoginPage />);
+
+    fireEvent.click(screen.getByTestId('forgot-password-btn'));
+
+    await act(async () => {
+      fireEvent.change(screen.getByTestId('reset-password-code'), { target: { value: 'wrong-word' } });
+      fireEvent.change(screen.getByTestId('reset-password-new-password'), { target: { value: 'newpassword123' } });
+      fireEvent.click(screen.getByTestId('reset-password-submit-btn'));
+    });
+
+    await waitFor(() => {
+      expect(screen.getByTestId('reset-password-error').textContent).toBe('Неверное кодовое слово семьи');
+    });
+  });
+
+  it('closes PasswordResetModal when close button is clicked', () => {
+    render(<LoginPage />);
+
+    fireEvent.click(screen.getByTestId('forgot-password-btn'));
+    expect(screen.getByTestId('reset-password-modal')).toBeDefined();
+
+    fireEvent.click(screen.getByTestId('reset-password-close-btn'));
+    expect(screen.queryByTestId('reset-password-modal')).toBeNull();
   });
 });
 
@@ -234,6 +313,50 @@ describe('RegisterPage Component', () => {
     expect(handleSuccess).toHaveBeenCalledWith(mockAuthSuccess);
   });
 
+  it('displays recovery code input and hint when creating new family', async () => {
+    render(<RegisterPage />);
+
+    // Default: invite code is visible, recovery code is not
+    expect(screen.queryByTestId('register-recovery-code')).toBeNull();
+
+    // Switch to new family
+    await act(async () => {
+      fireEvent.click(screen.getByTestId('family-mode-new'));
+    });
+
+    const recoveryInput = screen.getByTestId('register-recovery-code');
+    expect(recoveryInput).toBeDefined();
+    expect(screen.getByText(/Используется для восстановления доступа/)).toBeDefined();
+  });
+
+  it('registers successfully creating new family with recovery code', async () => {
+    const registerSpy = vi.spyOn(authApi, 'registerApi').mockResolvedValue(mockAuthSuccess);
+    const handleSuccess = vi.fn();
+
+    render(<RegisterPage onSuccess={handleSuccess} />);
+
+    await act(async () => {
+      fireEvent.change(screen.getByTestId('register-name-input'), { target: { value: 'Ольга' } });
+      fireEvent.change(screen.getByTestId('register-email-input'), { target: { value: 'olga@mail.ru' } });
+      fireEvent.change(screen.getByTestId('register-password-input'), { target: { value: 'secretpass' } });
+      fireEvent.click(screen.getByTestId('family-mode-new'));
+      fireEvent.change(screen.getByTestId('register-child-name-input'), { target: { value: 'Артём' } });
+      fireEvent.change(screen.getByTestId('register-recovery-code'), { target: { value: 'Барсик' } });
+      fireEvent.click(screen.getByTestId('register-submit-btn'));
+    });
+
+    expect(registerSpy).toHaveBeenCalledWith({
+      name: 'Ольга',
+      role: 'Мама',
+      email: 'olga@mail.ru',
+      password: 'secretpass',
+      childName: 'Артём',
+      familyName: 'Семья Артём',
+      recoveryCode: 'Барсик',
+    });
+    expect(handleSuccess).toHaveBeenCalledWith(mockAuthSuccess);
+  });
+
   it('handles back button and login link', () => {
     const handleLoginNav = vi.fn();
     render(<RegisterPage onNavigateToLogin={handleLoginNav} />);
@@ -243,5 +366,68 @@ describe('RegisterPage Component', () => {
 
     fireEvent.click(screen.getByTestId('link-to-login'));
     expect(handleLoginNav).toHaveBeenCalledTimes(2);
+  });
+});
+
+describe('PasswordResetModal Component', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it('does not render when isOpen is false', () => {
+    render(<PasswordResetModal isOpen={false} onClose={vi.fn()} />);
+    expect(screen.queryByTestId('reset-password-modal')).toBeNull();
+  });
+
+  it('renders all required form controls and triggers close on backdrop click', () => {
+    const handleClose = vi.fn();
+    render(<PasswordResetModal isOpen={true} onClose={handleClose} initialEmail="test@example.com" />);
+
+    expect(screen.getByTestId('reset-password-modal')).toBeDefined();
+    const emailInput = screen.getByTestId('reset-password-email') as HTMLInputElement;
+    expect(emailInput.value).toBe('test@example.com');
+
+    // Click backdrop
+    fireEvent.click(screen.getByTestId('reset-password-modal-backdrop'));
+    expect(handleClose).toHaveBeenCalledTimes(1);
+  });
+
+  it('closes on Escape key press', () => {
+    const handleClose = vi.fn();
+    render(<PasswordResetModal isOpen={true} onClose={handleClose} />);
+
+    fireEvent.keyDown(window, { key: 'Escape' });
+    expect(handleClose).toHaveBeenCalledTimes(1);
+  });
+
+  it('validates required fields before submitting', async () => {
+    const resetSpy = vi.spyOn(authApi, 'resetPasswordApi');
+    render(<PasswordResetModal isOpen={true} onClose={vi.fn()} />);
+
+    // Empty email
+    await act(async () => {
+      fireEvent.change(screen.getByTestId('reset-password-email'), { target: { value: '' } });
+      fireEvent.click(screen.getByTestId('reset-password-submit-btn'));
+    });
+    expect(screen.getByTestId('reset-password-error').textContent).toContain('эл. почту');
+    expect(resetSpy).not.toHaveBeenCalled();
+
+    // Fill email, empty recovery code
+    await act(async () => {
+      fireEvent.change(screen.getByTestId('reset-password-email'), { target: { value: 'user@example.com' } });
+      fireEvent.change(screen.getByTestId('reset-password-code'), { target: { value: '' } });
+      fireEvent.click(screen.getByTestId('reset-password-submit-btn'));
+    });
+    expect(screen.getByTestId('reset-password-error').textContent).toContain('кодовое слово');
+    expect(resetSpy).not.toHaveBeenCalled();
+
+    // Fill code, short password
+    await act(async () => {
+      fireEvent.change(screen.getByTestId('reset-password-code'), { target: { value: 'secret' } });
+      fireEvent.change(screen.getByTestId('reset-password-new-password'), { target: { value: '123' } });
+      fireEvent.click(screen.getByTestId('reset-password-submit-btn'));
+    });
+    expect(screen.getByTestId('reset-password-error').textContent).toContain('не менее 6');
+    expect(resetSpy).not.toHaveBeenCalled();
   });
 });

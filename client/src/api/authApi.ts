@@ -37,6 +37,7 @@ export interface RegisterInput {
   inviteCode?: string;
   familyName?: string;
   childName?: string;
+  recoveryCode?: string;
 }
 
 const TOKEN_KEY = 'auth_token';
@@ -117,6 +118,27 @@ export async function fetchMeApi(): Promise<{ user: UserDto; family: FamilyDto; 
   if (!res.ok) {
     clearAuthSession();
     throw new Error('Сессия истекла');
+  }
+
+  return res.json();
+}
+
+export interface ResetPasswordInput {
+  email: string;
+  recoveryCode: string;
+  newPassword: string;
+}
+
+export async function resetPasswordApi(data: ResetPasswordInput): Promise<{ success: boolean; message: string }> {
+  const res = await fetch('/api/auth/reset-password', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
+  });
+
+  if (!res.ok) {
+    const errorBody = await res.json().catch(() => ({}));
+    throw new Error(errorBody.error || 'Ошибка восстановления пароля');
   }
 
   return res.json();

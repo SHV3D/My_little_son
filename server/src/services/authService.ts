@@ -22,6 +22,7 @@ export interface RegisterInput {
   inviteCode?: string;
   familyName?: string;
   childName?: string;
+  recoveryCode?: string;
 }
 
 export interface LoginInput {
@@ -126,11 +127,13 @@ export function registerUser(input: RegisterInput): AuthResponse {
       familyId = crypto.randomUUID();
       familyName = input.familyName || 'Наша семья';
       inviteCode = generateInviteCode();
+      const normalizedRecovery = input.recoveryCode ? input.recoveryCode.trim().toLowerCase() : null;
 
-      db.prepare('INSERT INTO families (id, name, invite_code) VALUES (?, ?, ?)').run(
+      db.prepare('INSERT INTO families (id, name, invite_code, recovery_code) VALUES (?, ?, ?, ?)').run(
         familyId,
         familyName,
-        inviteCode
+        inviteCode,
+        normalizedRecovery
       );
 
       childId = crypto.randomUUID();
@@ -272,4 +275,40 @@ export function getCurrentUserProfile(userId: string) {
     children,
     familyMembers,
   };
+}
+
+export async function resetPassword(input: {
+  email: string;
+  recoveryCode: string;
+  newPassword: string;
+}): Promise<{ success: boolean; message: string }> {
+  const db = getDb();
+  const email = (input.email || '').trim().toLowerCase();
+  const recoveryCode = (input.recoveryCode || '').trim().toLowerCase();
+  const newPassword = input.newPassword || '';
+
+  if (!email) {
+    throw new Error('Укажите эл. почту');
+  }
+  if (!recoveryCode) {
+    throw new Error('Укажите кодовое слово семьи');
+  }
+  if (!newPassword || newPassword.length < 6) {
+    throw new Error('Пароль должен содержать не менее 6 символов');
+  }
+
+  const user = db.prepare('SELECT id, family_id FROM users WHERE LOWER(email) = ?').get(email) as DbUser | undefined;
+  if (!user) {
+    throw new Error('Пользователь с таким email не найден');
+  }
+
+  const family = db.prepare('SELECT id, recovery_code FROM families WHERE id = ?').get(user.family_id) as DbFamily | undefined;
+  if (!family || !family.recovery_code || family.recovery_code.trim().toLowerCase() !== recoveryCode) {
+    throw new Error('Неверное кодовое слово семьи');
+  }
+
+  const passwordHash = await bcrypt.hash(newPassword, 10);
+  db.prepare('UPDATE users SET password_hash = ? WHERE id = ?').run(passwordHash, user.id);
+
+  return { success: true, message: 'Пароль успешно изменён' };
 }

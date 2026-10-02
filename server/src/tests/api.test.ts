@@ -131,6 +131,85 @@ describe('My Little Son - REST API Integration Tests', () => {
       expect(res.status).toBe(400);
       expect(res.body.error).toContain('код приглашения');
     });
+
+    it('registers new user and family with recovery code', async () => {
+      const res = await request(app)
+        .post('/api/auth/register')
+        .send({
+          name: 'Ольга',
+          role: 'Мама',
+          email: 'olga@example.com',
+          password: 'password123',
+          familyName: 'Семья Смирновых',
+          childName: 'Артём',
+          recoveryCode: 'Барсик',
+        });
+
+      expect(res.status).toBe(201);
+      const fam = db.prepare('SELECT recovery_code FROM families WHERE id = ?').get(res.body.family.id) as { recovery_code: string };
+      expect(fam.recovery_code).toBe('барсик');
+    });
+
+    it('successfully resets password with correct email and recovery code', async () => {
+      const res = await request(app)
+        .post('/api/auth/reset-password')
+        .send({
+          email: 'mama@mail.ru',
+          recoveryCode: 'Солнышко',
+          newPassword: 'new-secure-password-456',
+        });
+
+      expect(res.status).toBe(200);
+      expect(res.body.success).toBe(true);
+      expect(res.body.message).toContain('Пароль успешно изменён');
+
+      // Verify user can now log in with the new password
+      const loginRes = await request(app)
+        .post('/api/auth/login')
+        .send({
+          email: 'mama@mail.ru',
+          password: 'new-secure-password-456',
+        });
+
+      expect(loginRes.status).toBe(200);
+      expect(loginRes.body.token).toBeDefined();
+
+      // Old password should no longer work
+      const oldLoginRes = await request(app)
+        .post('/api/auth/login')
+        .send({
+          email: 'mama@mail.ru',
+          password: 'password123',
+        });
+
+      expect(oldLoginRes.status).toBe(401);
+    });
+
+    it('returns 400 for wrong recovery code', async () => {
+      const res = await request(app)
+        .post('/api/auth/reset-password')
+        .send({
+          email: 'papa@mail.ru',
+          recoveryCode: 'wrong-secret',
+          newPassword: 'new-password-789',
+        });
+
+      expect(res.status).toBe(400);
+      expect(res.body.error).toContain('Неверное кодовое слово семьи');
+    });
+
+    it('returns 404 for nonexistent email', async () => {
+      const res = await request(app)
+        .post('/api/auth/reset-password')
+        .send({
+          email: 'nonexistent@mail.ru',
+          recoveryCode: 'солнышко',
+          newPassword: 'new-password-789',
+        });
+
+      expect(res.status).toBe(404);
+      expect(res.body.error).toContain('Пользователь с таким email не найден');
+    });
   });
 
   describe('Settings flow', () => {

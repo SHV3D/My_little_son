@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { loginApi, AuthResponse } from '../api/authApi';
+import { PasswordResetModal } from '../components/modals/PasswordResetModal';
 
 export interface LoginPageProps {
   onSuccess?: (auth: AuthResponse) => void;
@@ -18,6 +19,8 @@ export const LoginPage: React.FC<LoginPageProps> = ({
   const [password, setPassword] = useState('password123');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [isResetModalOpen, setIsResetModalOpen] = useState(false);
+  const [resetSuccessMessage, setResetSuccessMessage] = useState<string | null>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -228,6 +231,23 @@ export const LoginPage: React.FC<LoginPageProps> = ({
           Вход
         </h1>
 
+        {resetSuccessMessage && (
+          <div
+            data-testid="login-reset-success-banner"
+            style={{
+              backgroundColor: '#E8F5E9',
+              border: '1px solid #2E7D32',
+              color: '#1B5E20',
+              padding: '10px 14px',
+              borderRadius: '14px',
+              fontSize: '14px',
+              fontWeight: 500,
+            }}
+          >
+            {resetSuccessMessage}
+          </div>
+        )}
+
         {error && (
           <div
             data-testid="login-error-banner"
@@ -350,9 +370,10 @@ export const LoginPage: React.FC<LoginPageProps> = ({
 
           <a
             href="#forgot"
+            data-testid="forgot-password-btn"
             onClick={(e) => {
               e.preventDefault();
-              alert('Для восстановления пароля обратитесь к администратору семьи или используйте демо-пароль: password123');
+              setIsResetModalOpen(true);
             }}
             style={{
               minHeight: '44px',
@@ -362,6 +383,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({
               fontWeight: 500,
               color: '#2F5A3A',
               textDecoration: 'none',
+              cursor: 'pointer',
             }}
           >
             Забыли пароль?
@@ -416,6 +438,19 @@ export const LoginPage: React.FC<LoginPageProps> = ({
       >
         Нет аккаунта? Зарегистрироваться
       </button>
+
+      <PasswordResetModal
+        isOpen={isResetModalOpen}
+        onClose={() => setIsResetModalOpen(false)}
+        initialEmail={email}
+        onSuccess={(newEmail) => {
+          if (newEmail) {
+            setEmail(newEmail);
+          }
+          setPassword('');
+          setResetSuccessMessage('Пароль успешно изменён! Войдите с новым паролем.');
+        }}
+      />
     </div>
   );
 };

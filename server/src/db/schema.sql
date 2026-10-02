@@ -4,6 +4,7 @@ CREATE TABLE IF NOT EXISTS families (
   id TEXT PRIMARY KEY,
   name TEXT NOT NULL,
   invite_code TEXT UNIQUE NOT NULL,
+  recovery_code TEXT,
   created_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 
