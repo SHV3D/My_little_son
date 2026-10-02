@@ -45,10 +45,11 @@ jobs:
 
       - name: Deploy files via rsync
         run: |
-          rsync -avz --delete \
+          rsync -rltzv --no-perms --no-owner --no-group --delete \
             --exclude='.git' \
             --exclude='.github' \
             --exclude='.claude' \
+            --exclude='public_html' \
             --exclude='data' \
             --exclude='*.db' \
             --exclude='*.db-journal' \
@@ -56,6 +57,7 @@ jobs:
             --exclude='*.db-shm' \
             --exclude='.htaccess' \
             --exclude='tmp' \
+            --exclude='My little son*.html' \
             -e "ssh -p 22 -i ~/.ssh/id_ed25519 -o StrictHostKeyChecking=no" \
             ./ \
             "${{ secrets.BEGET_USERNAME }}@${{ secrets.BEGET_HOST }}:${{ secrets.BEGET_DEPLOY_PATH }}/"
