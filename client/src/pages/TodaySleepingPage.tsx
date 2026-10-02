@@ -237,7 +237,7 @@ export const TodaySleepingPage: React.FC<TodaySleepingPageProps> = ({
   // Check if wake deadline is exceeded or abnormally long nap warning exists
   const isWakeNow = Boolean(
     schedule?.isWakeDeadlineExceeded ||
-    schedule?.warnings?.some(
+    (schedule?.warnings || statusData?.warnings || []).some(
       (w) => w.code === 'ABNORMALLY_LONG_NAP' || w.actionType === 'WAKE_NOW'
     )
   );

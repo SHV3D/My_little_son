@@ -133,7 +133,11 @@ export const TodayAwakePage: React.FC<TodayAwakePageProps> = ({
   };
 
   const handleAction = (warning: SleepWarning) => {
-    if (warning.actionType === 'WAKE_NOW' || warning.actionType === 'SHORT_BRIDGE_NAP') {
+    if (
+      warning.actionType === 'SLEEP_NOW' ||
+      warning.actionType === 'WAKE_NOW' ||
+      warning.actionType === 'SHORT_BRIDGE_NAP'
+    ) {
       handleOpenFellAsleep();
     } else if (warning.actionType === 'SET_WAKE_TIME') {
       handleOpenRetroactive();
@@ -279,7 +283,7 @@ export const TodayAwakePage: React.FC<TodayAwakePageProps> = ({
           lastWakeTime={schedule?.lastWakeTime}
           intervalString="2:30–3:00"
           batteryLevel={schedule?.batteryStep}
-          isOvertired={schedule?.warnings?.some((w) => w.code === 'OVERTIRED')}
+          isOvertired={(schedule?.warnings || statusData?.warnings || []).some((w) => w.code === 'OVERTIRED')}
           countdownMinutes={schedule?.nextNap?.countdownMinutes}
         />
 
@@ -288,7 +292,6 @@ export const TodayAwakePage: React.FC<TodayAwakePageProps> = ({
           warnings={activeWarnings}
           onDismiss={(code) => setDismissedWarnings((prev) => new Set([...prev, code]))}
           onAction={handleAction}
-          style={{ marginBottom: 12 }}
         />
 
         {/* Bento Metrics 5-card Grid */}

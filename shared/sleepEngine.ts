@@ -121,7 +121,7 @@ export interface SleepWarning {
   title: string;
   message: string;
   actionRecommendation?: string;
-  actionType?: 'WAKE_NOW' | 'EARLY_BEDTIME' | 'SHORT_BRIDGE_NAP' | 'SET_WAKE_TIME' | 'CHECK_TIME';
+  actionType?: 'WAKE_NOW' | 'SLEEP_NOW' | 'EARLY_BEDTIME' | 'SHORT_BRIDGE_NAP' | 'SET_WAKE_TIME' | 'CHECK_TIME';
 }
 
 export interface SettingsInput {
@@ -523,7 +523,7 @@ export function evaluateSleepWarnings(
         title: 'Малыш перегуливает',
         message: `Бодрствует уже ${formattedAwake} (максимум по норме ${formattedMax}). Вероятны капризы и сопротивление укладыванию.`,
         actionRecommendation: 'Начните спокойное укладывание в затемнённой комнате без промедления.',
-        actionType: 'WAKE_NOW',
+        actionType: 'SLEEP_NOW',
       });
     }
   }

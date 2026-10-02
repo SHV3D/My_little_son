@@ -23,6 +23,7 @@ const BADGE_TEXT_MAP: Record<WarningSeverity, string> = {
 
 const ACTION_LABEL_MAP: Record<string, string> = {
   WAKE_NOW: 'Разбудить сейчас',
+  SLEEP_NOW: 'Уложить сейчас',
   SET_WAKE_TIME: 'Указать время пробуждения',
   SHORT_BRIDGE_NAP: 'Короткий мостик',
   EARLY_BEDTIME: 'Уложить раньше',
