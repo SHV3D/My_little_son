@@ -71,8 +71,8 @@ describe('LoginPage Component', () => {
     const logoImg = screen.getByTestId('auth-logo-img') as HTMLImageElement;
     expect(logoImg).toBeDefined();
     expect(logoImg.getAttribute('src')).toBe('/logo.svg');
-    expect(logoImg.style.width).toBe('124px');
-    expect(logoImg.style.height).toBe('124px');
+    expect(logoImg.style.width).toBe('144px');
+    expect(logoImg.style.height).toBe('144px');
     expect(logoImg.style.borderRadius).toBe('24px');
   });
 
@@ -205,6 +205,22 @@ describe('LoginPage Component', () => {
     const bioBtn = screen.getByTestId('biometric-login-btn');
     expect(bioBtn).toBeDefined();
     expect(bioBtn.getAttribute('aria-label')).toBe('Войти по биометрии');
+  });
+
+  it('adapts biometric button styling to light theme', () => {
+    render(<LoginPage theme="light" />);
+    const bioBtn = screen.getByTestId('biometric-login-btn');
+    expect(bioBtn.style.backgroundColor).toBe('var(--color-white, #FFFFFF)');
+    const svg = bioBtn.querySelector('svg');
+    expect(svg?.style.color).toBe('#23372A');
+  });
+
+  it('adapts biometric button styling to dark theme', () => {
+    render(<LoginPage theme="dark" />);
+    const bioBtn = screen.getByTestId('biometric-login-btn');
+    expect(bioBtn.style.backgroundColor).toBe('#2E4233');
+    const svg = bioBtn.querySelector('svg');
+    expect(svg?.style.color).toBe('#D4F27A');
   });
 
   it('clicking biometric button with saved credentials authenticates and triggers onSuccess', async () => {

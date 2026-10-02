@@ -156,18 +156,18 @@ export const LoginPage: React.FC<LoginPageProps> = ({
             backgroundColor: '#23372A',
             color: '#F1F4EA',
             borderRadius: '28px',
-            padding: '10px',
+            padding: '8px',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            minHeight: '150px',
+            minHeight: '160px',
           }}
         >
           <img
             src="/logo.svg"
             alt="Logo"
             data-testid="auth-logo-img"
-            style={{ width: '124px', height: '124px', borderRadius: '24px', objectFit: 'contain' }}
+            style={{ width: '144px', height: '144px', borderRadius: '24px', objectFit: 'contain' }}
           />
         </section>
 
@@ -451,8 +451,9 @@ export const LoginPage: React.FC<LoginPageProps> = ({
               width: '56px',
               height: '56px',
               borderRadius: '20px',
-              backgroundColor: 'var(--color-white, #FFFFFF)',
-              border: '1px solid var(--color-border, #E3E7DA)',
+              backgroundColor: currentTheme === 'dark' ? '#2E4233' : 'var(--color-white, #FFFFFF)',
+              border: currentTheme === 'dark' ? '1px solid #3E5444' : '1px solid var(--color-border, #E3E7DA)',
+              color: currentTheme === 'dark' ? '#D4F27A' : '#23372A',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
@@ -460,7 +461,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({
               flexShrink: 0,
               padding: 0,
               opacity: loading ? 0.6 : 1,
-              transition: 'opacity 0.2s',
+              transition: 'opacity 0.2s, background-color 0.25s, border-color 0.25s, color 0.25s',
             }}
           >
             <svg
@@ -472,7 +473,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({
               strokeWidth="1.8"
               strokeLinecap="round"
               strokeLinejoin="round"
-              style={{ color: '#23372A' }}
+              style={{ color: currentTheme === 'dark' ? '#D4F27A' : '#23372A' }}
             >
               <path d="M3 7V5a2 2 0 0 1 2-2h2" />
               <path d="M17 3h2a2 2 0 0 1 2 2v2" />
