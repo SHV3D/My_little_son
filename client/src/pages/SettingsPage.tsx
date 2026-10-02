@@ -1040,6 +1040,8 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({
             <button
               type="button"
               data-testid="biometrics-toggle-btn"
+              role="switch"
+              aria-checked={biometricsActive}
               onClick={handleToggleBiometrics}
               style={{
                 height: '38px',

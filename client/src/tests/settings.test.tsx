@@ -314,6 +314,8 @@ describe('SettingsPage Component', () => {
 
     const toggleBtn = screen.getByTestId('biometrics-toggle-btn');
     expect(toggleBtn).toBeDefined();
+    expect(toggleBtn.getAttribute('role')).toBe('switch');
+    expect(toggleBtn.getAttribute('aria-checked')).toBe('false');
     expect(toggleBtn.textContent).toBe('Включить');
 
     // Toggle on
@@ -322,6 +324,7 @@ describe('SettingsPage Component', () => {
     });
 
     expect(toggleBtn.textContent).toBe('Включено');
+    expect(toggleBtn.getAttribute('aria-checked')).toBe('true');
     expect(localStorage.getItem('mls_biometrics_enabled')).toBe('true');
 
     // Toggle off
@@ -330,6 +333,7 @@ describe('SettingsPage Component', () => {
     });
 
     expect(toggleBtn.textContent).toBe('Включить');
+    expect(toggleBtn.getAttribute('aria-checked')).toBe('false');
     expect(localStorage.getItem('mls_biometrics_enabled')).toBeNull();
   });
 });

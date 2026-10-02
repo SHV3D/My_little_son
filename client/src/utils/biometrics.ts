@@ -98,8 +98,12 @@ export async function registerBiometrics(user: any, token: string): Promise<bool
             timeout: 60000,
             authenticatorSelection: { userVerification: 'preferred' },
           },
-        } as any).catch(() => null);
-      } catch {
+        } as any);
+      } catch (err: any) {
+        // User cancellation or biometric registration rejected
+        if (err?.name === 'NotAllowedError' || err?.name === 'AbortError') {
+          return false;
+        }
         // Fallback gracefully in environments without full WebAuthn support
       }
     }
@@ -139,9 +143,9 @@ export async function authenticateWithBiometrics(): Promise<SavedBiometricData |
   }
 
   if (
-    typeof navigator !== 'undefined' &&
-    navigator.credentials &&
-    typeof navigator.credentials.get === 'function'
+    typeof window !== 'undefined' &&
+    window.navigator &&
+    typeof window.navigator.credentials?.get === 'function'
   ) {
     try {
       await navigator.credentials.get({
@@ -150,9 +154,13 @@ export async function authenticateWithBiometrics(): Promise<SavedBiometricData |
           timeout: 60000,
           userVerification: 'preferred',
         },
-      } as any).catch(() => null);
-    } catch {
-      // Fallback to simulated immediate confirmation
+      } as any);
+    } catch (err: any) {
+      // User cancellation or biometric mismatch
+      if (err?.name === 'NotAllowedError' || err?.name === 'AbortError') {
+        return null;
+      }
+      // Other errors (e.g. insecure context / simulator in tests) can fallback
     }
   }
 

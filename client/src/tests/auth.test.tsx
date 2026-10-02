@@ -248,6 +248,71 @@ describe('LoginPage Component', () => {
       expect(errorBanner.textContent).toContain('Сначала включите вход по биометрии в Настройках');
     });
   });
+
+  it('displays error when biometric authentication returns null', async () => {
+    localStorage.setItem('mls_biometrics_enabled', 'true');
+    localStorage.setItem(
+      'mls_biometric_user',
+      JSON.stringify({
+        id: 'user-mom-1',
+        name: 'Мама',
+        email: 'mama@mail.ru',
+        token: 'mock-token',
+      })
+    );
+    const originalCredentials = navigator.credentials;
+    Object.defineProperty(navigator, 'credentials', {
+      value: {
+        get: vi.fn().mockRejectedValue({ name: 'NotAllowedError' }),
+      },
+      configurable: true,
+      writable: true,
+    });
+
+    render(<LoginPage />);
+
+    await act(async () => {
+      fireEvent.click(screen.getByTestId('biometric-login-btn'));
+    });
+
+    await waitFor(() => {
+      const errorBanner = screen.getByTestId('login-error-banner');
+      expect(errorBanner.textContent).toBe('Биометрическая аутентификация не выполнена');
+    });
+
+    Object.defineProperty(navigator, 'credentials', {
+      value: originalCredentials,
+      configurable: true,
+      writable: true,
+    });
+  });
+
+  it('disables biometric button when loading is true', async () => {
+    let resolveLogin: (val: any) => void = () => {};
+    vi.spyOn(authApi, 'loginApi').mockImplementation(
+      () => new Promise((resolve) => { resolveLogin = resolve; })
+    );
+
+    render(<LoginPage />);
+
+    const submitBtn = screen.getByTestId('login-submit-btn');
+    const bioBtn = screen.getByTestId('biometric-login-btn') as HTMLButtonElement;
+
+    expect(bioBtn.disabled).toBe(false);
+
+    await act(async () => {
+      fireEvent.click(submitBtn);
+    });
+
+    expect(bioBtn.disabled).toBe(true);
+    expect(bioBtn.style.opacity).toBe('0.6');
+
+    await act(async () => {
+      resolveLogin(mockAuthSuccess);
+    });
+
+    expect(bioBtn.disabled).toBe(false);
+  });
 });
 
 describe('RegisterPage Component', () => {

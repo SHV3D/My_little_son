@@ -5,6 +5,7 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 import {
   isBiometricsAvailable,
   isBiometricsEnabled,
+  hasSavedBiometrics,
   getSavedBiometricUser,
   registerBiometrics,
   authenticateWithBiometrics,
@@ -14,9 +15,16 @@ import {
 } from '../utils/biometrics';
 
 describe('Biometrics Utility', () => {
+  const originalCredentials = navigator.credentials;
+
   beforeEach(() => {
     localStorage.clear();
     vi.clearAllMocks();
+    Object.defineProperty(navigator, 'credentials', {
+      value: originalCredentials,
+      configurable: true,
+      writable: true,
+    });
   });
 
   it('checks if biometrics is available', async () => {
@@ -26,6 +34,29 @@ describe('Biometrics Utility', () => {
 
   it('returns false for isBiometricsEnabled when localStorage is empty', () => {
     expect(isBiometricsEnabled()).toBe(false);
+  });
+
+  it('correctly reports hasSavedBiometrics status', async () => {
+    expect(hasSavedBiometrics()).toBe(false);
+
+    // Only enabled flag without user data
+    localStorage.setItem(BIOMETRICS_ENABLED_KEY, 'true');
+    expect(hasSavedBiometrics()).toBe(false);
+
+    // Register user
+    const testUser = {
+      id: 'user-mom-1',
+      email: 'mama@mail.ru',
+      name: 'Мама',
+      role: 'Мама',
+      familyId: 'demo-family-1',
+    };
+    const testToken = 'jwt-token-123';
+    await registerBiometrics(testUser, testToken);
+    expect(hasSavedBiometrics()).toBe(true);
+
+    disableBiometrics();
+    expect(hasSavedBiometrics()).toBe(false);
   });
 
   it('registers biometrics and stores user and token in localStorage', async () => {
@@ -72,6 +103,79 @@ describe('Biometrics Utility', () => {
   it('returns null when authenticating if biometrics is disabled or not set up', async () => {
     const result = await authenticateWithBiometrics();
     expect(result).toBeNull();
+  });
+
+  it('returns null when navigator.credentials.get rejects with NotAllowedError or AbortError', async () => {
+    const testUser = {
+      id: 'user-mom-1',
+      email: 'mama@mail.ru',
+      name: 'Мама',
+      role: 'Мама',
+      familyId: 'demo-family-1',
+    };
+    await registerBiometrics(testUser, 'jwt-token-123');
+
+    // Test NotAllowedError
+    Object.defineProperty(navigator, 'credentials', {
+      value: {
+        get: vi.fn().mockRejectedValue({ name: 'NotAllowedError' }),
+        create: vi.fn(),
+      },
+      configurable: true,
+      writable: true,
+    });
+
+    const notAllowedResult = await authenticateWithBiometrics();
+    expect(notAllowedResult).toBeNull();
+
+    // Test AbortError
+    Object.defineProperty(navigator, 'credentials', {
+      value: {
+        get: vi.fn().mockRejectedValue({ name: 'AbortError' }),
+        create: vi.fn(),
+      },
+      configurable: true,
+      writable: true,
+    });
+
+    const abortResult = await authenticateWithBiometrics();
+    expect(abortResult).toBeNull();
+  });
+
+  it('returns false when navigator.credentials.create rejects with NotAllowedError or AbortError', async () => {
+    const testUser = {
+      id: 'user-mom-1',
+      email: 'mama@mail.ru',
+      name: 'Мама',
+      role: 'Мама',
+      familyId: 'demo-family-1',
+    };
+
+    // Test NotAllowedError
+    Object.defineProperty(navigator, 'credentials', {
+      value: {
+        get: vi.fn(),
+        create: vi.fn().mockRejectedValue({ name: 'NotAllowedError' }),
+      },
+      configurable: true,
+      writable: true,
+    });
+
+    const notAllowedResult = await registerBiometrics(testUser, 'jwt-token-123');
+    expect(notAllowedResult).toBe(false);
+
+    // Test AbortError
+    Object.defineProperty(navigator, 'credentials', {
+      value: {
+        get: vi.fn(),
+        create: vi.fn().mockRejectedValue({ name: 'AbortError' }),
+      },
+      configurable: true,
+      writable: true,
+    });
+
+    const abortResult = await registerBiometrics(testUser, 'jwt-token-123');
+    expect(abortResult).toBe(false);
   });
 
   it('disables biometrics and removes items from localStorage', async () => {

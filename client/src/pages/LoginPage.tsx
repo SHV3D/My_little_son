@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { loginApi, AuthResponse, setAuthToken, setStoredUser } from '../api/authApi';
 import { PasswordResetModal } from '../components/modals/PasswordResetModal';
-import { authenticateWithBiometrics } from '../utils/biometrics';
+import { authenticateWithBiometrics, hasSavedBiometrics } from '../utils/biometrics';
 
 export interface LoginPageProps {
   onSuccess?: (auth: AuthResponse) => void;
@@ -56,11 +56,19 @@ export const LoginPage: React.FC<LoginPageProps> = ({
   };
 
   const handleBiometricLogin = async () => {
+    if (loading) return;
     setError(null);
+
+    if (!hasSavedBiometrics()) {
+      setError('Сначала включите вход по биометрии в Настройках');
+      return;
+    }
+
+    setLoading(true);
     try {
       const result = await authenticateWithBiometrics();
       if (!result) {
-        setError('Сначала включите вход по биометрии в Настройках');
+        setError('Биометрическая аутентификация не выполнена');
         return;
       }
       setAuthToken(result.token);
@@ -79,6 +87,8 @@ export const LoginPage: React.FC<LoginPageProps> = ({
       }
     } catch (err: any) {
       setError(err?.message || 'Ошибка биометрической аутентификации');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -448,6 +458,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({
             data-testid="biometric-login-btn"
             onClick={handleBiometricLogin}
             aria-label="Войти по биометрии"
+            disabled={loading}
             style={{
               width: '56px',
               height: '56px',
@@ -457,9 +468,11 @@ export const LoginPage: React.FC<LoginPageProps> = ({
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              cursor: 'pointer',
+              cursor: loading ? 'default' : 'pointer',
               flexShrink: 0,
               padding: 0,
+              opacity: loading ? 0.6 : 1,
+              transition: 'opacity 0.2s',
             }}
           >
             <svg
