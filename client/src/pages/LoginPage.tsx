@@ -176,7 +176,11 @@ export const LoginPage: React.FC<LoginPageProps> = ({
             type="button"
             data-testid="auth-theme-toggle-btn"
             aria-label={currentTheme === 'dark' ? 'Включить светлую тему' : 'Включить тёмную тему'}
-            onClick={handleToggleTheme}
+            onClick={(e: React.MouseEvent) => {
+              (window as any).__themeTransitionX = e.clientX;
+              (window as any).__themeTransitionY = e.clientY;
+              handleToggleTheme();
+            }}
             className="bento-interactive"
             style={{
               flexGrow: 1,

@@ -57,7 +57,11 @@ export const Header: React.FC<HeaderProps> = ({
           type="button"
           data-testid="theme-toggle-btn"
           aria-label={theme === 'dark' ? 'Включить светлую тему' : 'Включить тёмную тему'}
-          onClick={onToggleTheme}
+          onClick={(e: React.MouseEvent) => {
+            (window as any).__themeTransitionX = e.clientX;
+            (window as any).__themeTransitionY = e.clientY;
+            onToggleTheme?.();
+          }}
           className="bento-interactive"
           style={{
             width: '36px',

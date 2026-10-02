@@ -295,20 +295,23 @@ describe('Mobile Viewport Container Scrolling', () => {
   });
 });
 
-describe('Theme Wave Transition Styles and Behavior', () => {
-  it('verifies that theme.css contains theme-wave-down keyframes and .theme-wave-beam', () => {
+describe('Theme Radial Circle Reveal Transition', () => {
+  it('verifies that theme.css contains circle reveal keyframes and shimmer ring', () => {
     const themeCssPath = path.resolve(__dirname, '../styles/theme.css');
     const themeCss = fs.readFileSync(themeCssPath, 'utf-8');
 
-    expect(themeCss).toContain('theme-wave-down');
+    expect(themeCss).toContain('theme-circle-reveal');
     expect(themeCss).toContain('.theme-wave-beam');
     expect(themeCss).toContain('::view-transition-old(root)');
     expect(themeCss).toContain('::view-transition-new(root)');
-    expect(themeCss).toContain('clip-path: inset(0 0 100% 0)');
-    expect(themeCss).toContain('clip-path: inset(0 0 0 0)');
+    expect(themeCss).toContain('clip-path: circle(0%');
+    expect(themeCss).toContain('clip-path: circle(150%');
+    expect(themeCss).toContain('.theme-sparkle');
+    expect(themeCss).toContain('theme-ring-expand');
+    expect(themeCss).toContain('theme-sparkle-burst');
   });
 
-  it('spawns a .theme-wave-beam element on document.body on toggleTheme and removes it after animation', () => {
+  it('spawns a shimmer ring and sparkle particles on toggleTheme and cleans up after animation', () => {
     vi.useFakeTimers();
 
     function TestThemeToggle() {
@@ -323,23 +326,29 @@ describe('Theme Wave Transition Styles and Behavior', () => {
     render(<TestThemeToggle />);
     const button = screen.getByTestId('test-toggle-btn');
 
-    // Before click, no wave beam
+    // Before click, no elements
     expect(document.body.querySelector('.theme-wave-beam')).toBeNull();
+    expect(document.body.querySelector('.theme-sparkle')).toBeNull();
 
     fireEvent.click(button);
 
-    // After click, wave beam element is added to document.body
+    // After click, shimmer ring is added
     const beam = document.body.querySelector('.theme-wave-beam');
     expect(beam).not.toBeNull();
     expect(beam?.getAttribute('data-target-theme')).toBeDefined();
 
-    // Fast-forward time past 700ms
+    // Sparkle particles are added
+    const sparkles = document.body.querySelectorAll('.theme-sparkle');
+    expect(sparkles.length).toBe(8);
+
+    // Fast-forward time past cleanup
     act(() => {
-      vi.advanceTimersByTime(750);
+      vi.advanceTimersByTime(1000);
     });
 
-    // Beam is removed
+    // All elements are cleaned up
     expect(document.body.querySelector('.theme-wave-beam')).toBeNull();
+    expect(document.body.querySelectorAll('.theme-sparkle').length).toBe(0);
 
     vi.useRealTimers();
   });
@@ -359,6 +368,21 @@ describe('Theme Wave Transition Styles and Behavior', () => {
     } finally {
       (document as any).startViewTransition = originalStartViewTransition;
     }
+  });
+
+  it('sets CSS custom properties for radial origin coordinates', () => {
+    (window as any).__themeTransitionX = 100;
+    (window as any).__themeTransitionY = 200;
+
+    triggerThemeTransition('dark', () => {});
+
+    const ox = document.documentElement.style.getPropertyValue('--theme-transition-x');
+    const oy = document.documentElement.style.getPropertyValue('--theme-transition-y');
+    expect(ox).toBe('100px');
+    expect(oy).toBe('200px');
+
+    // Clean up sparkles
+    document.body.querySelectorAll('.theme-sparkle, .theme-wave-beam').forEach(el => el.remove());
   });
 });
 
