@@ -130,7 +130,7 @@ body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   line-height: 1.4;
-  transition: background-color 0.3s ease, border-color 0.3s ease, color 0.3s ease, box-shadow 0.3s ease;
+
 }
 
 /* Mobile Viewport Wrapper */
@@ -151,7 +151,7 @@ body {
   padding-bottom: env(safe-area-inset-bottom, 0px);
   padding-left: env(safe-area-inset-left, 0px);
   padding-right: env(safe-area-inset-right, 0px);
-  transition: background-color 0.3s ease, border-color 0.3s ease, color 0.3s ease, box-shadow 0.3s ease;
+
 }
 
 @media (min-width: 480px) {
@@ -203,7 +203,7 @@ body {
   box-sizing: border-box;
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
-  transition: background-color 0.3s ease, border-color 0.3s ease, color 0.3s ease, box-shadow 0.3s ease;
+
 }
 
 /* Custom Sleek Bento Scrollbars */
@@ -293,9 +293,8 @@ body {
   transform: scale(0.98);
 }
 
-/* Bento Card Transitions */
+/* Bento Card */
 .bento-card {
-  transition: background-color 0.3s ease, border-color 0.3s ease, color 0.3s ease, box-shadow 0.3s ease;
 }
 
 /* View Transitions — Radial Circle Reveal from Click Origin */
