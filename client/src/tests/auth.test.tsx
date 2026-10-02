@@ -61,29 +61,26 @@ describe('LoginPage Component', () => {
     const topStrip = screen.getByTestId('brand-top-strip');
     expect(topStrip).toBeDefined();
     expect(topStrip.textContent).toContain('My little sun');
+    expect(topStrip.style.padding).toBe('14px 18px');
+    expect(topStrip.style.minHeight).toBe('48px');
+    expect(topStrip.style.fontSize).toBe('16px');
+    expect(topStrip.style.letterSpacing).toBe('1.2px');
+    expect(topStrip.style.marginBottom).toBe('4px');
+    expect(topStrip.style.borderRadius).toBe('20px');
 
     const logoImg = screen.getByTestId('auth-logo-img') as HTMLImageElement;
     expect(logoImg).toBeDefined();
     expect(logoImg.getAttribute('src')).toBe('/logo.svg');
+    expect(logoImg.style.width).toBe('124px');
+    expect(logoImg.style.height).toBe('124px');
+    expect(logoImg.style.borderRadius).toBe('24px');
   });
 
-  it('handles quick demo buttons for Mom and Dad', () => {
+  it('does not render quick demo buttons for Mom and Dad', () => {
     render(<LoginPage />);
 
-    const emailInput = screen.getByTestId('login-email-input') as HTMLInputElement;
-    const passInput = screen.getByTestId('login-password-input') as HTMLInputElement;
-
-    // Default is mama
-    expect(emailInput.value).toBe('mama@mail.ru');
-
-    // Click quick demo papa
-    fireEvent.click(screen.getByTestId('quick-login-papa'));
-    expect(emailInput.value).toBe('papa@mail.ru');
-    expect(passInput.value).toBe('password123');
-
-    // Click quick demo mama
-    fireEvent.click(screen.getByTestId('quick-login-mama'));
-    expect(emailInput.value).toBe('mama@mail.ru');
+    expect(screen.queryByTestId('quick-login-mama')).toBeNull();
+    expect(screen.queryByTestId('quick-login-papa')).toBeNull();
   });
 
   it('submits login form and invokes onSuccess callback', async () => {
@@ -367,6 +364,12 @@ describe('RegisterPage Component', () => {
     const topStrip = screen.getByTestId('brand-top-strip');
     expect(topStrip).toBeDefined();
     expect(topStrip.textContent).toContain('My little sun');
+    expect(topStrip.style.padding).toBe('14px 18px');
+    expect(topStrip.style.minHeight).toBe('48px');
+    expect(topStrip.style.fontSize).toBe('16px');
+    expect(topStrip.style.letterSpacing).toBe('1.2px');
+    expect(topStrip.style.marginBottom).toBe('4px');
+    expect(topStrip.style.borderRadius).toBe('20px');
 
     const logoImg = screen.getByTestId('auth-logo-img') as HTMLImageElement;
     expect(logoImg).toBeDefined();

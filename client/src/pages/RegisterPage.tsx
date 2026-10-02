@@ -112,16 +112,17 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({
           style={{
             backgroundColor: 'var(--color-dark, #23372A)',
             color: 'var(--color-lime, #D4F27A)',
-            borderRadius: '18px',
-            padding: '10px 16px',
+            borderRadius: '20px',
+            padding: '14px 18px',
+            minHeight: '48px',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
             fontWeight: 700,
-            fontSize: '15px',
-            letterSpacing: '1px',
+            fontSize: '16px',
+            letterSpacing: '1.2px',
             textTransform: 'uppercase',
-            marginBottom: '10px',
+            marginBottom: '4px',
           }}
         >
         My little sun

@@ -45,16 +45,6 @@ export const LoginPage: React.FC<LoginPageProps> = ({
     }
   };
 
-  const handleQuickDemo = (role: 'mama' | 'papa') => {
-    if (role === 'mama') {
-      setEmail('mama@mail.ru');
-      setPassword('password123');
-    } else {
-      setEmail('papa@mail.ru');
-      setPassword('password123');
-    }
-  };
-
   const handleBiometricLogin = async () => {
     if (loading) return;
     setError(null);
@@ -128,16 +118,17 @@ export const LoginPage: React.FC<LoginPageProps> = ({
         style={{
           backgroundColor: 'var(--color-dark, #23372A)',
           color: 'var(--color-lime, #D4F27A)',
-          borderRadius: '18px',
-          padding: '10px 16px',
+          borderRadius: '20px',
+          padding: '14px 18px',
+          minHeight: '48px',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
           fontWeight: 700,
-          fontSize: '15px',
-          letterSpacing: '1px',
+          fontSize: '16px',
+          letterSpacing: '1.2px',
           textTransform: 'uppercase',
-          marginBottom: '10px',
+          marginBottom: '4px',
         }}
       >
         My little sun
@@ -157,7 +148,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({
             backgroundColor: '#23372A',
             color: '#F1F4EA',
             borderRadius: '28px',
-            padding: '20px',
+            padding: '10px',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
@@ -168,7 +159,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({
             src="/logo.svg"
             alt="Logo"
             data-testid="auth-logo-img"
-            style={{ width: '84px', height: '84px', borderRadius: '20px', objectFit: 'contain' }}
+            style={{ width: '124px', height: '124px', borderRadius: '24px', objectFit: 'contain' }}
           />
         </section>
 
@@ -365,47 +356,10 @@ export const LoginPage: React.FC<LoginPageProps> = ({
         <div
           style={{
             display: 'flex',
-            justifyContent: 'space-between',
+            justifyContent: 'flex-end',
             alignItems: 'center',
           }}
         >
-          <div style={{ display: 'flex', gap: '8px' }}>
-            <button
-              type="button"
-              data-testid="quick-login-mama"
-              onClick={() => handleQuickDemo('mama')}
-              style={{
-                background: 'none',
-                border: 0,
-                padding: '4px 8px',
-                borderRadius: '8px',
-                backgroundColor: '#F1F3EC',
-                fontSize: '12px',
-                color: '#4A5A4C',
-                cursor: 'pointer',
-              }}
-            >
-              Демо: Мама
-            </button>
-            <button
-              type="button"
-              data-testid="quick-login-papa"
-              onClick={() => handleQuickDemo('papa')}
-              style={{
-                background: 'none',
-                border: 0,
-                padding: '4px 8px',
-                borderRadius: '8px',
-                backgroundColor: '#F1F3EC',
-                fontSize: '12px',
-                color: '#4A5A4C',
-                cursor: 'pointer',
-              }}
-            >
-              Демо: Папа
-            </button>
-          </div>
-
           <a
             href="#forgot"
             data-testid="forgot-password-btn"
