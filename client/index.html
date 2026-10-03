@@ -46,14 +46,27 @@
           var dm = (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches);
           d.textContent = 'HTML OK ' + new Date().toISOString() + ' | standalone=' + sa + ' | display-mode-standalone=' + dm;
           (document.body || document.documentElement).appendChild(d);
+          // Ship errors to the server so they can be read without a Mac console.
+          window.__postErr = function (obj) {
+            try {
+              obj.standalone = sa; obj.dm = dm; obj.ua = navigator.userAgent;
+              fetch('/api/client-log', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(obj), keepalive: true }).catch(function () {});
+            } catch (_) {}
+          };
           window.addEventListener('error', function (e) {
             d.style.background = '#b3261e';
-            d.textContent = 'JS ERROR: ' + (e.message || (e.error && e.error.message) || '?') + ' @ ' + (e.filename || '') + ':' + (e.lineno || '');
+            var msg = e.message || (e.error && e.error.message) || '(empty)';
+            var stack = (e.error && e.error.stack) || '';
+            d.textContent = 'JS ERROR: ' + msg + ' @ ' + (e.filename || '') + ':' + (e.lineno || '') + ':' + (e.colno || '') + (stack ? ('\n' + stack) : '');
+            window.__postErr({ phase: 'window.error', message: msg, filename: e.filename, lineno: e.lineno, colno: e.colno, stack: stack });
           });
           window.addEventListener('unhandledrejection', function (e) {
             d.style.background = '#b3261e';
             var r = e.reason;
-            d.textContent = 'PROMISE REJECT: ' + ((r && (r.message || r.toString())) || '?');
+            var msg = (r && (r.message || r.toString())) || '(empty)';
+            var stack = (r && r.stack) || '';
+            d.textContent = 'PROMISE REJECT: ' + msg + (stack ? ('\n' + stack) : '');
+            window.__postErr({ phase: 'unhandledrejection', message: msg, stack: stack });
           });
           // Prove React mounted: when #root no longer contains the splash text.
           setTimeout(function () {
