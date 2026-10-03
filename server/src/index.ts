@@ -9,6 +9,7 @@ import settingsRoutes from './routes/settingsRoutes';
 import sleepRoutes from './routes/sleepRoutes';
 import calendarRoutes from './routes/calendarRoutes';
 import pushRoutes from './routes/pushRoutes';
+import webauthnRoutes from './routes/webauthnRoutes';
 import { configureWebPush } from './services/pushConfigService';
 import { setupWebSocketServer } from './ws/wsServer';
 
@@ -48,6 +49,7 @@ app.use('/api/settings', settingsRoutes);
 app.use('/api/sleep', sleepRoutes);
 app.use('/api/calendar', calendarRoutes);
 app.use('/api/push', pushRoutes);
+app.use('/api/webauthn', webauthnRoutes);
 
 // Static files from built client for production
 const candidateDistPaths = [
