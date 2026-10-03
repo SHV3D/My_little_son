@@ -113,7 +113,9 @@ if (fs.existsSync(clientDistPath)) {
     res.status(404).send('Icon not found');
   });
 
-  app.use(express.static(clientDistPath));
+  // Serve hashed assets with their normal caching, but DO NOT let static serve
+  // the HTML app shell (index:false) — the shell is served below with no-store.
+  app.use(express.static(clientDistPath, { index: false }));
 
   app.get('*', (req: Request, res: Response, next) => {
     if (req.path.startsWith('/api') || req.path.startsWith('/ws')) {
@@ -123,7 +125,15 @@ if (fs.existsSync(clientDistPath)) {
     if (path.extname(req.path)) {
       return res.status(404).send('Asset not found');
     }
-    res.sendFile(path.join(clientDistPath, 'index.html'));
+    // Serve the SPA shell with no-store and NO validators (etag/last-modified).
+    // iOS standalone (WKWebView) mishandles a 304 on the app shell and renders a
+    // blank page on the second launch; forcing a fresh 200 every time avoids it.
+    res.sendFile(path.join(clientDistPath, 'index.html'), {
+      etag: false,
+      lastModified: false,
+      cacheControl: false,
+      headers: { 'Cache-Control': 'no-store, must-revalidate' },
+    });
   });
 }
 
