@@ -8,11 +8,15 @@ describe('index.html PWA wiring', () => {
     expect(html).toMatch(/<link[^>]+rel=["']manifest["']/);
     expect(html).not.toMatch(/iPad\|iPhone\|iPod/);
   });
-  it('registers the service worker', () => {
-    expect(html).toMatch(/serviceWorker\.register\(\s*['"]\/sw\.js['"]/);
+
+  // Service worker is intentionally disabled: a registered SW white-screens the
+  // installed PWA on iOS standalone. The page must NOT register a SW and must
+  // actively unregister any previously installed one.
+  it('does not register a service worker', () => {
+    expect(html).not.toMatch(/serviceWorker\.register/);
   });
-  it('does not unregister service workers', () => {
-    expect(html).not.toMatch(/getRegistrations/);
-    expect(html).not.toMatch(/\.unregister\(/);
+  it('unregisters any existing service worker', () => {
+    expect(html).toMatch(/getRegistrations/);
+    expect(html).toMatch(/\.unregister\(/);
   });
 });

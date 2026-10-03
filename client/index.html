@@ -69,14 +69,16 @@
 
     <script type="module" src="/src/main.tsx"></script>
 
-    <!-- Register the Service Worker (required for iOS PWA install + push) -->
+    <!-- Service worker intentionally DISABLED: a registered SW white-screens the
+         installed PWA on iOS standalone (WKWebView). Unregister any previously
+         installed SW so the standalone app loads straight from the network.
+         Push (which requires a SW on iOS) is paused until the PWA is verified
+         stable, then reintroduced in a way that does not break standalone. -->
     <script>
       if ('serviceWorker' in navigator) {
-        window.addEventListener('load', function () {
-          navigator.serviceWorker.register('/sw.js').catch(function (e) {
-            console.error('SW register failed', e);
-          });
-        });
+        navigator.serviceWorker.getRegistrations()
+          .then(function (regs) { regs.forEach(function (r) { r.unregister(); }); })
+          .catch(function () {});
       }
     </script>
   </body>
