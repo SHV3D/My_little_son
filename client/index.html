@@ -32,6 +32,24 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Geologica:wght@300;400;500;600;700;800&family=Onest:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    <!-- Immediate Service Worker & Cache Cleanup in Head -->
+    <script>
+      (function() {
+        try {
+          if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.getRegistrations().then(function(regs) {
+              for (var r of regs) { r.unregister(); }
+            }).catch(function() {});
+          }
+          if (typeof window !== 'undefined' && 'caches' in window) {
+            caches.keys().then(function(names) {
+              names.forEach(function(n) { caches.delete(n); });
+            }).catch(function() {});
+          }
+        } catch(e) {}
+      })();
+    </script>
   </head>
   <body style="margin:0;padding:0;background-color:var(--bg-primary, #ECEEE6);transition:background-color 0.25s ease;">
     <div id="root">
@@ -48,8 +66,8 @@
 
     <!-- Error diagnostics script for iOS standalone mode -->
     <script>
-      window.addEventListener('error', function(e) {
-        console.error('[Boot Error]', e);
+      function reportBootError(msg) {
+        console.error('[Boot Error]', msg);
         var root = document.getElementById('root');
         if (root && root.innerHTML.indexOf('My little son') !== -1) {
           var errBox = document.getElementById('init-error');
@@ -59,22 +77,13 @@
             errBox.style = 'position:fixed;bottom:20px;left:20px;right:20px;background:#B3261E;color:#FFFFFF;padding:14px;border-radius:14px;font-size:13px;font-family:sans-serif;z-index:999999;box-shadow:0 4px 16px rgba(0,0,0,0.3);text-align:center;';
             document.body.appendChild(errBox);
           }
-          errBox.innerHTML = '<b>Сбой запуска:</b> ' + (e.message || 'Ошибка модуля') + '<br><button onclick="window.location.reload()" style="margin-top:8px;background:#fff;color:#B3261E;border:none;padding:6px 14px;border-radius:8px;font-weight:600;cursor:pointer;">Повторить</button>';
+          errBox.innerHTML = '<b>Сбой запуска:</b> ' + (msg || 'Ошибка модуля') + '<br><button onclick="window.location.reload()" style="margin-top:8px;background:#fff;color:#B3261E;border:none;padding:6px 14px;border-radius:8px;font-weight:600;cursor:pointer;">Повторить</button>';
         }
-      });
+      }
+      window.addEventListener('error', function(e) { reportBootError(e.message || (e.error && e.error.message)); });
+      window.addEventListener('unhandledrejection', function(e) { reportBootError(e.reason && (e.reason.message || String(e.reason))); });
     </script>
 
     <script type="module" src="/src/main.tsx"></script>
-
-    <!-- Unregister legacy Service Workers and clear caches to prevent redirect loops -->
-    <script>
-      if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.getRegistrations().then(function(registrations) {
-          for (var r of registrations) {
-            r.unregister();
-          }
-        }).catch(function() {});
-      }
-    </script>
   </body>
 </html>
