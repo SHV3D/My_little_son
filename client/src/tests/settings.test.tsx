@@ -3,10 +3,17 @@
  */
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
+
+vi.mock('@simplewebauthn/browser', () => ({
+  startRegistration: vi.fn(async () => ({ id: 'cred' })),
+  startAuthentication: vi.fn(async () => ({ id: 'cred' })),
+}));
+
 import { SanityBanner } from '../components/settings/SanityBanner';
 import { AgePresetsModal } from '../components/settings/AgePresetsModal';
 import { SettingsPage } from '../pages/SettingsPage';
 import * as settingsApi from '../api/settingsApi';
+import { setAuthToken, setStoredUser } from '../api/authApi';
 import { ValidationResult } from '@shared/sleepEngine';
 
 vi.mock('../hooks/useFamilySync', () => ({
@@ -318,6 +325,22 @@ describe('SettingsPage Component', () => {
 
   it('renders biometrics security card and toggles biometric authentication', async () => {
     localStorage.clear();
+    setAuthToken('session-jwt');
+    setStoredUser({
+      id: 'user-mom-1',
+      name: 'Мама',
+      email: 'mama@mail.ru',
+      role: 'Мама',
+      familyId: 'demo-family-1',
+    });
+
+    (globalThis as any).PublicKeyCredential = {
+      isUserVerifyingPlatformAuthenticatorAvailable: vi.fn().mockResolvedValue(true),
+    };
+    (globalThis as any).fetch = vi
+      .fn()
+      .mockResolvedValueOnce({ ok: true, json: async () => ({ challenge: 'c' }) }) // register/options
+      .mockResolvedValueOnce({ ok: true, json: async () => ({ verified: true }) }); // register/verify
 
     render(<SettingsPage childId="demo-child-1" />);
 
@@ -331,14 +354,17 @@ describe('SettingsPage Component', () => {
     expect(toggleBtn.getAttribute('aria-checked')).toBe('false');
     expect(toggleBtn.textContent).toBe('Включить');
 
-    // Toggle on
+    // Toggle on - triggers WebAuthn registration
     await act(async () => {
       fireEvent.click(toggleBtn);
     });
 
-    expect(toggleBtn.textContent).toBe('Включено');
+    await waitFor(() => {
+      expect(toggleBtn.textContent).toBe('Включено');
+    });
     expect(toggleBtn.getAttribute('aria-checked')).toBe('true');
     expect(localStorage.getItem('mls_biometrics_enabled')).toBe('true');
+    expect(localStorage.getItem('mls_biometric_email')).toBe('mama@mail.ru');
 
     // Toggle off
     await act(async () => {
@@ -348,16 +374,40 @@ describe('SettingsPage Component', () => {
     expect(toggleBtn.textContent).toBe('Включить');
     expect(toggleBtn.getAttribute('aria-checked')).toBe('false');
     expect(localStorage.getItem('mls_biometrics_enabled')).toBeNull();
+    expect(localStorage.getItem('mls_biometric_email')).toBeNull();
   });
 
   it('renders notifications card and toggles push notifications', async () => {
     localStorage.clear();
 
+    (globalThis as any).PushManager = function () {};
+    const subscribe = vi.fn(async () => ({
+      endpoint: 'e',
+      toJSON: () => ({ endpoint: 'e', keys: { p256dh: 'p', auth: 'a' } }),
+    }));
+    const unsubscribe = vi.fn(async () => true);
+    let currentSub: any = null;
+    (navigator as any).serviceWorker = {
+      ready: Promise.resolve({
+        pushManager: {
+          getSubscription: async () => currentSub,
+          subscribe: async () => {
+            currentSub = await subscribe();
+            return currentSub;
+          },
+        },
+      }),
+    };
+    currentSub = null;
     class MockNotification {
       static permission: NotificationPermission = 'granted';
       static requestPermission = vi.fn(async () => 'granted' as NotificationPermission);
     }
     (window as any).Notification = MockNotification;
+    (globalThis as any).fetch = vi.fn(async (url: string) => ({
+      ok: true,
+      json: async () => (url.includes('vapid') ? { key: 'BPUBLIC' } : { success: true }),
+    }));
 
     render(<SettingsPage childId="demo-child-1" />);
 
@@ -378,23 +428,32 @@ describe('SettingsPage Component', () => {
     });
 
     expect(MockNotification.requestPermission).toHaveBeenCalled();
+    expect(subscribe).toHaveBeenCalled();
     expect(toggleBtn.textContent).toBe('Включено');
     expect(toggleBtn.getAttribute('aria-checked')).toBe('true');
-    expect(localStorage.getItem('mls_push_notifications_enabled')).toBe('true');
+    expect(localStorage.getItem('mls_push_enabled')).toBe('true');
 
     // Toggle off
+    currentSub = { endpoint: 'e', unsubscribe };
     await act(async () => {
       fireEvent.click(toggleBtn);
     });
 
+    expect(unsubscribe).toHaveBeenCalled();
     expect(toggleBtn.textContent).toBe('Включить');
     expect(toggleBtn.getAttribute('aria-checked')).toBe('false');
-    expect(localStorage.getItem('mls_push_notifications_enabled')).toBe('false');
+    expect(localStorage.getItem('mls_push_enabled')).toBe('false');
   });
 
   it('shows hint when push notification permission is denied', async () => {
     localStorage.clear();
 
+    (globalThis as any).PushManager = function () {};
+    (navigator as any).serviceWorker = {
+      ready: Promise.resolve({
+        pushManager: { getSubscription: async () => null, subscribe: vi.fn() },
+      }),
+    };
     class MockNotification {
       static permission: NotificationPermission = 'denied';
       static requestPermission = vi.fn(async () => 'denied' as NotificationPermission);

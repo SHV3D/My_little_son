@@ -43,6 +43,27 @@ export interface DbChildSettings {
   updated_at: string;
 }
 
+export interface DbPushSubscription {
+  id: string;
+  user_id: string;
+  family_id: string;
+  endpoint: string;
+  p256dh: string;
+  auth: string;
+  created_at: string;
+}
+
+export interface DbWebauthnCredential {
+  id: string;
+  user_id: string;
+  credential_id: string;
+  public_key: string;
+  counter: number;
+  transports: string | null;
+  device_label: string | null;
+  created_at: string;
+}
+
 export interface DbSleepEvent {
   id: string;
   child_id: string;
@@ -96,6 +117,12 @@ export function initDatabase(customPath?: string): Database.Database {
   const familyColumns = db.prepare("PRAGMA table_info(families)").all() as { name: string }[];
   if (!familyColumns.some((col) => col.name === 'recovery_code')) {
     db.exec('ALTER TABLE families ADD COLUMN recovery_code TEXT;');
+  }
+
+  // Migration: ensure timezone column exists on families table
+  const famCols = db.prepare("PRAGMA table_info(families)").all() as Array<{ name: string }>;
+  if (!famCols.some((c) => c.name === 'timezone')) {
+    db.exec("ALTER TABLE families ADD COLUMN timezone TEXT NOT NULL DEFAULT 'Europe/Moscow'");
   }
 
   // Seed demo data if database is empty

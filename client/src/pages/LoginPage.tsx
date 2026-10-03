@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { loginApi, AuthResponse, setAuthToken, setStoredUser } from '../api/authApi';
 import { PasswordResetModal } from '../components/modals/PasswordResetModal';
-import { authenticateWithBiometrics, hasSavedBiometrics } from '../utils/biometrics';
+import { authenticateWithBiometrics, isBiometricsEnabled, getBiometricEmail } from '../utils/biometrics';
 import { useTheme } from '../hooks/useTheme';
 
 export interface LoginPageProps {
@@ -57,14 +57,15 @@ export const LoginPage: React.FC<LoginPageProps> = ({
     if (loading) return;
     setError(null);
 
-    if (!hasSavedBiometrics()) {
+    const savedEmail = getBiometricEmail();
+    if (!isBiometricsEnabled() || !savedEmail) {
       setError('Сначала включите вход по биометрии в Настройках');
       return;
     }
 
     setLoading(true);
     try {
-      const result = await authenticateWithBiometrics();
+      const result = await authenticateWithBiometrics(savedEmail);
       if (!result) {
         setError('Биометрическая аутентификация не выполнена');
         return;
@@ -75,12 +76,12 @@ export const LoginPage: React.FC<LoginPageProps> = ({
         onSuccess({
           user: result.user as any,
           token: result.token,
-          family: {
+          family: result.family || {
             id: result.user.familyId || 'demo-family-1',
             name: 'Семья',
             inviteCode: '',
           },
-          child: null,
+          child: result.child ?? null,
         });
       }
     } catch (err: any) {

@@ -249,6 +249,52 @@ export function loginUser(input: LoginInput): AuthResponse {
   };
 }
 
+export function buildAuthResponseByUserId(userId: string): AuthResponse {
+  const db = getDb();
+  const user = db.prepare('SELECT * FROM users WHERE id = ?').get(userId) as DbUser | undefined;
+  if (!user) {
+    throw new Error('Пользователь не найден');
+  }
+
+  const family = db.prepare('SELECT * FROM families WHERE id = ?').get(user.family_id) as DbFamily | undefined;
+  if (!family) {
+    throw new Error('Семья пользователя не найдена');
+  }
+
+  const child = db.prepare('SELECT * FROM children WHERE family_id = ? LIMIT 1').get(user.family_id) as DbChild | undefined;
+
+  const payload: UserTokenPayload = {
+    userId: user.id,
+    familyId: user.family_id,
+    childId: child ? child.id : '',
+    role: user.role,
+    email: user.email,
+    name: user.name,
+  };
+
+  const token = jwt.sign(payload, JWT_SECRET, { expiresIn: '30d' });
+
+  return {
+    user: {
+      id: user.id,
+      email: user.email,
+      name: user.name,
+      role: user.role,
+      familyId: user.family_id,
+    },
+    family: {
+      id: family.id,
+      name: family.name,
+      inviteCode: family.invite_code,
+    },
+    child: child ? {
+      id: child.id,
+      name: child.name,
+    } : null,
+    token,
+  };
+}
+
 export function verifyJwtToken(token: string): UserTokenPayload {
   try {
     return jwt.verify(token, JWT_SECRET) as UserTokenPayload;

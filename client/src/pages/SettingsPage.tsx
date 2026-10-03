@@ -15,14 +15,16 @@ import {
 } from '@shared/sleepEngine';
 import { ThemeMode } from '../hooks/useTheme';
 import {
+  isBiometricsAvailable,
   isBiometricsEnabled,
   registerBiometrics,
   disableBiometrics,
+  BIOMETRICS_EMAIL_KEY,
 } from '../utils/biometrics';
 import {
-  isPushNotificationsEnabled,
-  setPushNotificationsEnabled,
-  requestNotificationPermission,
+  isPushEnabled,
+  enablePush,
+  disablePush,
 } from '../services/pushNotificationService';
 import { getStoredUser, getAuthToken } from '../api/authApi';
 
@@ -85,49 +87,69 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({
   const [editingDaySleep, setEditingDaySleep] = useState(false);
   const [editingWakeTime, setEditingWakeTime] = useState(false);
   const [biometricsActive, setBiometricsActive] = useState<boolean>(() => isBiometricsEnabled());
+  const [biometricsAvailable, setBiometricsAvailable] = useState<boolean>(true);
+  const [biometricsHint, setBiometricsHint] = useState<string | null>(null);
+
+  useEffect(() => {
+    isBiometricsAvailable().then(setBiometricsAvailable);
+  }, []);
 
   const handleToggleBiometrics = async () => {
+    setBiometricsHint(null);
     if (biometricsActive) {
       disableBiometrics();
       setBiometricsActive(false);
+      return;
+    }
+
+    if (!biometricsAvailable) {
+      setBiometricsHint('Биометрия не поддерживается этим устройством');
+      return;
+    }
+
+    const token = getAuthToken();
+    if (!token) {
+      setBiometricsHint('Войдите в аккаунт, чтобы включить биометрию');
+      return;
+    }
+
+    const ok = await registerBiometrics(token);
+    if (ok) {
+      const user = getStoredUser();
+      const email = user?.email || data?.family?.members?.[0]?.email;
+      if (email) {
+        try {
+          localStorage.setItem(BIOMETRICS_EMAIL_KEY, email);
+        } catch {
+          // Ignore storage errors
+        }
+      }
+      setBiometricsActive(true);
     } else {
-      let user = getStoredUser();
-      let token = getAuthToken();
-
-      if (!user) {
-        const firstMember = data?.family?.members?.[0];
-        user = {
-          id: firstMember?.id || 'user-mom-1',
-          name: firstMember?.name || 'Мама',
-          email: firstMember?.email || 'mama@mail.ru',
-          role: (firstMember?.role as any) || 'Мама',
-          familyId: data?.family?.id || 'demo-family-1',
-        };
-      }
-      if (!token) {
-        token = 'mls-auth-token-session';
-      }
-
-      await registerBiometrics(user, token);
-      setBiometricsActive(isBiometricsEnabled());
+      setBiometricsHint('Не удалось включить биометрию');
+      setBiometricsActive(false);
     }
   };
 
-  const [pushEnabled, setPushEnabled] = useState<boolean>(() => isPushNotificationsEnabled());
+  const [pushEnabled, setPushEnabled] = useState<boolean>(() => isPushEnabled());
   const [notificationsHint, setNotificationsHint] = useState<string | null>(null);
 
   const handleTogglePushNotifications = async () => {
     setNotificationsHint(null);
     if (pushEnabled) {
-      setPushNotificationsEnabled(false);
+      await disablePush(getAuthToken() || '');
       setPushEnabled(false);
     } else {
-      const permission = await requestNotificationPermission();
-      if (permission === 'granted') {
-        setPushNotificationsEnabled(true);
+      const result = await enablePush(getAuthToken() || '');
+      if (result === 'granted') {
         setPushEnabled(true);
       } else {
-        setNotificationsHint('Разрешите уведомления в настройках браузера');
+        setPushEnabled(false);
+        setNotificationsHint(
+          result === 'unsupported'
+            ? 'Push-уведомления не поддерживаются этим браузером'
+            : 'Разрешите уведомления в настройках браузера'
+        );
       }
     }
   };
@@ -1089,6 +1111,22 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({
               {biometricsActive ? 'Включено' : 'Включить'}
             </button>
           </div>
+
+          {biometricsHint && (
+            <div
+              data-testid="biometrics-hint"
+              style={{
+                fontSize: '13px',
+                color: '#D97706',
+                backgroundColor: '#FEF3C7',
+                padding: '8px 12px',
+                borderRadius: '8px',
+                marginTop: '4px',
+              }}
+            >
+              {biometricsHint}
+            </div>
+          )}
         </section>
 
         {/* Section: Notifications */}

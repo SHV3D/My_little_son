@@ -8,6 +8,9 @@ import authRoutes from './routes/authRoutes';
 import settingsRoutes from './routes/settingsRoutes';
 import sleepRoutes from './routes/sleepRoutes';
 import calendarRoutes from './routes/calendarRoutes';
+import pushRoutes from './routes/pushRoutes';
+import webauthnRoutes from './routes/webauthnRoutes';
+import { configureWebPush } from './services/pushConfigService';
 import { setupWebSocketServer } from './ws/wsServer';
 
 const app = express();
@@ -15,12 +18,26 @@ const PORT = process.env.PORT || 3001;
 
 app.enable('trust proxy');
 
+app.use((req, res, next) => {
+  const host = req.headers.host || '';
+  const isLocal = host.startsWith('localhost') || host.startsWith('127.0.0.1');
+  const proto = (req.headers['x-forwarded-proto'] as string) || req.protocol;
+  if (!isLocal && proto !== 'https') {
+    return res.redirect(301, `https://${host}${req.originalUrl}`);
+  }
+  if (!isLocal && proto === 'https') {
+    res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
+  }
+  next();
+});
+
 app.use(cors());
 app.use(express.json());
 
 // Initialize database if not already done
 if (process.env.NODE_ENV !== 'test') {
   initDatabase();
+  configureWebPush();
 }
 
 app.get('/api/health', (_req: Request, res: Response) => {
@@ -31,6 +48,8 @@ app.use('/api/auth', authRoutes);
 app.use('/api/settings', settingsRoutes);
 app.use('/api/sleep', sleepRoutes);
 app.use('/api/calendar', calendarRoutes);
+app.use('/api/push', pushRoutes);
+app.use('/api/webauthn', webauthnRoutes);
 
 // Static files from built client for production
 const candidateDistPaths = [
@@ -53,11 +72,17 @@ if (fs.existsSync(clientDistPath)) {
     res.status(404).send('Manifest not found');
   });
 
-  // Return 404 for service worker requests to ensure browsers and WebClips purge any active registrations
   app.get(['/sw.js', '/service-worker.js'], (_req: Request, res: Response) => {
+    const swPath = path.join(clientDistPath, 'sw.js');
+    if (fs.existsSync(swPath)) {
+      res.setHeader('Content-Type', 'application/javascript; charset=UTF-8');
+      res.setHeader('Cache-Control', 'no-cache');
+      res.setHeader('Service-Worker-Allowed', '/');
+      return res.sendFile(swPath);
+    }
     res.setHeader('Content-Type', 'text/plain; charset=UTF-8');
-    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0');
-    return res.status(404).send('Service worker discontinued');
+    res.setHeader('Cache-Control', 'no-cache');
+    return res.status(404).send('Service worker not built');
   });
 
   // Ensure any iOS SpringBoard icon request (with or without .png, with or without -precomposed, or sizes) always receives a valid PNG
@@ -104,6 +129,9 @@ if (process.env.NODE_ENV !== 'test') {
   server.listen(PORT, () => {
     console.log(`Server listening on port ${PORT}`);
   });
+  setInterval(() => {
+    import('./services/pushDispatchService').then((m) => m.dispatchAllFamilies().catch(() => {}));
+  }, 60_000);
 }
 
 export { server, wss, app };

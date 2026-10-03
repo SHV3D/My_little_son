@@ -26,7 +26,6 @@ import {
 import { EditSleepModal } from './components/modals/EditSleepModal';
 import { useFamilySync } from './hooks/useFamilySync';
 import { useTheme } from './hooks/useTheme';
-import { checkAndDispatchScheduleNotifications } from './services/pushNotificationService';
 
 export interface AppProps {
   initialAuthView?: 'app' | 'login' | 'register';
@@ -75,11 +74,6 @@ export default function App({ initialAuthView }: AppProps = {}) {
   useEffect(() => {
     loadStatus();
   }, [loadStatus]);
-
-  useEffect(() => {
-    if (!status) return;
-    checkAndDispatchScheduleNotifications(status);
-  }, [status]);
 
   useEffect(() => {
     const intervalId = setInterval(() => {

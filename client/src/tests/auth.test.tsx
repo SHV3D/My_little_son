@@ -3,11 +3,19 @@
  */
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
+
+vi.mock('@simplewebauthn/browser', () => ({
+  startRegistration: vi.fn(async () => ({ id: 'cred' })),
+  startAuthentication: vi.fn(async () => ({ id: 'cred' })),
+}));
+
+import { startAuthentication } from '@simplewebauthn/browser';
 import { LoginPage } from '../pages/LoginPage';
 import { RegisterPage } from '../pages/RegisterPage';
 import { PasswordResetModal } from '../components/modals/PasswordResetModal';
 import App from '../App';
 import * as authApi from '../api/authApi';
+import { BIOMETRICS_ENABLED_KEY, BIOMETRICS_EMAIL_KEY } from '../utils/biometrics';
 
 const mockAuthSuccess: authApi.AuthResponse = {
   user: {
@@ -237,20 +245,15 @@ describe('LoginPage Component', () => {
     expect(svg?.style.color).toBe('#D4F27A');
   });
 
-  it('clicking biometric button with saved credentials authenticates and triggers onSuccess', async () => {
+  it('clicking biometric button with enabled biometrics authenticates via WebAuthn and triggers onSuccess', async () => {
     const handleSuccess = vi.fn();
-    localStorage.setItem('mls_biometrics_enabled', 'true');
-    localStorage.setItem(
-      'mls_biometric_user',
-      JSON.stringify({
-        id: 'user-mom-1',
-        name: 'Мама',
-        email: 'mama@mail.ru',
-        role: 'Мама',
-        familyId: 'demo-family-1',
-        token: 'mock-bio-token-123',
-      })
-    );
+    localStorage.setItem(BIOMETRICS_ENABLED_KEY, 'true');
+    localStorage.setItem(BIOMETRICS_EMAIL_KEY, 'mama@mail.ru');
+
+    (globalThis as any).fetch = vi
+      .fn()
+      .mockResolvedValueOnce({ ok: true, json: async () => ({ challenge: 'c2' }) }) // auth/options
+      .mockResolvedValueOnce({ ok: true, json: async () => mockAuthSuccess }); // auth/verify
 
     render(<LoginPage onSuccess={handleSuccess} />);
 
@@ -260,7 +263,7 @@ describe('LoginPage Component', () => {
 
     expect(handleSuccess).toHaveBeenCalledWith(
       expect.objectContaining({
-        token: 'mock-bio-token-123',
+        token: mockAuthSuccess.token,
         user: expect.objectContaining({
           id: 'user-mom-1',
           email: 'mama@mail.ru',
@@ -285,24 +288,13 @@ describe('LoginPage Component', () => {
   });
 
   it('displays error when biometric authentication returns null', async () => {
-    localStorage.setItem('mls_biometrics_enabled', 'true');
-    localStorage.setItem(
-      'mls_biometric_user',
-      JSON.stringify({
-        id: 'user-mom-1',
-        name: 'Мама',
-        email: 'mama@mail.ru',
-        token: 'mock-token',
-      })
-    );
-    const originalCredentials = navigator.credentials;
-    Object.defineProperty(navigator, 'credentials', {
-      value: {
-        get: vi.fn().mockRejectedValue({ name: 'NotAllowedError' }),
-      },
-      configurable: true,
-      writable: true,
-    });
+    localStorage.setItem(BIOMETRICS_ENABLED_KEY, 'true');
+    localStorage.setItem(BIOMETRICS_EMAIL_KEY, 'mama@mail.ru');
+
+    (startAuthentication as any).mockRejectedValueOnce({ name: 'NotAllowedError' });
+    (globalThis as any).fetch = vi
+      .fn()
+      .mockResolvedValueOnce({ ok: true, json: async () => ({ challenge: 'c2' }) }); // auth/options
 
     render(<LoginPage />);
 
@@ -313,12 +305,6 @@ describe('LoginPage Component', () => {
     await waitFor(() => {
       const errorBanner = screen.getByTestId('login-error-banner');
       expect(errorBanner.textContent).toBe('Биометрическая аутентификация не выполнена');
-    });
-
-    Object.defineProperty(navigator, 'credentials', {
-      value: originalCredentials,
-      configurable: true,
-      writable: true,
     });
   });
 
