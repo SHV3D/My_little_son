@@ -23,15 +23,8 @@
     <link rel="icon" type="image/png" sizes="192x192" href="/icon-192.png" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
 
-    <!-- Web App Manifest (Only for non-iOS devices to avoid iOS WebKit PWA sandbox bugs) -->
-    <script>
-      if (!/iPad|iPhone|iPod/.test(navigator.userAgent)) {
-        var m = document.createElement('link');
-        m.rel = 'manifest';
-        m.href = '/manifest.json';
-        document.head.appendChild(m);
-      }
-    </script>
+    <!-- Web App Manifest -->
+    <link rel="manifest" href="/manifest.json" />
 
     <!-- Google Fonts (Non-blocking) -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -76,12 +69,14 @@
 
     <script type="module" src="/src/main.tsx"></script>
 
-    <!-- Asynchronous background cleanup of any legacy Service Workers -->
+    <!-- Register the Service Worker (required for iOS PWA install + push) -->
     <script>
       if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.getRegistrations().then(function(regs) {
-          for (var r of regs) { r.unregister(); }
-        }).catch(function() {});
+        window.addEventListener('load', function () {
+          navigator.serviceWorker.register('/sw.js').catch(function (e) {
+            console.error('SW register failed', e);
+          });
+        });
       }
     </script>
   </body>
