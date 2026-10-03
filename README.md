@@ -130,3 +130,50 @@ My_little_son/
         ├── ws/              # wsServer (комнаты семей, presence)
         └── tests/           # Интеграционные тесты REST API и WebSocket
 ```
+
+---
+
+## PWA / Push / Биометрия: эксплуатация
+
+Домен продакшена: `son.shved.su` (Beget).
+
+### HTTPS-only
+
+Сервер принудительно редиректит на HTTPS: любой запрос с `X-Forwarded-Proto: http` (или без TLS) к non-localhost хосту получает `301` на `https://<host><url>` и далее отдаёт заголовок `Strict-Transport-Security`. Исключение — только `localhost`/`127.0.0.1` (режим разработки).
+
+### Push: cron-диспетчер
+
+Доставка push-уведомлений («Пора спать» / «Пора будить») происходит по дёргыванию `POST /api/push/dispatch`. У сервера есть собственный внутренний таймер (каждые 60 секунд, пока процесс жив), но на проде это дублируется внешним cron в панели Beget — он не зависит от того, жив ли Node-процесс:
+
+```
+* * * * * curl -s -m 50 https://son.shved.su/api/push/dispatch -H "X-Cron-Key: <ключ>" >/dev/null 2>&1
+```
+
+Роут проверяет заголовок `X-Cron-Key` и без правильного значения отвечает `403`. Значение ключа — одно из:
+
+1. **Задать явно**: переменная окружения `PUSH_CRON_KEY` в настройках Passenger-приложения на Beget. Если она задана — используется всегда, автогенерация не включается.
+2. **Автогенерация**: если `PUSH_CRON_KEY` не задан, сервер при первом обращении создаёт случайный ключ (`crypto.randomUUID()`) и сохраняет его в таблице `app_config` под ключом `push_cron_key`. Достать его из базы:
+   ```sql
+   SELECT value FROM app_config WHERE key='push_cron_key';
+   ```
+
+Публичный VAPID-ключ для подписки на push отдаётся без авторизации: `GET /api/push/vapid-public-key` → `{"key":"..."}`.
+
+### iPhone: установка и push
+
+- Web push на iOS работает **только** в приложении, установленном на домашний экран как PWA (standalone), и только на **iOS ≥ 16.4**. В обычной вкладке Safari push не работает — это ограничение iOS, не баг приложения.
+- Если после обновления старая установка на домашнем экране показывает белый экран (залипший старый Service Worker) — разовое решение: **удалить иконку с домашнего экрана и добавить её заново** через Safari → «Поделиться» → «На экран „Домой"». Это один раз пересоздаёт Service Worker.
+
+### Биометрия (WebAuthn / Face ID)
+
+Биометрический вход привязан к конкретному устройству (device-bound credential) и **не синхронизируется** между устройствами. Маме и папе нужно включить Face ID в «Настройках» отдельно на каждом своём iPhone — запись об отпечатке создаётся в `webauthn_credentials` персонально для устройства, на котором прошёл enroll.
+
+### Смоук-проверка после деплоя
+
+```bash
+curl -sS -o /dev/null -w "%{http_code}\n" -H "X-Forwarded-Proto: http" http://son.shved.su/   # ожидаем 301
+curl -sS -o /dev/null -w "%{http_code} %{content_type}\n" https://son.shved.su/sw.js           # ожидаем 200 javascript
+curl -sS https://son.shved.su/api/push/vapid-public-key                                        # ожидаем {"key":"..."}
+```
+
+Подробный ручной чек-лист для проверки на реальном iPhone (install, push при закрытом приложении, Face ID) — см. [`docs/manual-verification-iphone.md`](docs/manual-verification-iphone.md).
