@@ -127,6 +127,9 @@ if (process.env.NODE_ENV !== 'test') {
   server.listen(PORT, () => {
     console.log(`Server listening on port ${PORT}`);
   });
+  setInterval(() => {
+    import('./services/pushDispatchService').then((m) => m.dispatchAllFamilies().catch(() => {}));
+  }, 60_000);
 }
 
 export { server, wss, app };
