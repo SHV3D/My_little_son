@@ -66,11 +66,17 @@ if (fs.existsSync(clientDistPath)) {
     res.status(404).send('Manifest not found');
   });
 
-  // Return 404 for service worker requests to ensure browsers and WebClips purge any active registrations
   app.get(['/sw.js', '/service-worker.js'], (_req: Request, res: Response) => {
+    const swPath = path.join(clientDistPath, 'sw.js');
+    if (fs.existsSync(swPath)) {
+      res.setHeader('Content-Type', 'application/javascript; charset=UTF-8');
+      res.setHeader('Cache-Control', 'no-cache');
+      res.setHeader('Service-Worker-Allowed', '/');
+      return res.sendFile(swPath);
+    }
     res.setHeader('Content-Type', 'text/plain; charset=UTF-8');
-    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0');
-    return res.status(404).send('Service worker discontinued');
+    res.setHeader('Cache-Control', 'no-cache');
+    return res.status(404).send('Service worker not built');
   });
 
   // Ensure any iOS SpringBoard icon request (with or without .png, with or without -precomposed, or sizes) always receives a valid PNG
