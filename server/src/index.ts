@@ -8,6 +8,8 @@ import authRoutes from './routes/authRoutes';
 import settingsRoutes from './routes/settingsRoutes';
 import sleepRoutes from './routes/sleepRoutes';
 import calendarRoutes from './routes/calendarRoutes';
+import pushRoutes from './routes/pushRoutes';
+import { configureWebPush } from './services/pushConfigService';
 import { setupWebSocketServer } from './ws/wsServer';
 
 const app = express();
@@ -34,6 +36,7 @@ app.use(express.json());
 // Initialize database if not already done
 if (process.env.NODE_ENV !== 'test') {
   initDatabase();
+  configureWebPush();
 }
 
 app.get('/api/health', (_req: Request, res: Response) => {
@@ -44,6 +47,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/settings', settingsRoutes);
 app.use('/api/sleep', sleepRoutes);
 app.use('/api/calendar', calendarRoutes);
+app.use('/api/push', pushRoutes);
 
 // Static files from built client for production
 const candidateDistPaths = [
