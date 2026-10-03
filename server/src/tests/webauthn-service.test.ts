@@ -4,14 +4,31 @@ import app from '../index';
 import { initDatabase, setDb, getDb } from '../db/database';
 import Database from 'better-sqlite3';
 
+// Shared mock state so tests can drive distinct challenge values and capture the
+// expectedChallenge that verifyRegistrationResponse was actually called with.
+const mockState = vi.hoisted(() => ({
+  // When null, generateRegistrationOptions returns the default 'chal' (keeps the
+  // original 8 tests unchanged). When set, it returns this exact value.
+  nextRegChallenge: null as string | null,
+  lastRegExpectedChallenge: undefined as string | undefined,
+}));
+
 vi.mock('@simplewebauthn/server', () => ({
-  generateRegistrationOptions: async () => ({ challenge: 'chal', rp: {}, user: {}, pubKeyCredParams: [] }),
-  verifyRegistrationResponse: async () => ({
-    verified: true,
-    registrationInfo: {
-      credential: { id: 'Y3JlZA', publicKey: new Uint8Array([2]), counter: 0 },
-    },
+  generateRegistrationOptions: async () => ({
+    challenge: mockState.nextRegChallenge ?? 'chal',
+    rp: {},
+    user: {},
+    pubKeyCredParams: [],
   }),
+  verifyRegistrationResponse: async (opts: any) => {
+    mockState.lastRegExpectedChallenge = opts.expectedChallenge;
+    return {
+      verified: true,
+      registrationInfo: {
+        credential: { id: 'Y3JlZA', publicKey: new Uint8Array([2]), counter: 0 },
+      },
+    };
+  },
   generateAuthenticationOptions: async () => ({ challenge: 'chal2', allowCredentials: [] }),
   verifyAuthenticationResponse: async () => ({ verified: true, authenticationInfo: { newCounter: 1 } }),
 }));
@@ -104,5 +121,35 @@ describe('webauthnService', () => {
   it('rejects verifyAuthentication for unknown credential id', async () => {
     const { verifyAuthentication } = await import('../services/webauthnService');
     await expect(verifyAuthentication({ id: 'does-not-exist' } as any)).rejects.toThrow();
+  });
+
+  it('keeps a single live challenge per user+type and verifies against the latest', async () => {
+    const { createRegistrationOptions, verifyRegistration } = await import('../services/webauthnService');
+
+    // Start from a clean slate for this user (prior tests already registered the
+    // mocked credential id 'Y3JlZA' — remove it so this test's verify can re-insert),
+    // then fire two options requests in immediate succession (double-tap / client retry).
+    getDb().prepare("DELETE FROM webauthn_challenges WHERE user_id=? AND type='reg'").run(userId);
+    getDb().prepare('DELETE FROM webauthn_credentials WHERE user_id=?').run(userId);
+
+    mockState.nextRegChallenge = 'chal-first';
+    await createRegistrationOptions(userId, 'mama@mail.ru', 'Мама');
+    mockState.nextRegChallenge = 'chal-second';
+    await createRegistrationOptions(userId, 'mama@mail.ru', 'Мама');
+
+    // Exactly ONE live row remains for this user+type...
+    const rows = getDb()
+      .prepare("SELECT * FROM webauthn_challenges WHERE user_id=? AND type='reg'")
+      .all(userId) as any[];
+    expect(rows).toHaveLength(1);
+    // ...and it is the LATEST challenge, not the stale first one.
+    expect(rows[0].challenge).toBe('chal-second');
+
+    // verifyRegistration must pass the latest challenge into the library verify.
+    const result = await verifyRegistration(userId, { id: 'x', response: { transports: ['internal'] } } as any);
+    expect(result.verified).toBe(true);
+    expect(mockState.lastRegExpectedChallenge).toBe('chal-second');
+
+    mockState.nextRegChallenge = null;
   });
 });

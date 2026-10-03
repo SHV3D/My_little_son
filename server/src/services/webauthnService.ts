@@ -15,7 +15,14 @@ const CHALLENGE_TTL_MS = 5 * 60 * 1000;
 
 function storeChallenge(userId: string | null, challenge: string, type: 'reg' | 'auth'): void {
   const db = getDb();
+  // Global expired-row cleanup (cheap housekeeping).
   db.prepare('DELETE FROM webauthn_challenges WHERE expires_at < ?').run(new Date().toISOString());
+  // Enforce exactly ONE live challenge per (user, type): drop any prior live row for this
+  // same user+type before inserting the fresh one. Without this, two options requests within
+  // the same second share an identical CURRENT_TIMESTAMP (1s resolution), and takeChallenge's
+  // ORDER BY created_at DESC LIMIT 1 could return the stale challenge, breaking a legit
+  // double-tap/retry. Narrowly scoped to this user_id — never touches other users' rows.
+  db.prepare('DELETE FROM webauthn_challenges WHERE user_id IS ? AND type = ?').run(userId, type);
   db.prepare('INSERT INTO webauthn_challenges (id,user_id,challenge,type,expires_at) VALUES (?,?,?,?,?)').run(
     crypto.randomUUID(),
     userId,
