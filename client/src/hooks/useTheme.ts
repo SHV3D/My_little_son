@@ -39,6 +39,28 @@ function getStoredTheme(): ThemeMode {
 function applyThemeAttribute(resolved: 'light' | 'dark') {
   if (typeof document !== 'undefined') {
     document.documentElement.setAttribute('data-theme', resolved);
+    const bg = resolved === 'dark' ? '#142017' : '#ECEEE6';
+
+    // Update body and html background so iOS Safari safe-area bottom bar recolors
+    if (document.body) {
+      document.body.style.backgroundColor = bg;
+    }
+    if (document.documentElement) {
+      document.documentElement.style.backgroundColor = bg;
+    }
+
+    // Update meta theme-color for iOS Safari top bar, URL field, and tab bar
+    const metas = document.querySelectorAll('meta[name="theme-color"]');
+    if (metas.length > 0) {
+      metas.forEach((meta) => {
+        meta.setAttribute('content', bg);
+      });
+    } else {
+      const meta = document.createElement('meta');
+      meta.setAttribute('name', 'theme-color');
+      meta.setAttribute('content', bg);
+      document.head.appendChild(meta);
+    }
   }
 }
 

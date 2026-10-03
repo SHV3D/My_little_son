@@ -82,8 +82,9 @@ self.addEventListener('fetch', (event) => {
           return networkResponse;
         })
         .catch(async () => {
-          const cached = await caches.match('/index.html');
-          return cached || new Response('Offline', { status: 503, headers: { 'Content-Type': 'text/plain' } });
+          const cached = (await caches.match(request)) || (await caches.match('/index.html'));
+          if (cached) return cached;
+          return fetch(request);
         })
     );
     return;

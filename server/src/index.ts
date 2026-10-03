@@ -15,22 +15,6 @@ const PORT = process.env.PORT || 3001;
 
 app.enable('trust proxy');
 
-// Redirect HTTP to HTTPS for domain requests behind reverse proxies (Nginx/Passenger)
-app.use((req: Request, res: Response, next) => {
-  const host = req.headers.host || '';
-  if (host.includes('shved.su')) {
-    const isHttps =
-      req.secure ||
-      req.headers['x-forwarded-proto'] === 'https' ||
-      req.headers['x-forwarded-ssl'] === 'on';
-
-    if (!isHttps) {
-      return res.redirect(301, `https://${host}${req.url}`);
-    }
-  }
-  next();
-});
-
 app.use(cors());
 app.use(express.json());
 
