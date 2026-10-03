@@ -1,31 +1,19 @@
-export const BIOMETRICS_ENABLED_KEY = 'mls_biometrics_enabled';
-export const BIOMETRICS_USER_KEY = 'mls_biometric_user';
+import { startRegistration, startAuthentication } from '@simplewebauthn/browser';
 
-export interface SavedBiometricData {
-  user: {
-    id: string;
-    email: string;
-    name: string;
-    role: string;
-    familyId?: string;
-  };
-  token: string;
-}
+export const BIOMETRICS_ENABLED_KEY = 'mls_biometrics_enabled';
+export const BIOMETRICS_EMAIL_KEY = 'mls_biometric_email';
 
 export async function isBiometricsAvailable(): Promise<boolean> {
   if (typeof window === 'undefined') return false;
-  if (typeof window.PublicKeyCredential !== 'undefined') {
-    if (typeof window.PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable === 'function') {
-      try {
-        const available = await window.PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable();
-        return available !== false;
-      } catch {
-        return true;
-      }
+  const PKC = (window as any).PublicKeyCredential;
+  if (!PKC) return false;
+  if (typeof PKC.isUserVerifyingPlatformAuthenticatorAvailable === 'function') {
+    try {
+      return await PKC.isUserVerifyingPlatformAuthenticatorAvailable();
+    } catch {
+      return false;
     }
-    return true;
   }
-  // Return true for simulated / dev / local environments
   return true;
 }
 
@@ -38,144 +26,107 @@ export function isBiometricsEnabled(): boolean {
   }
 }
 
-export function hasSavedBiometrics(): boolean {
-  return isBiometricsEnabled() && getSavedBiometricUser() !== null;
-}
-
-export function getSavedBiometricUser(): SavedBiometricData | null {
+export function getBiometricEmail(): string | null {
   if (typeof window === 'undefined') return null;
   try {
-    const raw = localStorage.getItem(BIOMETRICS_USER_KEY);
-    if (!raw) return null;
-    const parsed = JSON.parse(raw);
-    if (!parsed) return null;
-
-    if (parsed.user && parsed.token) {
-      return {
-        user: parsed.user,
-        token: parsed.token,
-      };
-    }
-
-    if (parsed.token) {
-      return {
-        user: {
-          id: parsed.id || '',
-          email: parsed.email || '',
-          name: parsed.name || '',
-          role: parsed.role || 'Мама',
-          familyId: parsed.familyId,
-        },
-        token: parsed.token,
-      };
-    }
-
-    return null;
+    return localStorage.getItem(BIOMETRICS_EMAIL_KEY);
   } catch {
     return null;
   }
-}
-
-export async function registerBiometrics(user: any, token: string): Promise<boolean> {
-  if (typeof window === 'undefined') return false;
-  try {
-    if (
-      typeof navigator !== 'undefined' &&
-      navigator.credentials &&
-      typeof navigator.credentials.create === 'function'
-    ) {
-      try {
-        await navigator.credentials.create({
-          publicKey: {
-            challenge: new Uint8Array([1, 2, 3, 4]),
-            rp: { name: 'My little son' },
-            user: {
-              id: new Uint8Array([1, 2, 3, 4]),
-              name: user?.email || 'user',
-              displayName: user?.name || 'User',
-            },
-            pubKeyCredParams: [{ alg: -7, type: 'public-key' }],
-            timeout: 60000,
-            authenticatorSelection: { userVerification: 'preferred' },
-          },
-        } as any);
-      } catch (err: any) {
-        // User cancellation or biometric registration rejected
-        if (err?.name === 'NotAllowedError' || err?.name === 'AbortError') {
-          return false;
-        }
-        // Fallback gracefully in environments without full WebAuthn support
-      }
-    }
-
-    const payload = {
-      id: user?.id,
-      email: user?.email,
-      name: user?.name,
-      role: user?.role,
-      familyId: user?.familyId,
-      token,
-      user: {
-        id: user?.id,
-        email: user?.email,
-        name: user?.name,
-        role: user?.role,
-        familyId: user?.familyId,
-      },
-    };
-
-    localStorage.setItem(BIOMETRICS_USER_KEY, JSON.stringify(payload));
-    localStorage.setItem(BIOMETRICS_ENABLED_KEY, 'true');
-    return true;
-  } catch {
-    return false;
-  }
-}
-
-export async function authenticateWithBiometrics(): Promise<SavedBiometricData | null> {
-  if (!isBiometricsEnabled()) {
-    return null;
-  }
-
-  const saved = getSavedBiometricUser();
-  if (!saved) {
-    return null;
-  }
-
-  if (
-    typeof window !== 'undefined' &&
-    window.navigator &&
-    typeof window.navigator.credentials?.get === 'function'
-  ) {
-    try {
-      await navigator.credentials.get({
-        publicKey: {
-          challenge: new Uint8Array([1, 2, 3, 4]),
-          timeout: 60000,
-          userVerification: 'preferred',
-        },
-      } as any);
-    } catch (err: any) {
-      // User cancellation or biometric mismatch
-      if (err?.name === 'NotAllowedError' || err?.name === 'AbortError') {
-        return null;
-      }
-      // Other errors (e.g. insecure context / simulator in tests) can fallback
-    }
-  }
-
-  return {
-    user: saved.user,
-    token: saved.token,
-  };
 }
 
 export function disableBiometrics(): void {
   if (typeof window === 'undefined') return;
   try {
     localStorage.removeItem(BIOMETRICS_ENABLED_KEY);
-    localStorage.removeItem(BIOMETRICS_USER_KEY);
+    localStorage.removeItem(BIOMETRICS_EMAIL_KEY);
   } catch {
-    // Ignore error
+    // Ignore storage errors
   }
+}
+
+export async function registerBiometrics(token: string): Promise<boolean> {
+  let optRes: Response;
+  try {
+    optRes = await fetch('/api/webauthn/register/options', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}` },
+    });
+  } catch {
+    return false;
+  }
+  if (!optRes.ok) return false;
+  const options = await optRes.json();
+
+  let attResp;
+  try {
+    // @simplewebauthn/browser v14: startRegistration takes a single object { optionsJSON }
+    attResp = await startRegistration({ optionsJSON: options });
+  } catch {
+    return false;
+  }
+
+  let verifyRes: Response;
+  try {
+    verifyRes = await fetch('/api/webauthn/register/verify', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      body: JSON.stringify(attResp),
+    });
+  } catch {
+    return false;
+  }
+  const data = await verifyRes.json();
+  if (!verifyRes.ok || !data.verified) return false;
+
+  try {
+    localStorage.setItem(BIOMETRICS_ENABLED_KEY, 'true');
+  } catch {
+    // Ignore storage errors
+  }
+  return true;
+}
+
+export interface BioAuthResult {
+  token: string;
+  user: any;
+  family?: any;
+  child?: any;
+}
+
+export async function authenticateWithBiometrics(email: string): Promise<BioAuthResult | null> {
+  let optRes: Response;
+  try {
+    optRes = await fetch('/api/webauthn/auth/options', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email }),
+    });
+  } catch {
+    return null;
+  }
+  if (!optRes.ok) return null;
+  const options = await optRes.json();
+
+  let assertion;
+  try {
+    // @simplewebauthn/browser v14: startAuthentication takes a single object { optionsJSON }
+    assertion = await startAuthentication({ optionsJSON: options });
+  } catch {
+    return null;
+  }
+
+  let verifyRes: Response;
+  try {
+    verifyRes = await fetch('/api/webauthn/auth/verify', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(assertion),
+    });
+  } catch {
+    return null;
+  }
+  if (!verifyRes.ok) return null;
+  const data = await verifyRes.json();
+  return data && data.token ? data : null;
 }
