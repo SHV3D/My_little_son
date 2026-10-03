@@ -42,16 +42,44 @@ const candidateDistPaths = [
 const clientDistPath = candidateDistPaths.find((p) => fs.existsSync(p)) || candidateDistPaths[0];
 
 if (fs.existsSync(clientDistPath)) {
-  app.use(express.static(clientDistPath));
+  // Ensure manifest is served with proper content-type
+  app.get('/manifest.json', (_req: Request, res: Response) => {
+    const manifestPath = path.join(clientDistPath, 'manifest.json');
+    if (fs.existsSync(manifestPath)) {
+      res.setHeader('Content-Type', 'application/manifest+json; charset=UTF-8');
+      res.setHeader('Cache-Control', 'public, max-age=0, must-revalidate');
+      return res.sendFile(manifestPath);
+    }
+    res.status(404).send('Manifest not found');
+  });
+
+  // Ensure sw.js is never cached by browser to allow immediate self-unregistration
+  app.get('/sw.js', (_req: Request, res: Response) => {
+    res.setHeader('Content-Type', 'application/javascript; charset=UTF-8');
+    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+    const swPath = path.join(clientDistPath, 'sw.js');
+    if (fs.existsSync(swPath)) {
+      return res.sendFile(swPath);
+    }
+    res.status(404).send('// no sw');
+  });
 
   // Ensure any iOS SpringBoard icon request always receives a valid PNG
-  app.get('/apple-touch-icon*.png', (_req: Request, res: Response) => {
-    const iconPath = path.join(clientDistPath, 'apple-touch-icon.png');
-    if (fs.existsSync(iconPath)) {
-      return res.sendFile(iconPath);
+  app.get('/apple-touch-icon*.png', (req: Request, res: Response) => {
+    const requestedFile = path.basename(req.path);
+    const requestedPath = path.join(clientDistPath, requestedFile);
+    const defaultIconPath = path.join(clientDistPath, 'apple-touch-icon.png');
+    const filePath = fs.existsSync(requestedPath) ? requestedPath : defaultIconPath;
+
+    if (fs.existsSync(filePath)) {
+      res.setHeader('Content-Type', 'image/png');
+      res.setHeader('Cache-Control', 'public, max-age=86400');
+      return res.sendFile(filePath);
     }
     res.status(404).send('Icon not found');
   });
+
+  app.use(express.static(clientDistPath));
 
   app.get('*', (req: Request, res: Response, next) => {
     if (req.path.startsWith('/api') || req.path.startsWith('/ws')) {

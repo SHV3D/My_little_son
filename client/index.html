@@ -16,7 +16,9 @@
 
     <!-- Apple Touch Icons (Opaque 24-bit PNG for iOS SpringBoard) -->
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <link rel="apple-touch-icon-precomposed" href="/apple-touch-icon.png" />
     <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon-180x180.png" />
+    <link rel="apple-touch-icon-precomposed" sizes="180x180" href="/apple-touch-icon-180x180.png" />
     <link rel="apple-touch-icon" sizes="167x167" href="/apple-touch-icon-167x167.png" />
     <link rel="apple-touch-icon" sizes="152x152" href="/apple-touch-icon-152x152.png" />
     <link rel="apple-touch-icon" sizes="120x120" href="/apple-touch-icon-120x120.png" />
@@ -64,19 +66,14 @@
 
     <script type="module" src="/src/main.tsx"></script>
 
-    <!-- Safe Service Worker Registration -->
+    <!-- Unregister legacy Service Workers and clear caches to prevent redirect loops -->
     <script>
-      if ('serviceWorker' in navigator && window.location.protocol.startsWith('http')) {
-        const registerSW = () => {
-          navigator.serviceWorker.register('/sw.js').catch((err) => {
-            console.warn('[SW] Registration failed:', err);
-          });
-        };
-        if (document.readyState === 'complete') {
-          registerSW();
-        } else {
-          window.addEventListener('load', registerSW);
-        }
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.getRegistrations().then(function(registrations) {
+          for (var r of registrations) {
+            r.unregister();
+          }
+        }).catch(function() {});
       }
     </script>
   </body>
