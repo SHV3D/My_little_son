@@ -97,14 +97,21 @@ describe('pushNotificationService', () => {
 
   it('disablePush unsubscribes and posts to server, clearing the flag', async () => {
     localStorage.setItem('mls_push_enabled', 'true');
-    const unsubscribe = vi.fn(async () => true);
+    const order: string[] = [];
+    const unsubscribe = vi.fn(async () => {
+      order.push('unsubscribe');
+      return true;
+    });
     const existingSub = { endpoint: 'e', unsubscribe };
     (navigator as any).serviceWorker = {
       ready: Promise.resolve({
         pushManager: { getSubscription: async () => existingSub },
       }),
     };
-    const fetchMock = vi.fn(async () => ({ ok: true, json: async () => ({ success: true }) }));
+    const fetchMock = vi.fn(async () => {
+      order.push('fetch');
+      return { ok: true, json: async () => ({ success: true }) };
+    });
     (globalThis as any).fetch = fetchMock;
 
     await svc.disablePush('jwt');
@@ -114,6 +121,45 @@ describe('pushNotificationService', () => {
       expect.any(Object)
     );
     expect(unsubscribe).toHaveBeenCalled();
+    // Browser-level unsubscribe must run BEFORE the server POST (self-healing).
+    expect(order).toEqual(['unsubscribe', 'fetch']);
+    expect(svc.isPushEnabled()).toBe(false);
+  });
+
+  it('disablePush still unsubscribes and clears the flag when the server POST rejects', async () => {
+    localStorage.setItem('mls_push_enabled', 'true');
+    const unsubscribe = vi.fn(async () => true);
+    const existingSub = { endpoint: 'e', unsubscribe };
+    (navigator as any).serviceWorker = {
+      ready: Promise.resolve({
+        pushManager: { getSubscription: async () => existingSub },
+      }),
+    };
+    // Server POST rejects (network blip) — must not throw out of disablePush.
+    (globalThis as any).fetch = vi.fn(async () => {
+      throw new Error('network down');
+    });
+
+    await expect(svc.disablePush('jwt')).resolves.toBeUndefined();
+
+    expect(unsubscribe).toHaveBeenCalled();
+    expect(svc.isPushEnabled()).toBe(false);
+  });
+
+  it('disablePush clears the flag even when there is no active subscription', async () => {
+    localStorage.setItem('mls_push_enabled', 'true');
+    const fetchMock = vi.fn();
+    (navigator as any).serviceWorker = {
+      ready: Promise.resolve({
+        pushManager: { getSubscription: async () => null },
+      }),
+    };
+    (globalThis as any).fetch = fetchMock;
+
+    await svc.disablePush('jwt');
+
+    // No subscription → no endpoint → skip the server POST entirely.
+    expect(fetchMock).not.toHaveBeenCalled();
     expect(svc.isPushEnabled()).toBe(false);
   });
 });

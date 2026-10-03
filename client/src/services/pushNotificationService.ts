@@ -76,17 +76,36 @@ export async function disablePush(token: string): Promise<void> {
   try {
     const reg = await navigator.serviceWorker.ready;
     const sub = await reg.pushManager.getSubscription();
+    const endpoint = sub?.endpoint;
+
+    // 1) Kill the browser-level subscription FIRST. Once the endpoint is gone,
+    //    even a failed server POST below is self-healing: the next server send
+    //    gets a 410 and the dispatcher prunes the stale row automatically.
     if (sub) {
-      await fetch('/api/push/unsubscribe', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ endpoint: sub.endpoint }),
-      });
-      await sub.unsubscribe();
+      try {
+        await sub.unsubscribe();
+      } catch {
+        // Ignore: still inform the server and clear the local flag below.
+      }
+    }
+
+    // 2) Best-effort: tell the server to drop the subscription row.
+    if (endpoint) {
+      try {
+        await fetch('/api/push/unsubscribe', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+          body: JSON.stringify({ endpoint }),
+        });
+      } catch {
+        // Ignore network errors; the 410-prune path on the server self-heals.
+      }
     }
   } catch {
-    // Ignore unsubscribe/network errors; still clear local flag below
+    // Ignore serviceWorker/getSubscription errors; still clear local flag below.
   }
+
+  // 3) User intent "off" always takes effect locally, no matter what failed.
   try {
     localStorage.setItem(PUSH_ENABLED_KEY, 'false');
   } catch {
