@@ -1,25 +1,21 @@
-// Minimal service worker — PUSH ONLY. It intentionally does NOT register a
-// `fetch` handler. On iOS a navigation-intercepting service worker can wedge
-// repeat loads (the Cache API stalls in standalone/WKWebView), which made the
-// app "open once, then hang forever on reload". Web Push needs only the push
-// and notificationclick handlers below — no fetch interception required.
-const VERSION = 'mls-v2';
+// Minimal service worker — PUSH ONLY, zero Cache API usage.
+// Why so bare: on iOS standalone (WKWebView) the Cache Storage API can hang,
+// leaving the SW stuck in "activating" and wedging page loads for the whole
+// origin (app opened once in Safari, then the PWA — and Safari — hung). This SW
+// touches NO cache storage and installs NO fetch handler, so it can never stall
+// a navigation. It exists solely to receive Web Push.
+const VERSION = 'mls-v3';
 
 self.addEventListener('install', () => {
   self.skipWaiting();
 });
 
 self.addEventListener('activate', (event) => {
-  event.waitUntil((async () => {
-    // Purge every cache left by older SW versions that cached navigations/HTML.
-    const keys = await caches.keys();
-    await Promise.all(keys.map((k) => caches.delete(k)));
-    await self.clients.claim();
-  })());
+  // Only claim clients. No Cache API calls — nothing here can hang.
+  event.waitUntil(self.clients.claim());
 });
 
-// NOTE: no 'fetch' listener on purpose. All navigations and assets go straight
-// to the network, so the SW can never stall page loads.
+// No 'fetch' listener on purpose. Navigations/assets always go to the network.
 
 self.addEventListener('push', (event) => {
   let data = {};

@@ -190,6 +190,12 @@ export class FamilySocket {
 
     if (this.isExplicitlyClosed) return;
 
+    // Stop after a few failures. Where the WS endpoint is unavailable (e.g.
+    // Passenger returns 404 to the upgrade on shared hosting), endless
+    // reconnects are pointless and keep a connection slot busy; the app falls
+    // back to the 60s status poll in App.tsx.
+    if (this.reconnectAttempts >= 6) return;
+
     // Exponential backoff: 1s, 1.5s, 2.25s, ... max 15s
     const delay = Math.min(1000 * Math.pow(1.5, this.reconnectAttempts), 15000);
     this.reconnectAttempts++;

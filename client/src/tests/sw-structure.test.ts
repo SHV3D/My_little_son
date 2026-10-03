@@ -6,21 +6,21 @@ const sw = fs.readFileSync(path.resolve(__dirname, '../../public/sw.js'), 'utf8'
 
 describe('service worker source', () => {
   it('is push-only: does NOT register a fetch handler', () => {
-    // Root-cause fix for the iOS "opens once, then hangs on reload" bug: a
-    // navigation-intercepting SW stalls repeat loads on iOS. The SW must never
-    // intercept fetch — no fetch listener, no respondWith anywhere.
+    // A navigation-intercepting SW wedges repeat loads on iOS. Never intercept.
     expect(sw).not.toMatch(/addEventListener\(\s*['"]fetch['"]/);
     expect(sw).not.toMatch(/respondWith/);
   });
 
-  it('takes control immediately (skipWaiting + clients.claim)', () => {
-    expect(sw).toMatch(/skipWaiting/);
-    expect(sw).toMatch(/clients\.claim/);
+  it('uses NO Cache API (caches.* can hang in iOS standalone)', () => {
+    // Root cause of "PWA opens once then hangs": Cache API stalls in WKWebView
+    // standalone, freezing SW activation for the whole origin. Keep it absent.
+    expect(sw).not.toMatch(/caches\./);
+    expect(sw).not.toMatch(/\bcache\.(open|match|put|keys|delete)/);
   });
 
-  it('purges all old caches on activate (clears stale cached HTML)', () => {
-    expect(sw).toMatch(/caches\.keys\(\)/);
-    expect(sw).toMatch(/caches\.delete/);
+  it('takes control without blocking (skipWaiting + clients.claim)', () => {
+    expect(sw).toMatch(/skipWaiting/);
+    expect(sw).toMatch(/clients\.claim/);
   });
 
   it('has push and notificationclick handlers', () => {
