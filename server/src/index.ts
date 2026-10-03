@@ -15,6 +15,19 @@ const PORT = process.env.PORT || 3001;
 
 app.enable('trust proxy');
 
+app.use((req, res, next) => {
+  const host = req.headers.host || '';
+  const isLocal = host.startsWith('localhost') || host.startsWith('127.0.0.1');
+  const proto = (req.headers['x-forwarded-proto'] as string) || req.protocol;
+  if (!isLocal && proto !== 'https') {
+    return res.redirect(301, `https://${host}${req.originalUrl}`);
+  }
+  if (!isLocal && proto === 'https') {
+    res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
+  }
+  next();
+});
+
 app.use(cors());
 app.use(express.json());
 
