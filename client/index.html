@@ -28,28 +28,13 @@
     <link rel="icon" type="image/png" sizes="192x192" href="/icon-192.png" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
 
-    <!-- Google Fonts -->
+    <!-- Google Fonts (Non-blocking) -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Geologica:wght@300;400;500;600;700;800&family=Onest:wght@400;500;600;700&display=swap" rel="stylesheet">
-
-    <!-- Immediate Service Worker & Cache Cleanup in Head -->
-    <script>
-      (function() {
-        try {
-          if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.getRegistrations().then(function(regs) {
-              for (var r of regs) { r.unregister(); }
-            }).catch(function() {});
-          }
-          if (typeof window !== 'undefined' && 'caches' in window) {
-            caches.keys().then(function(names) {
-              names.forEach(function(n) { caches.delete(n); });
-            }).catch(function() {});
-          }
-        } catch(e) {}
-      })();
-    </script>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geologica:wght@300;400;500;600;700;800&family=Onest:wght@400;500;600;700&display=swap" media="print" onload="this.media='all'" />
+    <noscript>
+      <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geologica:wght@300;400;500;600;700;800&family=Onest:wght@400;500;600;700&display=swap" />
+    </noscript>
   </head>
   <body style="margin:0;padding:0;background-color:var(--bg-primary, #ECEEE6);transition:background-color 0.25s ease;">
     <div id="root">
