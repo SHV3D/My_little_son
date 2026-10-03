@@ -15,11 +15,18 @@ const PORT = process.env.PORT || 3001;
 
 app.enable('trust proxy');
 
-// Redirect HTTP to HTTPS in production behind reverse proxies (Nginx/Passenger)
+// Redirect HTTP to HTTPS for domain requests behind reverse proxies (Nginx/Passenger)
 app.use((req: Request, res: Response, next) => {
-  const proto = req.headers['x-forwarded-proto'];
-  if (process.env.NODE_ENV === 'production' && proto === 'http') {
-    return res.redirect(301, `https://${req.headers.host}${req.url}`);
+  const host = req.headers.host || '';
+  if (host.includes('shved.su')) {
+    const isHttps =
+      req.secure ||
+      req.headers['x-forwarded-proto'] === 'https' ||
+      req.headers['x-forwarded-ssl'] === 'on';
+
+    if (!isHttps) {
+      return res.redirect(301, `https://${host}${req.url}`);
+    }
   }
   next();
 });
@@ -52,6 +59,16 @@ const clientDistPath = candidateDistPaths.find((p) => fs.existsSync(p)) || candi
 
 if (fs.existsSync(clientDistPath)) {
   app.use(express.static(clientDistPath));
+
+  // Ensure any iOS SpringBoard icon request always receives a valid PNG
+  app.get('/apple-touch-icon*.png', (_req: Request, res: Response) => {
+    const iconPath = path.join(clientDistPath, 'apple-touch-icon.png');
+    if (fs.existsSync(iconPath)) {
+      return res.sendFile(iconPath);
+    }
+    res.status(404).send('Icon not found');
+  });
+
   app.get('*', (req: Request, res: Response, next) => {
     if (req.path.startsWith('/api') || req.path.startsWith('/ws')) {
       return next();

@@ -17,7 +17,11 @@ export function isPushNotificationsSupported(): boolean {
  */
 export function isPushNotificationsEnabled(): boolean {
   if (typeof window === 'undefined') return false;
-  return localStorage.getItem(PUSH_NOTIFICATIONS_STORAGE_KEY) === 'true';
+  try {
+    return localStorage.getItem(PUSH_NOTIFICATIONS_STORAGE_KEY) === 'true';
+  } catch {
+    return false;
+  }
 }
 
 /**
@@ -25,7 +29,11 @@ export function isPushNotificationsEnabled(): boolean {
  */
 export function setPushNotificationsEnabled(enabled: boolean): void {
   if (typeof window === 'undefined') return;
-  localStorage.setItem(PUSH_NOTIFICATIONS_STORAGE_KEY, enabled ? 'true' : 'false');
+  try {
+    localStorage.setItem(PUSH_NOTIFICATIONS_STORAGE_KEY, enabled ? 'true' : 'false');
+  } catch {
+    // Ignore storage restriction errors
+  }
 }
 
 /**

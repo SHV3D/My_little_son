@@ -43,21 +43,48 @@ export interface RegisterInput {
 const TOKEN_KEY = 'auth_token';
 const USER_KEY = 'auth_user';
 
+function safeGetItem(key: string): string | null {
+  try {
+    if (typeof window === 'undefined' || !window.localStorage) return null;
+    return localStorage.getItem(key);
+  } catch {
+    return null;
+  }
+}
+
+function safeSetItem(key: string, value: string): void {
+  try {
+    if (typeof window === 'undefined' || !window.localStorage) return;
+    localStorage.setItem(key, value);
+  } catch {
+    // Ignore storage restriction errors
+  }
+}
+
+function safeRemoveItem(key: string): void {
+  try {
+    if (typeof window === 'undefined' || !window.localStorage) return;
+    localStorage.removeItem(key);
+  } catch {
+    // Ignore
+  }
+}
+
 export function getAuthToken(): string | null {
-  return localStorage.getItem(TOKEN_KEY);
+  return safeGetItem(TOKEN_KEY);
 }
 
 export function setAuthToken(token: string): void {
-  localStorage.setItem(TOKEN_KEY, token);
+  safeSetItem(TOKEN_KEY, token);
 }
 
 export function clearAuthSession(): void {
-  localStorage.removeItem(TOKEN_KEY);
-  localStorage.removeItem(USER_KEY);
+  safeRemoveItem(TOKEN_KEY);
+  safeRemoveItem(USER_KEY);
 }
 
 export function getStoredUser(): UserDto | null {
-  const raw = localStorage.getItem(USER_KEY);
+  const raw = safeGetItem(USER_KEY);
   if (!raw) return null;
   try {
     return JSON.parse(raw);
@@ -67,7 +94,7 @@ export function getStoredUser(): UserDto | null {
 }
 
 export function setStoredUser(user: UserDto): void {
-  localStorage.setItem(USER_KEY, JSON.stringify(user));
+  safeSetItem(USER_KEY, JSON.stringify(user));
 }
 
 export async function loginApi(input: LoginInput): Promise<AuthResponse> {

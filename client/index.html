@@ -8,23 +8,65 @@
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="apple-mobile-web-app-title" content="My little son" />
+    <meta name="application-name" content="My little son" />
     <meta name="description" content="Умный трекер и планировщик сна ребенка для всей семьи" />
     <title>My little son</title>
 
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <!-- Apple Touch Icons (Opaque 24-bit PNG, prioritized for iOS SpringBoard) -->
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
-    <link rel="apple-touch-icon" sizes="152x152" href="/apple-touch-icon-152x152.png" />
-    <link rel="apple-touch-icon" sizes="167x167" href="/apple-touch-icon-167x167.png" />
+    <link rel="apple-touch-icon-precomposed" href="/apple-touch-icon-precomposed.png" />
     <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon-180x180.png" />
-    <link rel="manifest" href="/manifest.json" />
+    <link rel="apple-touch-icon-precomposed" sizes="180x180" href="/apple-touch-icon-180x180-precomposed.png" />
+    <link rel="apple-touch-icon" sizes="167x167" href="/apple-touch-icon-167x167.png" />
+    <link rel="apple-touch-icon-precomposed" sizes="167x167" href="/apple-touch-icon-167x167-precomposed.png" />
+    <link rel="apple-touch-icon" sizes="152x152" href="/apple-touch-icon-152x152.png" />
+    <link rel="apple-touch-icon-precomposed" sizes="152x152" href="/apple-touch-icon-152x152-precomposed.png" />
+    <link rel="apple-touch-icon" sizes="120x120" href="/apple-touch-icon-120x120.png" />
 
+    <!-- Web App Manifest & Favicons -->
+    <link rel="manifest" href="/manifest.json" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="icon" type="image/png" sizes="192x192" href="/icon-192.png" />
+
+    <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Geologica:wght@300;400;500;600;700;800&family=Onest:wght@400;500;600;700&display=swap" rel="stylesheet">
   </head>
-  <body>
-    <div id="root"></div>
+  <body style="margin:0;padding:0;background-color:#ECEEE6;">
+    <div id="root">
+      <!-- Branded Splash Skeleton (instantly replaced when React mounts) -->
+      <div style="height:100vh;height:100dvh;display:flex;flex-direction:column;align-items:center;justify-content:center;background-color:#ECEEE6;font-family:'Geologica',system-ui,sans-serif;color:#1E2A20;margin:0 auto;max-width:430px;box-sizing:border-box;padding:24px;text-align:center;">
+        <div style="background:#23372A;border-radius:28px;padding:16px;display:flex;align-items:center;justify-content:center;box-shadow:0 8px 24px rgba(35,55,42,0.15);width:144px;height:144px;box-sizing:border-box;">
+          <img src="/apple-touch-icon.png" width="112" height="112" style="border-radius:20px;display:block;" alt="My little son" />
+        </div>
+        <div style="margin-top:20px;font-weight:700;font-size:16px;letter-spacing:1.2px;text-transform:uppercase;color:#23372A;">
+          My little son
+        </div>
+      </div>
+    </div>
+
+    <!-- Error diagnostics script for iOS standalone mode -->
+    <script>
+      window.addEventListener('error', function(e) {
+        console.error('[Boot Error]', e);
+        var root = document.getElementById('root');
+        if (root && root.innerHTML.indexOf('My little son') !== -1) {
+          var errBox = document.getElementById('init-error');
+          if (!errBox) {
+            errBox = document.createElement('div');
+            errBox.id = 'init-error';
+            errBox.style = 'position:fixed;bottom:20px;left:20px;right:20px;background:#B3261E;color:#FFFFFF;padding:14px;border-radius:14px;font-size:13px;font-family:sans-serif;z-index:999999;box-shadow:0 4px 16px rgba(0,0,0,0.3);text-align:center;';
+            document.body.appendChild(errBox);
+          }
+          errBox.innerHTML = '<b>Сбой запуска:</b> ' + (e.message || 'Ошибка модуля') + '<br><button onclick="window.location.reload()" style="margin-top:8px;background:#fff;color:#B3261E;border:none;padding:6px 14px;border-radius:8px;font-weight:600;cursor:pointer;">Повторить</button>';
+        }
+      });
+    </script>
+
     <script type="module" src="/src/main.tsx"></script>
+
+    <!-- Safe Service Worker Registration -->
     <script>
       if ('serviceWorker' in navigator && window.location.protocol.startsWith('http')) {
         const registerSW = () => {
