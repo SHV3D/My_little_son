@@ -6,8 +6,7 @@ import { getFamilySubscriptions, removeSubscription } from './pushSubscriptionSe
 
 export const NOTIFICATION_THROTTLE_MS = 15 * 60 * 1000;
 
-export function nowInZone(tz: string): { date: string; time: string } {
-  const now = new Date();
+export function nowInZone(tz: string, now: Date = new Date()): { date: string; time: string } {
   const fmtDate = new Intl.DateTimeFormat('en-CA', { timeZone: tz, year: 'numeric', month: '2-digit', day: '2-digit' });
   const fmtTime = new Intl.DateTimeFormat('en-GB', { timeZone: tz, hour: '2-digit', minute: '2-digit', hour12: false });
   return { date: fmtDate.format(now), time: fmtTime.format(now) };
@@ -54,7 +53,7 @@ function buildNotifications(status: any): Array<{ key: string; title: string; bo
   return out;
 }
 
-export async function dispatchAllFamilies(sender: Sender = defaultSender): Promise<{ sent: number; pruned: number }> {
+export async function dispatchAllFamilies(sender: Sender = defaultSender, now: Date = new Date()): Promise<{ sent: number; pruned: number }> {
   const db = getDb();
   let sent = 0, pruned = 0;
   const families = db.prepare('SELECT id, timezone FROM families').all() as Array<{ id: string; timezone: string }>;
@@ -62,7 +61,7 @@ export async function dispatchAllFamilies(sender: Sender = defaultSender): Promi
     const child = db.prepare('SELECT id FROM children WHERE family_id=? LIMIT 1').get(fam.id) as { id: string } | undefined;
     if (!child) continue;
     const tz = fam.timezone || 'Europe/Moscow';
-    const { date, time } = nowInZone(tz);
+    const { date, time } = nowInZone(tz, now);
     let status: any;
     try { status = getDayStatus(child.id, date, time); } catch { continue; }
     const notes = buildNotifications(status).filter((n) => shouldSend(fam.id, n.key));
