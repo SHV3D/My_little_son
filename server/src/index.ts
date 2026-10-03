@@ -53,23 +53,27 @@ if (fs.existsSync(clientDistPath)) {
     res.status(404).send('Manifest not found');
   });
 
-  // Ensure sw.js is never cached by browser to allow immediate self-unregistration
-  app.get('/sw.js', (_req: Request, res: Response) => {
-    res.setHeader('Content-Type', 'application/javascript; charset=UTF-8');
-    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
-    const swPath = path.join(clientDistPath, 'sw.js');
-    if (fs.existsSync(swPath)) {
-      return res.sendFile(swPath);
-    }
-    res.status(404).send('// no sw');
+  // Return 404 for service worker requests to ensure browsers and WebClips purge any active registrations
+  app.get(['/sw.js', '/service-worker.js'], (_req: Request, res: Response) => {
+    res.setHeader('Content-Type', 'text/plain; charset=UTF-8');
+    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0');
+    return res.status(404).send('Service worker discontinued');
   });
 
-  // Ensure any iOS SpringBoard icon request always receives a valid PNG
-  app.get('/apple-touch-icon*.png', (req: Request, res: Response) => {
-    const requestedFile = path.basename(req.path);
-    const requestedPath = path.join(clientDistPath, requestedFile);
+  // Ensure any iOS SpringBoard icon request (with or without .png, with or without -precomposed, or sizes) always receives a valid PNG
+  app.get('/apple-touch-icon*', (req: Request, res: Response) => {
+    const rawName = path.basename(req.path);
+    const fileName = rawName.endsWith('.png') ? rawName : `${rawName}.png`;
+    const requestedPath = path.join(clientDistPath, fileName);
+    const default180Path = path.join(clientDistPath, 'apple-touch-icon-180x180.png');
     const defaultIconPath = path.join(clientDistPath, 'apple-touch-icon.png');
-    const filePath = fs.existsSync(requestedPath) ? requestedPath : defaultIconPath;
+
+    let filePath = defaultIconPath;
+    if (fs.existsSync(requestedPath)) {
+      filePath = requestedPath;
+    } else if (fs.existsSync(default180Path)) {
+      filePath = default180Path;
+    }
 
     if (fs.existsSync(filePath)) {
       res.setHeader('Content-Type', 'image/png');

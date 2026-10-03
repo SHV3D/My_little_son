@@ -3,8 +3,6 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
-    <meta name="theme-color" media="(prefers-color-scheme: light)" content="#ECEEE6" />
-    <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#142017" />
     <meta name="theme-color" content="#ECEEE6" id="theme-color-meta" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="mobile-web-app-capable" content="yes" />
@@ -16,17 +14,24 @@
 
     <!-- Apple Touch Icons (Opaque 24-bit PNG for iOS SpringBoard) -->
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
-    <link rel="apple-touch-icon-precomposed" href="/apple-touch-icon.png" />
     <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon-180x180.png" />
-    <link rel="apple-touch-icon-precomposed" sizes="180x180" href="/apple-touch-icon-180x180.png" />
     <link rel="apple-touch-icon" sizes="167x167" href="/apple-touch-icon-167x167.png" />
     <link rel="apple-touch-icon" sizes="152x152" href="/apple-touch-icon-152x152.png" />
     <link rel="apple-touch-icon" sizes="120x120" href="/apple-touch-icon-120x120.png" />
 
-    <!-- Web App Manifest & Favicons -->
-    <link rel="manifest" href="/manifest.json" />
+    <!-- Standard Favicons -->
     <link rel="icon" type="image/png" sizes="192x192" href="/icon-192.png" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+
+    <!-- Web App Manifest (Only for non-iOS devices to avoid iOS WebKit PWA sandbox bugs) -->
+    <script>
+      if (!/iPad|iPhone|iPod/.test(navigator.userAgent)) {
+        var m = document.createElement('link');
+        m.rel = 'manifest';
+        m.href = '/manifest.json';
+        document.head.appendChild(m);
+      }
+    </script>
 
     <!-- Google Fonts (Non-blocking) -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -70,5 +75,14 @@
     </script>
 
     <script type="module" src="/src/main.tsx"></script>
+
+    <!-- Asynchronous background cleanup of any legacy Service Workers -->
+    <script>
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.getRegistrations().then(function(regs) {
+          for (var r of regs) { r.unregister(); }
+        }).catch(function() {});
+      }
+    </script>
   </body>
 </html>
