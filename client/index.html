@@ -35,6 +35,35 @@
     </noscript>
   </head>
   <body style="margin:0;padding:0;background-color:var(--bg-primary, #ECEEE6);transition:background-color 0.25s ease;">
+    <!-- TEMP on-screen diagnostic (no console needed). Remove after diagnosis. -->
+    <script>
+      (function () {
+        try {
+          var d = document.createElement('div');
+          d.id = '__diag';
+          d.style.cssText = 'position:fixed;top:0;left:0;right:0;z-index:2147483647;background:#0a7a0a;color:#fff;font:12px/1.4 monospace;padding:6px 8px;white-space:pre-wrap;word-break:break-word;';
+          var sa = (typeof navigator !== 'undefined') ? navigator.standalone : undefined;
+          var dm = (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches);
+          d.textContent = 'HTML OK ' + new Date().toISOString() + ' | standalone=' + sa + ' | display-mode-standalone=' + dm;
+          (document.body || document.documentElement).appendChild(d);
+          window.addEventListener('error', function (e) {
+            d.style.background = '#b3261e';
+            d.textContent = 'JS ERROR: ' + (e.message || (e.error && e.error.message) || '?') + ' @ ' + (e.filename || '') + ':' + (e.lineno || '');
+          });
+          window.addEventListener('unhandledrejection', function (e) {
+            d.style.background = '#b3261e';
+            var r = e.reason;
+            d.textContent = 'PROMISE REJECT: ' + ((r && (r.message || r.toString())) || '?');
+          });
+          // Prove React mounted: when #root no longer contains the splash text.
+          setTimeout(function () {
+            var root = document.getElementById('root');
+            var mounted = root && root.innerHTML.indexOf('My little son') === -1 && root.children.length > 0;
+            d.textContent += ' | react-mounted-3s=' + !!mounted;
+          }, 3000);
+        } catch (_) {}
+      })();
+    </script>
     <div id="root">
       <!-- Branded Splash Skeleton (instantly replaced when React mounts) -->
       <div style="height:100vh;height:100dvh;display:flex;flex-direction:column;align-items:center;justify-content:center;background-color:var(--bg-primary, #ECEEE6);font-family:'Geologica',system-ui,sans-serif;color:var(--text-primary, #1E2A20);margin:0 auto;max-width:430px;box-sizing:border-box;padding:24px;text-align:center;">
