@@ -353,11 +353,34 @@ describe('SettingsPage Component', () => {
   it('renders notifications card and toggles push notifications', async () => {
     localStorage.clear();
 
+    (globalThis as any).PushManager = function () {};
+    const subscribe = vi.fn(async () => ({
+      endpoint: 'e',
+      toJSON: () => ({ endpoint: 'e', keys: { p256dh: 'p', auth: 'a' } }),
+    }));
+    const unsubscribe = vi.fn(async () => true);
+    let currentSub: any = null;
+    (navigator as any).serviceWorker = {
+      ready: Promise.resolve({
+        pushManager: {
+          getSubscription: async () => currentSub,
+          subscribe: async () => {
+            currentSub = await subscribe();
+            return currentSub;
+          },
+        },
+      }),
+    };
+    currentSub = null;
     class MockNotification {
       static permission: NotificationPermission = 'granted';
       static requestPermission = vi.fn(async () => 'granted' as NotificationPermission);
     }
     (window as any).Notification = MockNotification;
+    (globalThis as any).fetch = vi.fn(async (url: string) => ({
+      ok: true,
+      json: async () => (url.includes('vapid') ? { key: 'BPUBLIC' } : { success: true }),
+    }));
 
     render(<SettingsPage childId="demo-child-1" />);
 
@@ -378,23 +401,32 @@ describe('SettingsPage Component', () => {
     });
 
     expect(MockNotification.requestPermission).toHaveBeenCalled();
+    expect(subscribe).toHaveBeenCalled();
     expect(toggleBtn.textContent).toBe('Включено');
     expect(toggleBtn.getAttribute('aria-checked')).toBe('true');
-    expect(localStorage.getItem('mls_push_notifications_enabled')).toBe('true');
+    expect(localStorage.getItem('mls_push_enabled')).toBe('true');
 
     // Toggle off
+    currentSub = { endpoint: 'e', unsubscribe };
     await act(async () => {
       fireEvent.click(toggleBtn);
     });
 
+    expect(unsubscribe).toHaveBeenCalled();
     expect(toggleBtn.textContent).toBe('Включить');
     expect(toggleBtn.getAttribute('aria-checked')).toBe('false');
-    expect(localStorage.getItem('mls_push_notifications_enabled')).toBe('false');
+    expect(localStorage.getItem('mls_push_enabled')).toBe('false');
   });
 
   it('shows hint when push notification permission is denied', async () => {
     localStorage.clear();
 
+    (globalThis as any).PushManager = function () {};
+    (navigator as any).serviceWorker = {
+      ready: Promise.resolve({
+        pushManager: { getSubscription: async () => null, subscribe: vi.fn() },
+      }),
+    };
     class MockNotification {
       static permission: NotificationPermission = 'denied';
       static requestPermission = vi.fn(async () => 'denied' as NotificationPermission);

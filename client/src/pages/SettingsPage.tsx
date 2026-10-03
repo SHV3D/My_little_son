@@ -20,9 +20,9 @@ import {
   disableBiometrics,
 } from '../utils/biometrics';
 import {
-  isPushNotificationsEnabled,
-  setPushNotificationsEnabled,
-  requestNotificationPermission,
+  isPushEnabled,
+  enablePush,
+  disablePush,
 } from '../services/pushNotificationService';
 import { getStoredUser, getAuthToken } from '../api/authApi';
 
@@ -113,21 +113,25 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({
     }
   };
 
-  const [pushEnabled, setPushEnabled] = useState<boolean>(() => isPushNotificationsEnabled());
+  const [pushEnabled, setPushEnabled] = useState<boolean>(() => isPushEnabled());
   const [notificationsHint, setNotificationsHint] = useState<string | null>(null);
 
   const handleTogglePushNotifications = async () => {
     setNotificationsHint(null);
     if (pushEnabled) {
-      setPushNotificationsEnabled(false);
+      await disablePush(getAuthToken() || '');
       setPushEnabled(false);
     } else {
-      const permission = await requestNotificationPermission();
-      if (permission === 'granted') {
-        setPushNotificationsEnabled(true);
+      const result = await enablePush(getAuthToken() || '');
+      if (result === 'granted') {
         setPushEnabled(true);
       } else {
-        setNotificationsHint('Разрешите уведомления в настройках браузера');
+        setPushEnabled(false);
+        setNotificationsHint(
+          result === 'unsupported'
+            ? 'Push-уведомления не поддерживаются этим браузером'
+            : 'Разрешите уведомления в настройках браузера'
+        );
       }
     }
   };
