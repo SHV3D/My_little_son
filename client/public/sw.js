@@ -1,57 +1,25 @@
-const VERSION = 'mls-v1';
-const CACHE = `mls-cache-${VERSION}`;
+// Minimal service worker — PUSH ONLY. It intentionally does NOT register a
+// `fetch` handler. On iOS a navigation-intercepting service worker can wedge
+// repeat loads (the Cache API stalls in standalone/WKWebView), which made the
+// app "open once, then hang forever on reload". Web Push needs only the push
+// and notificationclick handlers below — no fetch interception required.
+const VERSION = 'mls-v2';
 
-self.addEventListener('install', (event) => {
+self.addEventListener('install', () => {
   self.skipWaiting();
 });
 
 self.addEventListener('activate', (event) => {
   event.waitUntil((async () => {
+    // Purge every cache left by older SW versions that cached navigations/HTML.
     const keys = await caches.keys();
-    await Promise.all(keys.filter((k) => k !== CACHE).map((k) => caches.delete(k)));
+    await Promise.all(keys.map((k) => caches.delete(k)));
     await self.clients.claim();
   })());
 });
 
-self.addEventListener('fetch', (event) => {
-  const req = event.request;
-  const url = new URL(req.url);
-
-  // passthrough: cross-origin, API, websockets
-  if (url.origin !== self.location.origin || url.pathname.startsWith('/api/') || url.pathname.startsWith('/ws')) {
-    return;
-  }
-
-  // navigations: network-first, cache index as offline fallback only
-  if (req.mode === 'navigate') {
-    event.respondWith((async () => {
-      try {
-        const fresh = await fetch(req);
-        const cache = await caches.open(CACHE);
-        cache.put('/index.html', fresh.clone());
-        return fresh;
-      } catch (e) {
-        const cache = await caches.open(CACHE);
-        const cached = await cache.match('/index.html');
-        return cached || Response.error();
-      }
-    })());
-    return;
-  }
-
-  // static assets: stale-while-revalidate
-  if (url.pathname.startsWith('/assets/') || /\.(png|svg|css|js|woff2?)$/.test(url.pathname)) {
-    event.respondWith((async () => {
-      const cache = await caches.open(CACHE);
-      const cached = await cache.match(req);
-      const network = fetch(req).then((resp) => {
-        if (resp && resp.status === 200) cache.put(req, resp.clone());
-        return resp;
-      }).catch(() => cached);
-      return cached || network;
-    })());
-  }
-});
+// NOTE: no 'fetch' listener on purpose. All navigations and assets go straight
+// to the network, so the SW can never stall page loads.
 
 self.addEventListener('push', (event) => {
   let data = {};
