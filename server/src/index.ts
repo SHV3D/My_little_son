@@ -21,11 +21,16 @@ app.enable('trust proxy');
 app.use((req, res, next) => {
   const host = req.headers.host || '';
   const isLocal = host.startsWith('localhost') || host.startsWith('127.0.0.1');
-  const proto = (req.headers['x-forwarded-proto'] as string) || req.protocol;
-  if (!isLocal && proto !== 'https') {
+  // Only act on an EXPLICIT proxy-reported scheme. Beget's Passenger serves the
+  // app over a local socket WITHOUT x-forwarded-proto; falling back to
+  // req.protocol there reports "http" for TLS-terminated requests and causes an
+  // infinite redirect loop. When the header is absent, do nothing and let the
+  // web server / Beget panel enforce HTTPS.
+  const xfProto = req.headers['x-forwarded-proto'] as string | undefined;
+  if (!isLocal && xfProto === 'http') {
     return res.redirect(301, `https://${host}${req.originalUrl}`);
   }
-  if (!isLocal && proto === 'https') {
+  if (!isLocal && xfProto === 'https') {
     res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
   }
   next();

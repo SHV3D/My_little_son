@@ -25,4 +25,12 @@ describe('HTTPS enforcement', () => {
     const res = await request(app).get('/api/health').set('Host', 'localhost:3001');
     expect(res.status).toBe(200);
   });
+
+  it('does not redirect when x-forwarded-proto is absent (Beget/Passenger, no loop)', async () => {
+    // Beget serves the app over a local socket without x-forwarded-proto.
+    // The app must NOT redirect here, or every request loops ("too many redirects").
+    const res = await request(app).get('/api/health').set('Host', 'son.shved.su');
+    expect(res.status).toBe(200);
+    expect(res.headers.location).toBeUndefined();
+  });
 });
