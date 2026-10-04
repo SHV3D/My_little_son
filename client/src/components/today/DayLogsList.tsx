@@ -95,7 +95,8 @@ export const DayLogsList: React.FC<DayLogsListProps> = ({
   } else if (events && events.length > 0) {
     displayRecords = formatEventsToDayLogRecords(events);
   } else {
-    displayRecords = DEFAULT_DAY_RECORDS;
+    // No real records → show an empty state, NOT fake sample data.
+    displayRecords = [];
   }
 
   return (
@@ -127,6 +128,19 @@ export const DayLogsList: React.FC<DayLogsListProps> = ({
       </div>
 
       <div style={{ display: 'flex', flexDirection: 'column' }}>
+        {displayRecords.length === 0 && (
+          <div
+            data-testid="day-logs-empty"
+            style={{
+              padding: '16px 0 18px',
+              fontSize: '14px',
+              color: 'var(--text-muted, #4A5A4C)',
+              textAlign: 'center',
+            }}
+          >
+            Пока нет записей за день
+          </div>
+        )}
         {displayRecords.map((record, index) => {
           const isLast = index === displayRecords.length - 1;
           return (

@@ -86,7 +86,7 @@ describe('SleepingHeroCard Component', () => {
 });
 
 describe('DayLogsList Component', () => {
-  it('renders default day events with authors and times', () => {
+  it('shows an empty state (no fake sample rows) when no records are provided', () => {
     render(<DayLogsList />);
 
     const list = screen.getByTestId('day-logs-list');
@@ -94,23 +94,9 @@ describe('DayLogsList Component', () => {
 
     expect(screen.getByTestId('day-logs-title').textContent).toBe('Записи за день');
 
-    const items = screen.getAllByTestId('day-log-item');
-    expect(items).toHaveLength(3);
-
-    const titles = screen.getAllByTestId('day-log-event-title');
-    expect(titles[0].textContent).toBe('Подъём');
-    expect(titles[1].textContent).toBe('Сон 1 · 1:15');
-    expect(titles[2].textContent).toBe('Сон 2 · идёт');
-
-    const authors = screen.getAllByTestId('day-log-author');
-    expect(authors[0].textContent).toBe('Мама');
-    expect(authors[1].textContent).toBe('Папа');
-    expect(authors[2].textContent).toBe('Мама');
-
-    const times = screen.getAllByTestId('day-log-time');
-    expect(times[0].textContent).toBe('07:10');
-    expect(times[1].textContent).toBe('09:40 – 10:55');
-    expect(times[2].textContent).toBe('13:22 – …');
+    // No fake default rows — an explicit empty message instead.
+    expect(screen.queryAllByTestId('day-log-item')).toHaveLength(0);
+    expect(screen.getByTestId('day-logs-empty').textContent).toBe('Пока нет записей за день');
   });
 
   it('renders custom day records and handles row click', () => {
