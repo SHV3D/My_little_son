@@ -34,8 +34,9 @@ router.post('/fell-asleep', (req: Request, res: Response) => {
     const userName = req.user?.name || req.body.userName || 'Мама';
     const time = req.body.time;
     const source = req.body.source || 'NOW';
+    const isNightSleep = req.body.isNightSleep === true;
 
-    const result = recordFellAsleep(childId, userId, userName, time, source);
+    const result = recordFellAsleep(childId, userId, userName, time, source, isNightSleep);
     const familyId = req.user?.familyId || getFamilyIdForChild(childId);
     if (familyId) {
       broadcastToFamily(familyId, {

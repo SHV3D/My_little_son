@@ -279,7 +279,8 @@ export function recordFellAsleep(
   userId: string,
   userName: string,
   time?: string,
-  source: string = 'NOW'
+  source: string = 'NOW',
+  isNightSleep: boolean = false
 ): { event: FormattedSleepEvent; status: DayStatusResponse } {
   const db = getDb();
   const settingsData = getSettings(childId);
@@ -300,23 +301,28 @@ export function recordFellAsleep(
   const eventDate = effectiveTime.slice(0, 10);
   const timeFormatted = formatMinutesToTime(parseTimeToMinutes(effectiveTime));
 
-  // Determine next nap number
-  const napCountRow = db.prepare(`
-    SELECT COUNT(*) as count FROM sleep_events
-    WHERE child_id = ? AND date = ? AND event_type = 'NAP'
-  `).get(settingsData.child.id, eventDate) as { count: number };
-  const napNumber = napCountRow.count + 1;
+  // Night sleep: event_type NIGHT_SLEEP, no nap number. Otherwise a numbered NAP.
+  const eventType = isNightSleep ? 'NIGHT_SLEEP' : 'NAP';
+  let napNumber: number | null = null;
+  if (!isNightSleep) {
+    const napCountRow = db.prepare(`
+      SELECT COUNT(*) as count FROM sleep_events
+      WHERE child_id = ? AND date = ? AND event_type = 'NAP'
+    `).get(settingsData.child.id, eventDate) as { count: number };
+    napNumber = napCountRow.count + 1;
+  }
 
   const eventId = crypto.randomUUID();
   db.prepare(`
     INSERT INTO sleep_events (
       id, child_id, date, event_type, nap_number, start_time, end_time,
       duration_minutes, recorded_by_user_id, recorded_by_name, source
-    ) VALUES (?, ?, ?, 'NAP', ?, ?, NULL, NULL, ?, ?, ?)
+    ) VALUES (?, ?, ?, ?, ?, ?, NULL, NULL, ?, ?, ?)
   `).run(
     eventId,
     settingsData.child.id,
     eventDate,
+    eventType,
     napNumber,
     effectiveTime,
     userId,

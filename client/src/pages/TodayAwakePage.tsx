@@ -215,6 +215,13 @@ export const TodayAwakePage: React.FC<TodayAwakePageProps> = ({
   }, [initialData]);
 
   const schedule = statusData?.schedule;
+  // No sleep records logged for the day yet → show an empty state instead of the
+  // projected (default) plan, which looks like real data and confuses. "Empty"
+  // means nothing logged AND no progress (no events, no completed naps, no day sleep).
+  const hasNoRecords =
+    (statusData?.events?.length ?? 0) === 0 &&
+    (schedule?.completedNapsCount ?? 0) === 0 &&
+    (schedule?.completedDaySleepMinutes ?? 0) === 0;
   const activeWarnings = (schedule?.warnings || statusData?.warnings || []).filter(
     (w) => !dismissedWarnings.has(w.code)
   );
@@ -297,30 +304,55 @@ export const TodayAwakePage: React.FC<TodayAwakePageProps> = ({
           onAction={handleAction}
         />
 
-        {/* Bento Metrics 5-card Grid */}
-        <BentoMetricsGrid
-          nextNapTime={schedule?.nextNap?.targetStartTime}
-          nextNapCountdown={schedule?.nextNap?.formattedCountdown}
-          nextNapDuration={schedule?.nextNap?.formattedDuration}
-          bedtime={schedule?.projectedBedtime || schedule?.targetBedtime}
-          bedtimeStatus={schedule?.bedtimeStatusMessage}
-          daySleepCurrent={
-            schedule?.completedDaySleepMinutes != null
-              ? formatMinutesToHoursAndMinutes(schedule.completedDaySleepMinutes)
-              : undefined
-          }
-          daySleepTarget={
-            schedule?.targetDaySleepMinutes != null
-              ? formatMinutesToHoursAndMinutes(schedule.targetDaySleepMinutes)
-              : undefined
-          }
-          daySleepPercent={daySleepPercent}
-          completedNapsCount={schedule?.completedNapsCount}
-          totalNapsCount={schedule?.targetNapsCount}
-          remainingNapsText={schedule?.formattedRemainingNaps}
-          subsequentNapTitle={subsequentNapTitle}
-          subsequentNapDetails={subsequentNapDetails}
-        />
+        {/* Bento Metrics 5-card Grid — or empty state when nothing is logged yet */}
+        {hasNoRecords ? (
+          <div
+            data-testid="no-records-empty"
+            style={{
+              backgroundColor: 'var(--color-white, #FFFFFF)',
+              borderRadius: '24px',
+              padding: '28px 20px',
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              textAlign: 'center',
+              gap: '8px',
+              boxShadow: 'var(--shadow-sm, 0 2px 8px rgba(35,55,42,0.08))',
+            }}
+          >
+            <div style={{ fontSize: '34px', lineHeight: 1 }}>🌙</div>
+            <div style={{ fontSize: '16px', fontWeight: 700, color: 'var(--text-primary, #1E2A20)' }}>
+              Сегодня ещё нет записей о снах
+            </div>
+            <div style={{ fontSize: '13px', color: 'var(--text-secondary, #6A7D70)', maxWidth: '260px' }}>
+              Нажмите «Уснул», когда малыш уснёт — записи появятся здесь.
+            </div>
+          </div>
+        ) : (
+          <BentoMetricsGrid
+            nextNapTime={schedule?.nextNap?.targetStartTime}
+            nextNapCountdown={schedule?.nextNap?.formattedCountdown}
+            nextNapDuration={schedule?.nextNap?.formattedDuration}
+            bedtime={schedule?.projectedBedtime || schedule?.targetBedtime}
+            bedtimeStatus={schedule?.bedtimeStatusMessage}
+            daySleepCurrent={
+              schedule?.completedDaySleepMinutes != null
+                ? formatMinutesToHoursAndMinutes(schedule.completedDaySleepMinutes)
+                : undefined
+            }
+            daySleepTarget={
+              schedule?.targetDaySleepMinutes != null
+                ? formatMinutesToHoursAndMinutes(schedule.targetDaySleepMinutes)
+                : undefined
+            }
+            daySleepPercent={daySleepPercent}
+            completedNapsCount={schedule?.completedNapsCount}
+            totalNapsCount={schedule?.targetNapsCount}
+            remainingNapsText={schedule?.formattedRemainingNaps}
+            subsequentNapTitle={subsequentNapTitle}
+            subsequentNapDetails={subsequentNapDetails}
+          />
+        )}
 
         {/* Big Action Button "Уснул" */}
         <button

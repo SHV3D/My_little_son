@@ -784,9 +784,11 @@ export function calculateDaySchedule(input: ScheduleInput): ScheduleOutput {
         sleepStartTime: sleepStartTimeStr,
         currentNapNumber: undefined,
         plannedCurrentNapDurationMinutes: undefined,
-        wakeDeadlineTime: undefined,
+        // Night sleep: expected wake is the morning wake-up from settings, NOT a
+        // wake-interval deadline.
+        wakeDeadlineTime: settings.typicalWakeupTime,
         isWakeDeadlineExceeded: false,
-        wakeDeadlineMessage: undefined,
+        wakeDeadlineMessage: `Подъём ~${settings.typicalWakeupTime}`,
         subsequentNaps: [],
         targetBedtime: settings.targetBedtime,
         projectedBedtime: settings.targetBedtime,

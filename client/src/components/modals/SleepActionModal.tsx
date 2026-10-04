@@ -5,6 +5,7 @@ export type SleepActionType = 'FELL_ASLEEP' | 'WOKE_UP';
 export interface SleepActionConfirmPayload {
   source: 'NOW' | 'MANUAL';
   time?: string;
+  isNightSleep?: boolean;
 }
 
 export interface SleepActionModalProps {
@@ -47,6 +48,7 @@ export const SleepActionModal: React.FC<SleepActionModalProps> = ({
   onConfirm,
 }) => {
   const [nowTime, setNowTime] = useState<string>(currentTime || getCurrentTimeHHMM());
+  const [nightSleep, setNightSleep] = useState<boolean>(false);
   const [activeOffset, setActiveOffset] = useState<number | null>(
     defaultOffsetMinutes > 0 ? defaultOffsetMinutes : null
   );
@@ -267,11 +269,61 @@ export const SleepActionModal: React.FC<SleepActionModalProps> = ({
           </button>
         </div>
 
+        {/* Night-sleep toggle (only when logging "fell asleep") */}
+        {type === 'FELL_ASLEEP' && (
+          <button
+            type="button"
+            data-testid="night-sleep-toggle"
+            aria-pressed={nightSleep}
+            onClick={() => setNightSleep((v) => !v)}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '12px',
+              width: '100%',
+              boxSizing: 'border-box',
+              padding: '14px 16px',
+              borderRadius: '18px',
+              border: 'none',
+              cursor: 'pointer',
+              backgroundColor: nightSleep ? '#23372A' : 'var(--color-white, #FFFFFF)',
+              color: nightSleep ? '#F1F4EA' : 'var(--text-primary, #1E2A20)',
+              boxShadow: 'var(--shadow-sm, 0 2px 8px rgba(35,55,42,0.08))',
+              marginBottom: '4px',
+              textAlign: 'left',
+            }}
+          >
+            <span
+              style={{
+                width: '24px',
+                height: '24px',
+                borderRadius: '8px',
+                flexShrink: 0,
+                border: nightSleep ? 'none' : '2px solid #C3CEBE',
+                backgroundColor: nightSleep ? '#D4F27A' : 'transparent',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+            >
+              {nightSleep && (
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#1E2A20" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M20 6L9 17l-5-5" />
+                </svg>
+              )}
+            </span>
+            <span style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+              <span style={{ fontSize: '15px', fontWeight: 600 }}>🌙 Ночной сон</span>
+              <span style={{ fontSize: '12px', opacity: 0.7 }}>Подъём — по времени из настроек, не по интервалу</span>
+            </span>
+          </button>
+        )}
+
         {/* One-tap Button ("Сейчас") */}
         <button
           type="button"
           data-testid="action-now-btn"
-          onClick={() => onConfirm({ source: 'NOW', time: nowTime })}
+          onClick={() => onConfirm({ source: 'NOW', time: nowTime, ...(type === 'FELL_ASLEEP' && nightSleep ? { isNightSleep: true } : {}) })}
           className="bento-interactive"
           style={{
             height: '88px',
@@ -402,7 +454,7 @@ export const SleepActionModal: React.FC<SleepActionModalProps> = ({
         <button
           type="button"
           data-testid="action-save-btn"
-          onClick={() => onConfirm({ source: 'MANUAL', time: selectedTime })}
+          onClick={() => onConfirm({ source: 'MANUAL', time: selectedTime, ...(type === 'FELL_ASLEEP' && nightSleep ? { isNightSleep: true } : {}) })}
           className="bento-interactive"
           style={{
             height: '60px',

@@ -86,17 +86,19 @@ export async function fetchScheduleStatus(
 }
 
 export async function postFellAsleep(
-  childIdOrOptions?: string | { childId?: string; time?: string; source?: string },
+  childIdOrOptions?: string | { childId?: string; time?: string; source?: string; isNightSleep?: boolean },
   time?: string,
   source: string = 'NOW'
 ): Promise<any> {
   let childId = 'demo-child-1';
   let t = time;
   let s = source;
+  let isNightSleep = false;
   if (typeof childIdOrOptions === 'object' && childIdOrOptions !== null) {
     childId = childIdOrOptions.childId || 'demo-child-1';
     t = childIdOrOptions.time;
     s = childIdOrOptions.source || 'NOW';
+    isNightSleep = childIdOrOptions.isNightSleep === true;
   } else if (typeof childIdOrOptions === 'string') {
     childId = childIdOrOptions;
   }
@@ -104,7 +106,7 @@ export async function postFellAsleep(
   const res = await fetch('/api/sleep/fell-asleep', {
     method: 'POST',
     headers: getAuthHeaders({ 'Content-Type': 'application/json' }),
-    body: JSON.stringify({ childId, time: t, source: s }),
+    body: JSON.stringify({ childId, time: t, source: s, ...(isNightSleep ? { isNightSleep: true } : {}) }),
   });
   if (!res.ok) {
     throw new Error(`Failed to record fell asleep: ${res.status} ${res.statusText}`);

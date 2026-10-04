@@ -101,7 +101,12 @@ export default function App({ initialAuthView }: AppProps = {}) {
     }
 
     try {
-      await recordFellAsleepApi(status?.child?.id || 'demo-child-1', time, payload.source);
+      await recordFellAsleepApi({
+        childId: status?.child?.id || 'demo-child-1',
+        time,
+        source: payload.source,
+        isNightSleep: payload.isNightSleep === true,
+      });
       await loadStatus();
     } catch {
       await loadStatus();
