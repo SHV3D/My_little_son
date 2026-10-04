@@ -35,48 +35,6 @@
     </noscript>
   </head>
   <body style="margin:0;padding:0;background-color:var(--bg-primary, #ECEEE6);transition:background-color 0.25s ease;">
-    <!-- TEMP on-screen diagnostic (no console needed). Remove after diagnosis. -->
-    <script>
-      (function () {
-        try {
-          var d = document.createElement('div');
-          d.id = '__diag';
-          d.style.cssText = 'position:fixed;top:0;left:0;right:0;z-index:2147483647;background:#0a7a0a;color:#fff;font:12px/1.4 monospace;padding:6px 8px;white-space:pre-wrap;word-break:break-word;';
-          var sa = (typeof navigator !== 'undefined') ? navigator.standalone : undefined;
-          var dm = (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches);
-          d.textContent = 'HTML OK ' + new Date().toISOString() + ' | standalone=' + sa + ' | display-mode-standalone=' + dm;
-          (document.body || document.documentElement).appendChild(d);
-          // Ship errors to the server so they can be read without a Mac console.
-          window.__postErr = function (obj) {
-            try {
-              obj.standalone = sa; obj.dm = dm; obj.ua = navigator.userAgent;
-              fetch('/api/client-log', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(obj), keepalive: true }).catch(function () {});
-            } catch (_) {}
-          };
-          window.addEventListener('error', function (e) {
-            d.style.background = '#b3261e';
-            var msg = e.message || (e.error && e.error.message) || '(empty)';
-            var stack = (e.error && e.error.stack) || '';
-            d.textContent = 'JS ERROR: ' + msg + ' @ ' + (e.filename || '') + ':' + (e.lineno || '') + ':' + (e.colno || '') + (stack ? ('\n' + stack) : '');
-            window.__postErr({ phase: 'window.error', message: msg, filename: e.filename, lineno: e.lineno, colno: e.colno, stack: stack });
-          });
-          window.addEventListener('unhandledrejection', function (e) {
-            d.style.background = '#b3261e';
-            var r = e.reason;
-            var msg = (r && (r.message || r.toString())) || '(empty)';
-            var stack = (r && r.stack) || '';
-            d.textContent = 'PROMISE REJECT: ' + msg + (stack ? ('\n' + stack) : '');
-            window.__postErr({ phase: 'unhandledrejection', message: msg, stack: stack });
-          });
-          // Prove React mounted: when #root no longer contains the splash text.
-          setTimeout(function () {
-            var root = document.getElementById('root');
-            var mounted = root && root.innerHTML.indexOf('My little son') === -1 && root.children.length > 0;
-            d.textContent += ' | react-mounted-3s=' + !!mounted;
-          }, 3000);
-        } catch (_) {}
-      })();
-    </script>
     <div id="root">
       <!-- Branded Splash Skeleton (instantly replaced when React mounts) -->
       <div style="height:100vh;height:100dvh;display:flex;flex-direction:column;align-items:center;justify-content:center;background-color:var(--bg-primary, #ECEEE6);font-family:'Geologica',system-ui,sans-serif;color:var(--text-primary, #1E2A20);margin:0 auto;max-width:430px;box-sizing:border-box;padding:24px;text-align:center;">
@@ -111,16 +69,15 @@
 
     <script type="module" src="/src/main.tsx"></script>
 
-    <!-- Service worker intentionally DISABLED: a registered SW white-screens the
-         installed PWA on iOS standalone (WKWebView). Unregister any previously
-         installed SW so the standalone app loads straight from the network.
-         Push (which requires a SW on iOS) is paused until the PWA is verified
-         stable, then reintroduced in a way that does not break standalone. -->
+    <!-- Register the push-only Service Worker (no fetch/Cache interception, so it
+         can't wedge navigation on iOS; required for Web Push). -->
     <script>
       if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.getRegistrations()
-          .then(function (regs) { regs.forEach(function (r) { r.unregister(); }); })
-          .catch(function () {});
+        window.addEventListener('load', function () {
+          navigator.serviceWorker.register('/sw.js').catch(function (e) {
+            console.error('SW register failed', e);
+          });
+        });
       }
     </script>
   </body>

@@ -49,20 +49,6 @@ app.get('/api/health', (_req: Request, res: Response) => {
   res.json({ status: 'ok' });
 });
 
-// TEMP remote client-error log (no console on iOS): the client POSTs JS errors
-// here with full stack so they can be read via GET. Remove after diagnosis.
-const clientErrors: any[] = [];
-app.post('/api/client-log', (req: Request, res: Response) => {
-  try {
-    const body = req.body || {};
-    clientErrors.push({ t: new Date().toISOString(), ua: req.headers['user-agent'] || '', ...body });
-    if (clientErrors.length > 100) clientErrors.shift();
-  } catch { /* ignore */ }
-  res.json({ ok: true });
-});
-app.get('/api/client-log', (_req: Request, res: Response) => {
-  res.json(clientErrors);
-});
 
 app.use('/api/auth', authRoutes);
 app.use('/api/settings', settingsRoutes);
